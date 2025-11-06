@@ -753,6 +753,8 @@ const ChatPage = () => {
             onEdit={handleEdit}
             onSelectVariant={handleSelectVariant}
             onFeedback={handleFeedback}
+            onSuggestionClick={handleSendMessage}
+            userName={userName}
           />
 
           {/* Composer */}
