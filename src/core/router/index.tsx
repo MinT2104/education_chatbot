@@ -15,6 +15,7 @@ const CoursePlayerPage = lazy(
 const AdminPage = lazy(() => import("../../features/admin/pages/AdminPage"));
 const UpgradePage = lazy(() => import("../../features/auth/pages/UpgradePage"));
 const ProfilePage = lazy(() => import("../../features/auth/pages/ProfilePage"));
+const SettingsPage = lazy(() => import("../../features/auth/pages/SettingsPage"));
 
 export interface AppRoute {
   path: string;
@@ -59,6 +60,11 @@ export const routes: AppRoute[] = [
     protected: true,
   },
   {
+    path: "/settings",
+    component: SettingsPage,
+    protected: true,
+  },
+  {
     path: "/prayers",
     component: CommunityPage,
   },
@@ -85,9 +91,11 @@ export const routes: AppRoute[] = [
     protected: true,
   },
   {
+    path: "/admin",
+    component: AdminPage,
+  },
+  {
     path: "/admin/*",
     component: AdminPage,
-    protected: true,
-    adminOnly: true,
   },
 ];

@@ -7,6 +7,12 @@ export const chatService = {
     previousChat?: any[]
     chatHistoryId?: string | null
     chatType?: string
+    role?: 'student' | 'teacher'
+    schoolId?: string
+    schoolName?: string
+    grade?: string
+    subject?: string
+    topic?: string
   }): Promise<{
     chatMessage: ChatMessage
     chatHistoryId: string

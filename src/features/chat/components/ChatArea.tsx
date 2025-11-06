@@ -4,6 +4,7 @@ import { NewMessage } from "../types";
 
 interface ChatAreaProps {
   messages: NewMessage[];
+  conversationId?: string;
   isStreaming?: boolean;
   onCopy?: (content: string) => void;
   onShare?: (messageId: string) => void;
@@ -11,15 +12,26 @@ interface ChatAreaProps {
   onLike?: (messageId: string, like: boolean) => void;
   onPin?: (messageId: string) => void;
   onQuote?: (messageId: string, content: string) => void;
+  onContinue?: (messageId: string) => void;
+  onEdit?: (messageId: string, newContent: string) => void;
+  onSelectVariant?: (messageId: string, variantId: string) => void;
+  onFeedback?: (messageId: string, feedback: { like?: boolean; dislike?: boolean; note?: string; reason?: string }) => void;
 }
 
 const ChatArea = ({
   messages,
+  conversationId,
   isStreaming = false,
   onCopy,
   onShare,
   onRegenerate,
   onLike,
+  onPin,
+  onQuote,
+  onContinue,
+  onEdit,
+  onSelectVariant,
+  onFeedback,
 }: ChatAreaProps) => {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -134,10 +146,17 @@ const ChatArea = ({
           <MessageBubble
             key={message.id}
             message={message}
+            conversationId={conversationId}
             onCopy={onCopy}
             onShare={onShare}
             onRegenerate={onRegenerate}
             onLike={onLike}
+            onPin={onPin}
+            onQuote={onQuote}
+            onContinue={onContinue}
+            onEdit={onEdit}
+            onSelectVariant={onSelectVariant}
+            onFeedback={onFeedback}
           />
         ))}
 

@@ -67,6 +67,10 @@ export interface NewMessage {
   timestamp: number
   streamed?: boolean
   pinned?: boolean
+  selectedVariantId?: string // Currently selected variant
+  isEdited?: boolean // Track if user message was edited
+  originalContent?: string // Original content before edit
+  isContinuable?: boolean // Can this message be continued?
 }
 
 export interface ConversationTools {

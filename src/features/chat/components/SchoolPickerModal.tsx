@@ -1,15 +1,18 @@
 import { useEffect, useMemo, useState } from 'react'
 import schools from '../data/schools.json'
+import { Checkbox } from '@/components/ui/checkbox'
+import { Label } from '@/components/ui/label'
 
 interface SchoolPickerModalProps {
   open: boolean
   onClose: () => void
-  onSelect: (school: { id: string; name: string }) => void
+  onSelect: (school: { id: string; name: string }, remember: boolean) => void
 }
 
 const SchoolPickerModal = ({ open, onClose, onSelect }: SchoolPickerModalProps) => {
   const [q, setQ] = useState('')
   const [debounced, setDebounced] = useState('')
+  const [rememberChoice, setRememberChoice] = useState(false)
 
   useEffect(() => {
     const t = setTimeout(() => setDebounced(q), 300)
@@ -22,12 +25,20 @@ const SchoolPickerModal = ({ open, onClose, onSelect }: SchoolPickerModalProps) 
     return schools.filter((s) => s.name.toLowerCase().includes(query))
   }, [debounced])
 
+  const handleSelect = (school: { id: string; name: string }) => {
+    onSelect(school, rememberChoice)
+    if (!rememberChoice) {
+      onClose()
+    }
+  }
+
   if (!open) return null
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center">
       <div className="absolute inset-0 bg-black/50" onClick={onClose} />
       <div className="relative z-10 w-full max-w-lg rounded-2xl bg-surface p-6 shadow-[0_8px_24px_rgba(0,0,0,.4),inset_0_0_0_1px_var(--border)]">
         <h2 className="text-lg font-semibold text-text">Choose your school</h2>
+        <p className="text-sm text-text-subtle mt-1">Enter your school name to get personalized content</p>
         <input
           autoFocus
           value={q}
@@ -39,11 +50,8 @@ const SchoolPickerModal = ({ open, onClose, onSelect }: SchoolPickerModalProps) 
           {results.map((s) => (
             <button
               key={s.id}
-              onClick={() => {
-                onSelect(s)
-                onClose()
-              }}
-              className="w-full text-left px-4 py-2 rounded-xl bg-surface hover:bg-primary-500/8"
+              onClick={() => handleSelect(s)}
+              className="w-full text-left px-4 py-2 rounded-xl bg-surface hover:bg-primary-500/8 transition-colors"
             >
               {s.name}
             </button>
@@ -51,6 +59,19 @@ const SchoolPickerModal = ({ open, onClose, onSelect }: SchoolPickerModalProps) 
           {results.length === 0 && (
             <div className="text-sm text-text-subtle">No schools found</div>
           )}
+        </div>
+        <div className="mt-4 pt-4 border-t border-border flex items-center gap-2">
+          <Checkbox
+            id="remember-school"
+            checked={rememberChoice}
+            onCheckedChange={(checked) => setRememberChoice(checked as boolean)}
+          />
+          <Label
+            htmlFor="remember-school"
+            className="text-sm text-text cursor-pointer font-normal"
+          >
+            Do not ask me again
+          </Label>
         </div>
       </div>
     </div>

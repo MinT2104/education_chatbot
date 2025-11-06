@@ -1,6 +1,6 @@
 import { Conversation, ConversationTools } from "../types";
 import { useMemo, useState } from "react";
-import { useAppSelector } from "../../../core/store/hooks";
+import { useAppSelector, useAppDispatch } from "../../../core/store/hooks";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -18,6 +18,8 @@ import {
 import LoginPage from "../../auth/pages/LoginPage";
 import SignupPage from "../../auth/pages/SignupPage";
 import { cn } from "@/lib/utils";
+import { toggleDarkMode, setDarkMode } from "../../ui/store/uiSlice";
+import { settingsService } from "../../auth/services/settingsService";
 
 interface TopBarProps {
   currentConversation?: Conversation | null;
@@ -41,9 +43,23 @@ const TopBar = ({
   const [showLogin, setShowLogin] = useState(false);
   const [showSignup, setShowSignup] = useState(false);
   const isAuthenticated = useAppSelector((s) => s.auth.isAuthenticated);
+  const isDark = useAppSelector((s) => s.ui.isDark);
+  const user = useAppSelector((s) => s.auth.user);
+  const userId = user?.email || user?.id || null;
+  const dispatch = useAppDispatch();
   const shareUrl = useMemo(() => {
     return window.location.origin + "/share";
   }, []);
+
+  const handleThemeToggle = () => {
+    dispatch(toggleDarkMode());
+    // Update settings to match the toggle
+    const newIsDark = !isDark;
+    const settings = settingsService.getSettings(userId);
+    // If user toggles, we assume they want to override system preference
+    const newTheme = newIsDark ? 'dark' : 'light';
+    settingsService.saveSettings({ theme: newTheme }, userId);
+  };
   return (
     <div className="h-16 bg-background/50 backdrop-blur-sm sticky top-0 z-10">
       <div className="h-full px-4 flex items-center justify-between">
@@ -161,6 +177,42 @@ const TopBar = ({
                   />
                 </svg>
               </button>
+              {/* Theme Toggle */}
+              <button
+                onClick={handleThemeToggle}
+                className="p-2 rounded-lg hover:bg-muted transition-colors"
+                aria-label={isDark ? "Switch to light mode" : "Switch to dark mode"}
+              >
+                {isDark ? (
+                  <svg
+                    className="w-5 h-5 text-muted-foreground"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"
+                    />
+                  </svg>
+                ) : (
+                  <svg
+                    className="w-5 h-5 text-muted-foreground"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"
+                    />
+                  </svg>
+                )}
+              </button>
               {onSettings && (
                 <button
                   onClick={onSettings}
@@ -177,7 +229,13 @@ const TopBar = ({
                       strokeLinecap="round"
                       strokeLinejoin="round"
                       strokeWidth={2}
-                      d="M11.983 4a1 1 0 01.94.658l.44 1.175a7.96 7.96 0 011.706.989l1.203-.44a1 1 0 011.262.53l1 2a1 1 0 01-.322 1.232l-1 2a1 1 0 01-1.262.53l-1.203-.44c-.542-.392 1.115-.725 1.706-.989l.44-1.175A1 1 0 019.983 4h2zM12 9.5a2.5 2.5 0 100 5 2.5 2.5 0 000-5z"
+                      d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"
+                    />
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
                     />
                   </svg>
                 </button>

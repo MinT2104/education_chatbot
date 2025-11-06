@@ -28,11 +28,21 @@ const uiSlice = createSlice({
       state.isDark = !state.isDark
       localStorage.setItem('theme', state.isDark ? 'dark' : 'light')
       document.documentElement.setAttribute('data-theme', state.isDark ? 'dark' : 'light')
+      if (state.isDark) {
+        document.documentElement.classList.add('dark')
+      } else {
+        document.documentElement.classList.remove('dark')
+      }
     },
     setDarkMode: (state, action: PayloadAction<boolean>) => {
       state.isDark = action.payload
       localStorage.setItem('theme', action.payload ? 'dark' : 'light')
       document.documentElement.setAttribute('data-theme', action.payload ? 'dark' : 'light')
+      if (action.payload) {
+        document.documentElement.classList.add('dark')
+      } else {
+        document.documentElement.classList.remove('dark')
+      }
     },
     toggleSettings: (state) => {
       state.isSettingsShow = !state.isSettingsShow
