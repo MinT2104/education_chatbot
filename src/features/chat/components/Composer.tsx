@@ -1,11 +1,5 @@
 import { useState, useRef, useEffect, KeyboardEvent } from "react";
 import { Button } from "@/components/ui/button";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
 import SlashCommandMenu from "./SlashCommandMenu";
 
 interface ComposerProps {
@@ -195,49 +189,21 @@ const Composer = ({
               placeholder={placeholder}
               disabled={disabled || isStreaming}
               rows={1}
-              className="w-full px-4 py-3 pr-28 bg-muted/50 border border-border rounded-full resize-none focus:outline-none focus:ring-2 focus:ring-ring focus:border-transparent disabled:opacity-50 disabled:cursor-not-allowed max-h-[200px] overflow-y-auto transition-all"
-              style={{ minHeight: "52px" }}
+              className="w-full px-4 py-5 pr-28 bg-muted/50 border border-border rounded-2xl resize-none focus:outline-none focus:ring-2 focus:ring-ring focus:border-transparent disabled:opacity-50 disabled:cursor-not-allowed max-h-[320px] overflow-y-auto transition-all"
+              style={{ minHeight: "112px" }}
             />
-            {/* Inline controls on the right inside input */}
-            <div className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center gap-1">
-              {/* Role dropdown */}
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button
-                    variant="ghost"
-                    className="h-9 px-3 rounded-full border border-ring bg-background text-xs font-medium"
-                    aria-label="Select role"
-                  >
-                    {role === "student" ? "Student" : "Teacher"}
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className="w-36">
-                  <DropdownMenuItem
-                    onClick={() => handleRoleChange("student")}
-                    className={role === "student" ? "font-medium" : undefined}
-                  >
-                    Student
-                  </DropdownMenuItem>
-                  <DropdownMenuItem
-                    onClick={() => handleRoleChange("teacher")}
-                    className={role === "teacher" ? "font-medium" : undefined}
-                  >
-                    Teacher
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
-
-              {/* Attach button */}
+            {/* Attach button pinned to bottom-left */}
+            <div className="absolute left-2 bottom-2">
               <Button
                 variant="ghost"
                 size="icon"
-                className="h-9 w-9 rounded-full border border-ring bg-background hover:bg-muted"
+                className="h-8 w-8 rounded-full border border-ring bg-background hover:bg-muted"
                 aria-label="Attach"
               >
                 <svg
                   xmlns="http://www.w3.org/2000/svg"
-                  width="24"
-                  height="24"
+                  width="20"
+                  height="20"
                   viewBox="0 0 24 24"
                   fill="none"
                   stroke="currentColor"
@@ -249,6 +215,30 @@ const Composer = ({
                   <path d="m16 6-8.414 8.586a2 2 0 0 0 2.829 2.829l8.414-8.586a4 4 0 1 0-5.657-5.657l-8.379 8.551a6 6 0 1 0 8.485 8.485l8.379-8.551" />
                 </svg>
               </Button>
+            </div>
+
+            {/* Inline controls pinned to bottom-right inside input */}
+            <div className="absolute right-2 bottom-2 flex items-end gap-1">
+              {/* Role single-toggle switch */}
+              <button
+                type="button"
+                onClick={() => handleRoleChange(role === "student" ? "teacher" : "student")}
+                className={`relative h-8 w-14 rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-violet-500 ${
+                  role === "student" ? "bg-violet-600" : "bg-violet-400"
+                }`}
+                role="switch"
+                aria-checked={role === "student"}
+                aria-label="Toggle role"
+              >
+                <span
+                  className={`absolute top-1 left-1 h-6 w-6 rounded-full bg-white shadow transition-transform ${
+                    role === "student" ? "translate-x-6" : "translate-x-0"
+                  }`}
+                />
+              </button>
+              <span className="ml-1.5 text-xs font-medium text-muted-foreground">
+                {role === "student" ? "Student" : "Teacher"}
+              </span>
 
               {/* Send/Stop button inside input */}
               {isStreaming && onStop ? (

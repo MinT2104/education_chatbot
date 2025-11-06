@@ -1,5 +1,7 @@
 import { useEffect, useRef } from "react";
+import cuteIcon from "../../../public/cute.png";
 import MessageBubble from "./MessageBubble";
+import SpaceStarter from "./SpaceStarter";
 import { NewMessage } from "../types";
 
 interface ChatAreaProps {
@@ -35,7 +37,6 @@ const ChatArea = ({
   onSelectVariant,
   onFeedback,
   onSuggestionClick,
-  userName = "Student",
 }: ChatAreaProps) => {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -48,122 +49,26 @@ const ChatArea = ({
   }, [messages, isStreaming]);
 
   if (messages.length === 0) {
-    const suggestions = [
-      {
-        title: "📐 Math - Algebra",
-        question: "How do I solve the equation: 3x + 7 = 22?",
-        icon: "📐",
-      },
-      {
-        title: "⚡ Physics - Motion",
-        question: "Explain Newton's second law with a real-world example",
-        icon: "⚡",
-      },
-      {
-        title: "🧪 Chemistry - Atoms",
-        question: "What's the difference between ionic and covalent bonds?",
-        icon: "🧪",
-      },
-      {
-        title: "🌿 Biology - Cells",
-        question: "Why are mitochondria called the powerhouse of the cell?",
-        icon: "🌿",
-      },
-      {
-        title: "💬 English - Grammar",
-        question: "When should I use 'affect' vs 'effect'?",
-        icon: "💬",
-      },
-      {
-        title: "🌍 Geography",
-        question: "How are mountains formed?",
-        icon: "🌍",
-      },
-      {
-        title: "📚 History",
-        question: "What were the main causes of World War I?",
-        icon: "📚",
-      },
-      {
-        title: "💻 Computer Science",
-        question: "Explain what an algorithm is with simple examples",
-        icon: "💻",
-      },
-      {
-        title: "🎨 Art & Literature",
-        question: "What is the theme of Romeo and Juliet?",
-        icon: "🎨",
-      },
-      {
-        title: "🧮 Math - Geometry",
-        question: "Calculate the area of a circle with radius 5cm",
-        icon: "🧮",
-      },
-      {
-        title: "⚛️ Physics - Energy",
-        question: "What is kinetic energy and how is it calculated?",
-        icon: "⚛️",
-      },
-      {
-        title: "🔬 Science - Experiments",
-        question: "How does photosynthesis work step by step?",
-        icon: "🔬",
-      },
-    ];
-
     return (
       <div className="flex-1 flex flex-col items-center justify-center p-8 text-center">
-        <div className="w-14 h-14 rounded-full bg-primary/10 flex items-center justify-center mb-5">
-          <svg
-            className="w-7 h-7 text-primary"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth={2}
-            viewBox="0 0 24 24"
-          >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              d="M12 2L2 7v10c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V7l-10-5z"
-            />
-          </svg>
-        </div>
+        {/* removed decorative icon above header */}
 
-        <h2 className="text-2xl font-semibold text-foreground mb-2">
-          Hello {userName}! 👋
-        </h2>
-        <p className="text-muted-foreground mb-10 text-base max-w-2xl">
-          I'm your AI learning assistant. Pick a question below to get started, or type your own question!
-        </p>
-
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 max-w-6xl w-full px-4">
-          {suggestions.map((s, i) => (
-            <button
-              key={i}
-              onClick={() => onSuggestionClick?.(s.question)}
-              className="group p-4 text-left rounded-xl border border-border/60 hover:border-primary/70 hover:bg-accent/50 transition-all duration-200 hover:shadow-lg hover:scale-[1.02] active:scale-[0.98]"
-            >
-              <div className="flex items-start gap-3">
-                <span className="text-2xl flex-shrink-0 group-hover:scale-110 transition-transform duration-200">
-                  {s.icon}
-                </span>
-                <div className="flex-1 min-w-0">
-                  <h3 className="text-xs font-semibold text-foreground/80 mb-1.5 uppercase tracking-wide">
-                    {s.title}
-                  </h3>
-                  <p className="text-sm text-muted-foreground group-hover:text-foreground transition-colors line-clamp-2">
-                    {s.question}
-                  </p>
-                </div>
-              </div>
-            </button>
-          ))}
-        </div>
-
-        <div className="mt-10 text-center">
-          <p className="text-xs text-muted-foreground">
-            💡 Tip: You can ask me anything about your homework, studies, or learning!
+        <img
+          src={cuteIcon}
+          alt="Cute assistant"
+          className="w-72 h-72 mb-2 mx-auto rounded-full"
+        />
+        <div className="-mt-6 md:-mt-8 mb-2 leading-tight relative z-10">
+          <p className="text-4xl md:text-5xl font-bold text-foreground">
+            Chat to get started.
           </p>
+          <p className="text-4xl md:text-5xl font-bold text-foreground">
+            Or start with <span className="gradient-text">a Space!</span>
+          </p>
+        </div>
+
+        <div className="w-full px-4 mt-4">
+          <SpaceStarter />
         </div>
       </div>
     );
