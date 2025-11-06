@@ -1,0 +1,13 @@
+server
+client
+node_modules
+.git
+*.log
+.env
+.env.local
+.DS_Store
+docs
+*.md
+ARCHITECTURE.md
+IMPLEMENTATION_SUMMARY.md
+
