@@ -19,6 +19,7 @@ interface ChatAreaProps {
   onSelectVariant?: (messageId: string, variantId: string) => void;
   onFeedback?: (messageId: string, feedback: { like?: boolean; dislike?: boolean; note?: string; reason?: string }) => void;
   userName?: string;
+  isAuthenticated?: boolean;
 }
 
 const ChatArea = ({
@@ -35,6 +36,8 @@ const ChatArea = ({
   onEdit,
   onSelectVariant,
   onFeedback,
+  userName,
+  isAuthenticated,
 }: ChatAreaProps) => {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -48,26 +51,35 @@ const ChatArea = ({
 
   if (messages.length === 0) {
     return (
-      <div className="flex-1 flex flex-col items-center justify-center p-8 text-center">
+      <div className={`flex flex-col items-center justify-start pt-6 ${isAuthenticated ? 'pb-0' : 'pb-4'} px-4 text-center`}>
         {/* removed decorative icon above header */}
 
         <img
           src={cuteIcon}
           alt="Cute assistant"
-          className="w-72 h-72 mb-2 mx-auto rounded-full"
+          className="w-48 h-48 mb-1 mx-auto rounded-full"
         />
-        <div className="-mt-6 md:-mt-8 mb-2 leading-tight relative z-10">
-          <p className="text-4xl md:text-5xl font-bold text-foreground">
-            Chat to get started.
+        <div className={`-mt-4 md:-mt-5 ${isAuthenticated ? 'mb-8' : 'mb-1'} leading-tight relative z-10`}>
+          <p className="text-3xl md:text-4xl font-bold text-foreground">
+            {(() => {
+              const hour = new Date().getHours();
+              const partOfDay =
+                hour < 12 ? "Morning" : hour < 18 ? "Afternoon" : "Evening";
+              const name = userName && userName !== "Guest" ? userName : "there";
+              return `Good ${partOfDay}, ${name}`;
+            })()}
           </p>
-          <p className="text-4xl md:text-5xl font-bold text-foreground">
-            Or start with <span className="gradient-text">a Space!</span>
+          <p className="text-3xl md:text-4xl font-bold text-foreground">
+            What's on <span className="gradient-text">your mind?</span>
           </p>
         </div>
 
-        <div className="w-full px-4 mt-4">
-          <SpaceStarter />
-        </div>
+        {!isAuthenticated && (
+          <div className="w-full px-4 mt-2">
+            <SpaceStarter />
+          </div>
+        )}
+
       </div>
     );
   }

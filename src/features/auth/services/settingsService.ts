@@ -11,7 +11,7 @@ export interface UserSettings {
 const DEFAULT_SETTINGS: UserSettings = {
   language: "en",
   fontSize: "medium",
-  theme: "system",
+  theme: "light",
   enterToSend: true,
   memoryEnabled: true,
   dataCollection: true,

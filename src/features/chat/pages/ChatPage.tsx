@@ -184,47 +184,23 @@ const ChatPage = () => {
   );
 
   const handleNewChat = () => {
-    setSelectedConversationId(null);
+    // Create a new empty conversation immediately and select it
+    const newConversation: Conversation = {
+      id: `conv_${Date.now()}`,
+      title: "New chat",
+      pinned: false,
+      createdAt: Date.now(),
+      updatedAt: Date.now(),
+      messages: [],
+      tools,
+      memory: { enabled: memoryEnabled },
+    };
+    setConversations((prev) => [newConversation, ...prev]);
+    setSelectedConversationId(newConversation.id);
     setCurrentMessages([]);
     setIsStreaming(false);
     setWorkflowStep(null);
-    
-    // Check if we need to show school picker
-    const rememberedSchool = sessionService.getRememberedSchool();
-    if (!rememberedSchool && !session.schoolId) {
-      setShowSchoolPicker(true);
-    } else if (rememberedSchool) {
-      // Use remembered school and start workflow
-      setSession({
-        ...session,
-        schoolId: rememberedSchool.id,
-        schoolName: rememberedSchool.name,
-      });
-      // Start workflow step 1
-      setWorkflowStep(1);
-      // Send initial workflow message
-      setTimeout(() => {
-        const initialMessage: NewMessage = {
-          id: `msg_${Date.now()}`,
-          role: "assistant",
-          contentMd: prompts.workflow.step1,
-          timestamp: Date.now(),
-        };
-        setCurrentMessages([initialMessage]);
-      }, 100);
-    } else {
-      // Has school but start fresh workflow
-      setWorkflowStep(1);
-      setTimeout(() => {
-        const initialMessage: NewMessage = {
-          id: `msg_${Date.now()}`,
-          role: "assistant",
-          contentMd: prompts.workflow.step1,
-          timestamp: Date.now(),
-        };
-        setCurrentMessages([initialMessage]);
-      }, 100);
-    }
+    setShowSchoolPicker(false);
   };
 
   const handleSchoolSelect = (school: { id: string; name: string }, remember: boolean) => {
@@ -736,7 +712,7 @@ const ChatPage = () => {
         )}
 
         {/* Main Chat Area */}
-        <div className="flex-1 flex flex-col overflow-hidden bg-background">
+        <div className="flex-1 flex flex-col overflow-hidden bg-background pb-8">
           {/* Mobile menu button */}
           {isSidebarCollapsed && (
             <button
@@ -792,6 +768,8 @@ const ChatPage = () => {
             onSelectVariant={handleSelectVariant}
             onFeedback={handleFeedback}
             userName={userName}
+            isAuthenticated={isAuthenticated}
+            onSuggestionClick={handleSendMessage}
           />
 
           {/* Composer */}
@@ -799,7 +777,7 @@ const ChatPage = () => {
             onSend={handleSendMessage}
             onStop={handleStopStreaming}
             isStreaming={isStreaming}
-            disabled={plan === "Free" && quotaUsed >= 25}
+            disabled={false}
             tools={tools}
             memoryEnabled={memoryEnabled}
             enterToSend={enterToSend}
@@ -810,23 +788,83 @@ const ChatPage = () => {
               setSession(updatedSession);
               sessionService.saveSession(updatedSession);
             }}
+            compact={isAuthenticated && currentMessages.length === 0}
+            onNewChat={handleNewChat}
           />
-          {/* Quota indicator */}
-          <div className="px-6 py-2 text-xs text-muted-foreground text-center">
-            {plan === "Free" ? (
-              <span>
-                {quotaRemaining} / 25 messages left.{" "}
-                <button
-                  className="underline text-primary hover:text-primary/80"
-                  onClick={() => setShowUpgrade(true)}
-                >
-                  Upgrade
-                </button>
-              </span>
-            ) : (
-              <span>Plan Go: Unlimited messages</span>
-            )}
-          </div>
+
+          {/* Suggestions UNDER the chat box when no messages */}
+          {isAuthenticated && currentMessages.length === 0 && (
+            <div className="mx-auto max-w-[900px] px-6 mt-3">
+              <h3 className="text-xs font-medium text-muted-foreground mb-3 tracking-wide">
+                GET STARTED WITH AN EXAMPLE BELOW
+              </h3>
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+                {[
+                  {
+                    text: "Write a to-do list for a personal project",
+                    icon: (
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                      </svg>
+                    ),
+                  },
+                  {
+                    text: "Generate an email to reply to a job offer",
+                    icon: (
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                      </svg>
+                    ),
+                  },
+                  {
+                    text: "Summarize this article in one paragraph",
+                    icon: (
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+                      </svg>
+                    ),
+                  },
+                  {
+                    text: "How does AI work in a technical capacity",
+                    icon: (
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4" />
+                      </svg>
+                    ),
+                  },
+                ].map((suggestion, i) => (
+                  <button
+                    key={i}
+                    onClick={() => handleSendMessage(suggestion.text)}
+                    className="group relative p-4 rounded-xl bg-card border border-border hover:bg-accent hover:border-primary/50 transition-all text-left cursor-pointer"
+                  >
+                    <p className="text-sm text-foreground mb-3 pr-8">{suggestion.text}</p>
+                    <div className="absolute bottom-3 left-4 text-muted-foreground group-hover:text-primary transition-colors">
+                      {suggestion.icon}
+                    </div>
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+          {/* Quota indicator (only for authenticated users) */}
+          {isAuthenticated && (
+            <div className="px-6 py-2 text-xs text-muted-foreground text-center">
+              {plan === "Free" ? (
+                <span>
+                  {quotaRemaining} / 25 messages left.{" "}
+                  <button
+                    className="underline text-primary hover:text-primary/80"
+                    onClick={() => setShowUpgrade(true)}
+                  >
+                    Upgrade
+                  </button>
+                </span>
+              ) : (
+                <span>Plan Go: Unlimited messages</span>
+              )}
+            </div>
+          )}
           <UpgradeModal
             open={showUpgrade}
             onClose={() => setShowUpgrade(false)}

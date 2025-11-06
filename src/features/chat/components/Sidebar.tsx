@@ -76,14 +76,14 @@ const Sidebar = ({
 
   if (isCollapsed && onToggleCollapse) {
     return (
-      <div className="w-14 bg-sidebar flex flex-col h-full">
+      <div className="w-14 bg-sidebar flex flex-col h-full text-muted-foreground">
         <div className="flex flex-col items-center py-4">
           <Button
             onClick={onToggleCollapse}
             variant="ghost"
             size="icon"
             aria-label="Expand sidebar"
-            className="mb-4"
+            className="mb-4 hover:bg-muted"
           >
             <svg
               className="w-5 h-5"
@@ -104,7 +104,7 @@ const Sidebar = ({
             variant="ghost"
             size="icon"
             aria-label="New chat"
-            className="bg-primary text-primary-foreground hover:bg-primary/90"
+            className="hover:bg-muted"
           >
             <svg
               className="w-5 h-5"
@@ -122,12 +122,47 @@ const Sidebar = ({
           </Button>
         </div>
 
+        {/* Compact vertical icon menu */}
+        <nav className="flex-1 flex flex-col items-center gap-1 text-muted-foreground">
+          <Button variant="ghost" size="icon" className="h-9 w-9 hover:bg-muted" aria-label="Logo/Home">
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 12l9-9 9 9M4 10v10a1 1 0 001 1h14a1 1 0 001-1V10" />
+            </svg>
+          </Button>
+          <Button variant="ghost" size="icon" className="h-9 w-9 hover:bg-muted" aria-label="Stats">
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 3a1 1 0 012 0v18a1 1 0 11-2 0V3zm-6 8a1 1 0 012 0v10a1 1 0 11-2 0V11zm12 4a1 1 0 012 0v6a1 1 0 11-2 0v-6z" />
+            </svg>
+          </Button>
+          <Button variant="ghost" size="icon" className="h-9 w-9 hover:bg-muted" aria-label="Magic">
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 3l14 14M14 5l5 5M4 14l5 5" />
+            </svg>
+          </Button>
+          <Button variant="ghost" size="icon" className="h-9 w-9 hover:bg-muted" aria-label="Attachments">
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 15a4 4 0 01-4 4H7a6 6 0 010-12h10a4 4 0 010 8H9a2 2 0 110-4h8" />
+            </svg>
+          </Button>
+          <Button variant="ghost" size="icon" className="h-9 w-9 hover:bg-muted" aria-label="Chats">
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 10h.01M12 10h.01M16 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+          </Button>
+          <Button variant="ghost" size="icon" className="h-9 w-9 hover:bg-muted" aria-label="Notifications">
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6 6 0 10-12 0v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
+            </svg>
+          </Button>
+          <div className="mt-auto mb-2" />
+        </nav>
+
         {/* User avatar at bottom */}
         {userName && (
           <div className="mt-auto pb-4 flex justify-center">
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button variant="ghost" size="icon" className="rounded-full">
+                <Button variant="ghost" size="icon" className="rounded-full hover:bg-muted text-muted-foreground">
                   <div className="w-10 h-10 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-sm font-medium">
                     {userName.charAt(0).toUpperCase()}
                   </div>
@@ -178,11 +213,11 @@ const Sidebar = ({
               onClick={onToggleCollapse}
               variant="ghost"
               size="icon"
-              className="h-8 w-8"
+              className="h-8 w-8 text-muted-foreground hover:text-foreground"
               aria-label="Collapse sidebar"
             >
               <svg
-                className="w-5 h-5"
+              className="w-5 h-5"
                 fill="none"
                 stroke="currentColor"
                 viewBox="0 0 24 24"
