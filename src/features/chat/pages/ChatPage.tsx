@@ -769,7 +769,6 @@ const ChatPage = () => {
             onFeedback={handleFeedback}
             userName={userName}
             isAuthenticated={isAuthenticated}
-            onSuggestionClick={handleSendMessage}
           />
 
           {/* Composer */}

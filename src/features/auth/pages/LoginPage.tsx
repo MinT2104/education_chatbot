@@ -3,19 +3,12 @@ import { useNavigate } from "react-router-dom";
 import { useAppDispatch, useAppSelector } from "../../../core/store/hooks";
 import { login } from "../store/authSlice";
 import { toast } from "react-toastify";
-import { MOCK_CREDENTIALS } from "../data/mockAuth";
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
-  DialogDescription,
 } from "@/components/ui/dialog";
-
-// Check if we should use mock mode
-const USE_MOCK_MODE =
-  !import.meta.env.VITE_API_URL ||
-  import.meta.env.VITE_USE_MOCK_AUTH === "true";
 
 interface LoginInlineProps {
   inline?: boolean;
