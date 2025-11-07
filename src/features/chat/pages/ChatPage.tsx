@@ -58,10 +58,12 @@ const ChatPage = () => {
   const [showSchoolPicker, setShowSchoolPicker] = useState(false);
   const [role, setRole] = useState<"student" | "teacher">("student");
   const [pendingMessage, setPendingMessage] = useState<string | null>(null);
-  
+
   // Workflow state
   const [workflowStep, setWorkflowStep] = useState<1 | 2 | 3 | null>(null);
-  const [session, setSession] = useState<UserSession>(() => sessionService.getSession());
+  const [session, setSession] = useState<UserSession>(() =>
+    sessionService.getSession()
+  );
 
   // Helper function to check if school picker should be shown
   const shouldShowSchoolPicker = (): boolean => {
@@ -99,7 +101,7 @@ const ChatPage = () => {
   useEffect(() => {
     const savedSession = sessionService.getSession();
     setSession(savedSession);
-    
+
     // Check if school should be remembered
     const rememberedSchool = sessionService.getRememberedSchool();
     if (rememberedSchool) {
@@ -225,7 +227,7 @@ const ChatPage = () => {
       setShowSchoolPickerSafe(true);
       return;
     }
-    
+
     // Create a new empty conversation immediately and select it
     const newConversation: Conversation = {
       id: `conv_${Date.now()}`,
@@ -244,7 +246,10 @@ const ChatPage = () => {
     setWorkflowStep(null);
   };
 
-  const handleSchoolSelect = (school: { id: string; name: string }, remember: boolean) => {
+  const handleSchoolSelect = (
+    school: { id: string; name: string },
+    remember: boolean
+  ) => {
     const newSession = {
       ...session,
       schoolId: school.id,
@@ -254,7 +259,7 @@ const ChatPage = () => {
     sessionService.saveSession(newSession);
     sessionService.setRememberSchool(remember);
     setShowSchoolPickerSafe(false);
-    
+
     // If there's a pending message, send it now
     if (pendingMessage) {
       const messageToSend = pendingMessage;
@@ -265,7 +270,7 @@ const ChatPage = () => {
       }, 100);
       return;
     }
-    
+
     // Create a new conversation after school selection
     const newConversation: Conversation = {
       id: `conv_${Date.now()}`,
@@ -312,7 +317,7 @@ const ChatPage = () => {
         setShowSchoolPickerSafe(true);
         return;
       }
-      
+
       // Create new conversation
       const newConversation: Conversation = {
         id: `conv_${Date.now()}`,
@@ -338,7 +343,9 @@ const ChatPage = () => {
                 messages: [...conv.messages, userMessage],
                 updatedAt: Date.now(),
                 title:
-                  conv.messages.length === 0 || !conv.title || conv.title === "New chat"
+                  conv.messages.length === 0 ||
+                  !conv.title ||
+                  conv.title === "New chat"
                     ? deriveConversationTitle(content)
                     : conv.title,
               }
@@ -359,19 +366,42 @@ const ChatPage = () => {
       // Step 1: User provides subject and grade
       // Parse user input to extract subject and grade
       const lowerContent = content.toLowerCase();
-      const subjects = ['math', 'science', 'english', 'physics', 'chemistry', 'biology', 'history', 'geography'];
-      const grades = ['1', '2', '3', '4', '5', '6', '7', '8', '9', '10', '11', '12', 'grade'];
-      
-      let detectedSubject = '';
-      let detectedGrade = '';
-      
+      const subjects = [
+        "math",
+        "science",
+        "english",
+        "physics",
+        "chemistry",
+        "biology",
+        "history",
+        "geography",
+      ];
+      const grades = [
+        "1",
+        "2",
+        "3",
+        "4",
+        "5",
+        "6",
+        "7",
+        "8",
+        "9",
+        "10",
+        "11",
+        "12",
+        "grade",
+      ];
+
+      let detectedSubject = "";
+      let detectedGrade = "";
+
       for (const subject of subjects) {
         if (lowerContent.includes(subject)) {
           detectedSubject = subject;
           break;
         }
       }
-      
+
       for (const grade of grades) {
         if (lowerContent.includes(grade)) {
           const match = lowerContent.match(/(grade\s*)?(\d+)/i);
@@ -381,7 +411,7 @@ const ChatPage = () => {
           break;
         }
       }
-      
+
       if (detectedSubject || detectedGrade) {
         const newSession = {
           ...session,
@@ -391,7 +421,7 @@ const ChatPage = () => {
         setSession(newSession);
         sessionService.saveSession(newSession);
         setWorkflowStep(2);
-        
+
         // Respond with step 2
         setIsStreaming(true);
         setTimeout(() => {
@@ -416,7 +446,7 @@ const ChatPage = () => {
       setSession(newSession);
       sessionService.saveSession(newSession);
       setWorkflowStep(3);
-      
+
       // Respond with step 3
       setIsStreaming(true);
       setTimeout(() => {
@@ -456,7 +486,7 @@ const ChatPage = () => {
 
     // Simulate streaming response
     setIsStreaming(true);
-    
+
     // Generate random response with slight delay for realistic streaming
     const delay = 800 + Math.random() * 400; // 800-1200ms
     setTimeout(() => {
@@ -511,7 +541,10 @@ const ChatPage = () => {
     const variantId = `var_${Date.now()}`;
     const newVariant = {
       id: variantId,
-      contentMd: `Regenerated response for: "${message.contentMd?.slice(0, 50)}..."`,
+      contentMd: `Regenerated response for: "${message.contentMd?.slice(
+        0,
+        50
+      )}..."`,
       timestamp: Date.now(),
     };
 
@@ -662,9 +695,7 @@ const ChatPage = () => {
     }
   ) => {
     setCurrentMessages((prev) =>
-      prev.map((msg) =>
-        msg.id === messageId ? { ...msg, feedback } : msg
-      )
+      prev.map((msg) => (msg.id === messageId ? { ...msg, feedback } : msg))
     );
 
     if (selectedConversationId) {
@@ -722,32 +753,32 @@ const ChatPage = () => {
 
   const handleClearAllCache = () => {
     // Clear all user-related localStorage
-    localStorage.removeItem('edu_chat_session');
-    localStorage.removeItem('edu_chat_remember_school');
-    localStorage.removeItem('conversations');
-    localStorage.removeItem('mock_users');
-    localStorage.removeItem('access_token');
-    localStorage.removeItem('refresh_token');
-    localStorage.removeItem('mock_user_email');
-    localStorage.removeItem('plan');
-    localStorage.removeItem('quota_used');
-    
+    localStorage.removeItem("edu_chat_session");
+    localStorage.removeItem("edu_chat_remember_school");
+    localStorage.removeItem("conversations");
+    localStorage.removeItem("mock_users");
+    localStorage.removeItem("access_token");
+    localStorage.removeItem("refresh_token");
+    localStorage.removeItem("mock_user_email");
+    localStorage.removeItem("plan");
+    localStorage.removeItem("quota_used");
+
     // Clear all user-related sessionStorage
-    const email = user?.email || localStorage.getItem('mock_user_email');
+    const email = user?.email || localStorage.getItem("mock_user_email");
     if (email) {
       sessionStorage.removeItem(`user_settings_${email}`);
     }
-    sessionStorage.removeItem('user_settings_guest');
-    
+    sessionStorage.removeItem("user_settings_guest");
+
     // Clear all sessionStorage keys that start with 'user_settings_'
-    Object.keys(sessionStorage).forEach(key => {
-      if (key.startsWith('user_settings_')) {
+    Object.keys(sessionStorage).forEach((key) => {
+      if (key.startsWith("user_settings_")) {
         sessionStorage.removeItem(key);
       }
     });
-    
+
     toast.success("All cache cleared! Page will reload.");
-    
+
     // Clear Redux state by reloading page
     setTimeout(() => {
       window.location.reload();
@@ -815,7 +846,11 @@ const ChatPage = () => {
         )}
 
         {/* Main Chat Area */}
-        <div className="flex-1 flex flex-col overflow-hidden bg-background pb-24 md:pb-8">
+        <div
+          className={`flex-1 flex flex-col overflow-hidden bg-background pb-24 md:pb-8 ${
+            !isAuthenticated ? "px-4 md:px-6" : ""
+          }`}
+        >
           {/* Mobile menu button */}
           {isSidebarCollapsed && (
             <button
@@ -875,7 +910,12 @@ const ChatPage = () => {
           />
 
           {/* Composer and bottom elements container */}
-          <div className="pb-20 md:pb-4" style={{ paddingBottom: 'max(5rem, env(safe-area-inset-bottom, 1.25rem))' }}>
+          <div
+            className="pb-20 md:pb-4"
+            style={{
+              paddingBottom: "max(5rem, env(safe-area-inset-bottom, 1.25rem))",
+            }}
+          >
             {/* Composer */}
             <Composer
               onSend={handleSendMessage}
@@ -907,32 +947,72 @@ const ChatPage = () => {
                     {
                       text: "Write a to-do list for a personal project",
                       icon: (
-                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                        <svg
+                          className="w-4 h-4"
+                          fill="none"
+                          stroke="currentColor"
+                          viewBox="0 0 24 24"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={2}
+                            d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"
+                          />
                         </svg>
                       ),
                     },
                     {
                       text: "Generate an email to reply to a job offer",
                       icon: (
-                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                        <svg
+                          className="w-4 h-4"
+                          fill="none"
+                          stroke="currentColor"
+                          viewBox="0 0 24 24"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={2}
+                            d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"
+                          />
                         </svg>
                       ),
                     },
                     {
                       text: "Summarize this article in one paragraph",
                       icon: (
-                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+                        <svg
+                          className="w-4 h-4"
+                          fill="none"
+                          stroke="currentColor"
+                          viewBox="0 0 24 24"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={2}
+                            d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"
+                          />
                         </svg>
                       ),
                     },
                     {
                       text: "How does AI work in a technical capacity",
                       icon: (
-                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4" />
+                        <svg
+                          className="w-4 h-4"
+                          fill="none"
+                          stroke="currentColor"
+                          viewBox="0 0 24 24"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={2}
+                            d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4"
+                          />
                         </svg>
                       ),
                     },
@@ -942,7 +1022,9 @@ const ChatPage = () => {
                       onClick={() => handleSendMessage(suggestion.text)}
                       className="group relative p-4 rounded-xl bg-card border border-border hover:bg-accent hover:border-primary/50 transition-all text-left cursor-pointer"
                     >
-                      <p className="text-sm text-foreground mb-3 pr-8">{suggestion.text}</p>
+                      <p className="text-sm text-foreground mb-3 pr-8">
+                        {suggestion.text}
+                      </p>
                       <div className="absolute bottom-3 left-4 text-muted-foreground group-hover:text-primary transition-colors">
                         {suggestion.icon}
                       </div>
@@ -1007,7 +1089,9 @@ const ChatPage = () => {
             open={commandPaletteOpen}
             onClose={() => setCommandPaletteOpen(false)}
             onModelChange={setModel}
-            onToggleTool={(tool: string) => handleToggleTool(tool as keyof ConversationTools)}
+            onToggleTool={(tool: string) =>
+              handleToggleTool(tool as keyof ConversationTools)
+            }
             onToggleMemory={handleToggleMemory}
             onNewChat={handleNewChat}
             onSettings={() => navigate("/settings")}
@@ -1015,7 +1099,7 @@ const ChatPage = () => {
             conversations={conversations}
             onSelectConversation={handleSelectConversation}
           />
-          
+
           {/* School Picker Modal */}
           <SchoolPickerModal
             open={showSchoolPicker}
@@ -1024,7 +1108,10 @@ const ChatPage = () => {
           />
 
           {/* Test Button - Clear Cache (Bottom Right) */}
-          <div className="fixed right-4 z-50" style={{ bottom: 'max(1rem, env(safe-area-inset-bottom, 1rem))' }}>
+          <div
+            className="fixed right-4 z-50"
+            style={{ bottom: "max(1rem, env(safe-area-inset-bottom, 1rem))" }}
+          >
             <button
               onClick={handleClearAllCache}
               className="px-3 py-1.5 text-xs font-medium rounded-md bg-red-500/10 text-red-600 dark:text-red-400 border border-red-500/20 hover:bg-red-500/20 transition-colors shadow-lg"

@@ -17,6 +17,7 @@ const UpgradePage = lazy(() => import("../../features/auth/pages/UpgradePage"));
 const ProfilePage = lazy(() => import("../../features/auth/pages/ProfilePage"));
 const SettingsPage = lazy(() => import("../../features/auth/pages/SettingsPage"));
 const FaqPage = lazy(() => import("../../features/misc/pages/FaqPage"));
+const LibraryPage = lazy(() => import("../../features/library/pages/LibraryPage"));
 
 export interface AppRoute {
   path: string;
@@ -63,6 +64,11 @@ export const routes: AppRoute[] = [
   {
     path: "/settings",
     component: SettingsPage,
+    protected: true,
+  },
+  {
+    path: "/library",
+    component: LibraryPage,
     protected: true,
   },
   {

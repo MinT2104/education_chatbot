@@ -41,51 +41,53 @@ const SPACES: SpaceItem[] = [
 
 const SpaceStarter: React.FC = () => {
   return (
-    <div className="relative w-full max-w-6xl mx-auto rounded-2xl overflow-hidden bg-white dark:bg-card/70 shadow-sm">
-      {/* Soft base gradient (light & dark) */}
-      <div
-        className="pointer-events-none absolute inset-0 bg-gradient-to-r from-[#B194FF10] via-[#7C4DFF0D] to-[#4C6BFF0A] dark:from-[#4C6BFF0A] dark:via-[#7C4DFF10] dark:to-[#14B8A60A]"
-        aria-hidden
-      />
-      {/* Dark scrim for softer contrast */}
-      <div
-        className="pointer-events-none absolute inset-0 hidden dark:block bg-[linear-gradient(180deg,rgba(10,12,18,.45),rgba(10,12,18,.55))]"
-        aria-hidden
-      />
+    <div className="relative w-full max-w-5xl mx-auto rounded-2xl overflow-visible dark:bg-card/70">
       {/* Pastel radial mist overlays */}
       <div className="pointer-events-none absolute inset-0">
         {/* Blue left (extend toward center to blend) */}
-        <div className="absolute bottom-6 -left-24 w-[640px] h-[360px] rounded-full bg-[radial-gradient(closest-side,rgba(59,130,246,0.14),transparent_70%)] dark:bg-[radial-gradient(closest-side,rgba(59,130,246,0.12),transparent_70%)] blur-3xl"></div>
+        <div className="absolute bottom-6 -left-24 w-[640px] h-[360px] rounded-full bg-[radial-gradient(closest-side,rgba(59,130,246,0.28),transparent_70%)] dark:bg-[radial-gradient(closest-side,rgba(59,130,246,0.24),transparent_70%)] blur-3xl"></div>
         {/* Purple center (largest, sits behind as bridge) */}
-        <div className="absolute -top-28 left-1/2 -translate-x-1/2 w-[760px] h-[420px] rounded-full bg-[radial-gradient(closest-side,rgba(139,92,246,0.14),transparent_70%)] dark:bg-[radial-gradient(closest-side,rgba(139,92,246,0.12),transparent_70%)] blur-3xl"></div>
+        <div className="absolute -top-28 left-1/2 -translate-x-1/2 w-[760px] h-[420px] rounded-full bg-[radial-gradient(closest-side,rgba(139,92,246,0.28),transparent_70%)] dark:bg-[radial-gradient(closest-side,rgba(139,92,246,0.24),transparent_70%)] blur-3xl"></div>
         {/* Lavender bridge to smooth overlaps */}
-        <div className="absolute rounded-full blur-3xl" style={{ left: "48%", top: "38%", width: "820px", height: "460px" , transform: "translate(-50%, -50%)" }}>
-          <div className="w-full h-full rounded-full bg-[radial-gradient(closest-side,rgba(196,181,253,0.10),transparent_70%)] dark:bg-[radial-gradient(closest-side,rgba(196,181,253,0.08),transparent_70%)]"></div>
+        <div
+          className="absolute rounded-full blur-3xl"
+          style={{
+            left: "48%",
+            top: "38%",
+            width: "820px",
+            height: "460px",
+            transform: "translate(-50%, -50%)",
+          }}
+        >
+          <div className="w-full h-full rounded-full bg-[radial-gradient(closest-side,rgba(196,181,253,0.20),transparent_70%)] dark:bg-[radial-gradient(closest-side,rgba(196,181,253,0.18),transparent_70%)]"></div>
         </div>
         {/* Pink right (pull inward for blend) */}
-        <div className="absolute bottom-8 -right-12 w-[640px] h-[360px] rounded-full bg-[radial-gradient(closest-side,rgba(244,114,182,0.14),transparent_70%)] dark:bg-[radial-gradient(closest-side,rgba(244,114,182,0.12),transparent_70%)] blur-3xl"></div>
+        <div className="absolute bottom-8 -right-12 w-[640px] h-[360px] rounded-full bg-[radial-gradient(closest-side,rgba(244,114,182,0.28),transparent_70%)] dark:bg-[radial-gradient(closest-side,rgba(244,114,182,0.24),transparent_70%)] blur-3xl"></div>
       </div>
-
-      <div className="relative p-3 sm:p-4">
-        <div className="flex items-center justify-between mb-2 sm:mb-3">
-          <h2 className="text-base sm:text-lg font-semibold text-foreground">Start with a Space</h2>
-          <button className="text-sm font-medium text-foreground hover:text-foreground/80 transition-colors">
+      <div className="relative p-2 sm:p-3">
+        <div className="flex items-center justify-between mb-1.5 sm:mb-2">
+          <h2 className="text-sm sm:text-base font-semibold text-foreground">
+            Start with a Space
+          </h2>
+          <button className="text-xs sm:text-sm font-medium text-foreground hover:text-foreground/80 transition-colors">
             Explore hundreds more →
           </button>
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2 sm:gap-3">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-1.5 sm:gap-2">
           {SPACES.map((space, idx) => (
             <div
               key={idx}
-              className="group rounded-xl bg-card/60 dark:bg-card/40 hover:bg-card/75 dark:hover:bg-card/55 transition-colors p-4 flex gap-3 shadow-[0_1px_2px_rgba(0,0,0,.06)] dark:shadow-[0_1px_2px_rgba(0,0,0,.2)] text-left"
+              className="group rounded-lg bg-card/60 dark:bg-card/40 hover:bg-card/75 dark:hover:bg-card/55 transition-colors p-2.5 sm:p-3 flex gap-2 shadow-[0_1px_2px_rgba(0,0,0,.06)] dark:shadow-[0_1px_2px_rgba(0,0,0,.2)] text-left min-h-24"
             >
-              <div className="text-3xl shrink-0 leading-none self-center">{space.icon}</div>
-              <div className="min-w-0">
-                <div className="text-base md:text-lg font-semibold text-foreground mb-1">
+              <div className="text-2xl shrink-0 leading-none self-start">
+                {space.icon}
+              </div>
+              <div className="min-w-0 flex-1">
+                <div className="text-sm md:text-base font-semibold text-foreground mb-0.5">
                   {space.title}
                 </div>
-                <div className="text-sm md:text-base text-foreground/80 leading-relaxed">
+                <div className="text-xs md:text-sm text-foreground/80 leading-relaxed">
                   {space.description}
                 </div>
               </div>
@@ -98,5 +100,3 @@ const SpaceStarter: React.FC = () => {
 };
 
 export default SpaceStarter;
-
-

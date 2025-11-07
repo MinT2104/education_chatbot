@@ -17,7 +17,15 @@ interface ChatAreaProps {
   onContinue?: (messageId: string) => void;
   onEdit?: (messageId: string, newContent: string) => void;
   onSelectVariant?: (messageId: string, variantId: string) => void;
-  onFeedback?: (messageId: string, feedback: { like?: boolean; dislike?: boolean; note?: string; reason?: string }) => void;
+  onFeedback?: (
+    messageId: string,
+    feedback: {
+      like?: boolean;
+      dislike?: boolean;
+      note?: string;
+      reason?: string;
+    }
+  ) => void;
   userName?: string;
   isAuthenticated?: boolean;
 }
@@ -51,7 +59,11 @@ const ChatArea = ({
 
   if (messages.length === 0) {
     return (
-      <div className={`flex flex-col items-center justify-start pt-6 ${isAuthenticated ? 'pb-0' : 'pb-4'} px-4 text-center`}>
+      <div
+        className={`flex flex-col items-center justify-start pt-6 ${
+          isAuthenticated ? "pb-0" : "pb-4"
+        } ${isAuthenticated ? "px-4" : "px-0"} text-center`}
+      >
         {/* removed decorative icon above header */}
 
         <img
@@ -59,13 +71,18 @@ const ChatArea = ({
           alt="Cute assistant"
           className="w-48 h-48 mb-1 mx-auto rounded-full"
         />
-        <div className={`-mt-4 md:-mt-5 ${isAuthenticated ? 'mb-8' : 'mb-1'} leading-tight relative z-10`}>
+        <div
+          className={`-mt-4 md:-mt-5 ${
+            isAuthenticated ? "mb-8" : "mb-1"
+          } leading-tight relative z-10`}
+        >
           <p className="text-3xl md:text-4xl font-bold text-foreground">
             {(() => {
               const hour = new Date().getHours();
               const partOfDay =
                 hour < 12 ? "Morning" : hour < 18 ? "Afternoon" : "Evening";
-              const name = userName && userName !== "Guest" ? userName : "there";
+              const name =
+                userName && userName !== "Guest" ? userName : "there";
               return `Good ${partOfDay}, ${name}`;
             })()}
           </p>
@@ -75,11 +92,10 @@ const ChatArea = ({
         </div>
 
         {!isAuthenticated && (
-          <div className="w-full px-4 mt-2">
+          <div className="w-full mt-2">
             <SpaceStarter />
           </div>
         )}
-
       </div>
     );
   }

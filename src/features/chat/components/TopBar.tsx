@@ -56,11 +56,11 @@ const TopBar = ({
     // Update settings to match the toggle
     const newIsDark = !isDark;
     // If user toggles, we assume they want to override system preference
-    const newTheme = newIsDark ? 'dark' : 'light';
+    const newTheme = newIsDark ? "dark" : "light";
     settingsService.saveSettings({ theme: newTheme }, userId);
   };
   return (
-    <div className="h-16 bg-background/50 backdrop-blur-sm sticky top-0 z-10">
+    <div className="h-16 min-h-16 bg-background/50 backdrop-blur-sm sticky top-0 z-10">
       <div className="h-full px-4 flex items-center justify-between">
         {/* Left: Model dropdown */}
         {/* Left: Model Selector */}
@@ -180,7 +180,9 @@ const TopBar = ({
               <button
                 onClick={handleThemeToggle}
                 className="p-2 rounded-lg hover:bg-muted transition-colors"
-                aria-label={isDark ? "Switch to light mode" : "Switch to dark mode"}
+                aria-label={
+                  isDark ? "Switch to light mode" : "Switch to dark mode"
+                }
               >
                 {isDark ? (
                   <svg
