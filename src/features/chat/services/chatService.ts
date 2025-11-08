@@ -4,6 +4,7 @@ import type { ChatMessage, ChatHistory } from '../types'
 export const chatService = {
   async createChat(data: {
     userInput: string
+    conversationId?: string
     previousChat?: any[]
     chatHistoryId?: string | null
     chatType?: string
@@ -14,8 +15,16 @@ export const chatService = {
     subject?: string
     topic?: string
   }): Promise<{
-    chatMessage: ChatMessage
-    chatHistoryId: string
+    success: boolean
+    message: {
+      id: string
+      role: string
+      content: string
+      contentMd: string
+      timestamp: number
+      streamed: boolean
+    }
+    chatHistoryId: string | null
     relatedQuestions?: string[]
     sources?: any[]
   }> {

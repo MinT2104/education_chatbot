@@ -3,16 +3,14 @@ import { useNavigate } from "react-router-dom";
 import { useAppDispatch, useAppSelector } from "../../../core/store/hooks";
 import { Switch } from "@/components/ui/switch";
 import { toggleDarkMode } from "../../ui/store/uiSlice";
-import LoginPage from "../../auth/pages/LoginPage";
-import SignupPage from "../../auth/pages/SignupPage";
+import AuthDialog from "../../auth/components/AuthDialog";
 
 const HomePage = () => {
   const navigate = useNavigate();
   const dispatch = useAppDispatch();
   const isAuthenticated = useAppSelector((s) => s.auth.isAuthenticated);
   const isDark = useAppSelector((s) => s.ui.isDark);
-  const [showLogin, setShowLogin] = useState(false);
-  const [showSignup, setShowSignup] = useState(false);
+  const [authModal, setAuthModal] = useState<"login" | "signup" | null>(null);
 
   useEffect(() => {
     if (isAuthenticated) {
@@ -51,13 +49,13 @@ const HomePage = () => {
                 <span role="img" aria-hidden>🌓</span>
               </button>
               <button
-                onClick={() => setShowLogin(true)}
+                onClick={() => setAuthModal("login")}
                 className="h-9 px-3 inline-flex items-center rounded-md bg-white text-black text-sm hover:bg-gray-100 whitespace-nowrap border border-border"
               >
                 Log in
               </button>
               <button
-                onClick={() => setShowSignup(true)}
+                onClick={() => setAuthModal("signup")}
                 className="h-9 px-3 inline-flex items-center rounded-md bg-black text-white text-sm hover:bg-gray-900 whitespace-nowrap border border-border"
               >
                 Sign up
@@ -73,20 +71,12 @@ const HomePage = () => {
         </h1>
         <p className="text-muted-foreground">Your AI learning assistant.</p>
       </main>
-      {showLogin && (
-        <LoginPage
-          inline
-          open={showLogin}
-          onClose={() => setShowLogin(false)}
-        />
-      )}
-      {showSignup && (
-        <SignupPage
-          inline
-          open={showSignup}
-          onClose={() => setShowSignup(false)}
-        />
-      )}
+      <AuthDialog
+        inline
+        open={authModal !== null}
+        onClose={() => setAuthModal(null)}
+        initialMode={authModal || "login"}
+      />
     </div>
   );
 };

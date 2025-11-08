@@ -26,7 +26,15 @@ interface MessageBubbleProps {
   onContinue?: (messageId: string) => void;
   onEdit?: (messageId: string, newContent: string) => void;
   onSelectVariant?: (messageId: string, variantId: string) => void;
-  onFeedback?: (messageId: string, feedback: { like?: boolean; dislike?: boolean; note?: string; reason?: string }) => void;
+  onFeedback?: (
+    messageId: string,
+    feedback: {
+      like?: boolean;
+      dislike?: boolean;
+      note?: string;
+      reason?: string;
+    }
+  ) => void;
 }
 
 const MessageBubble = ({
@@ -49,14 +57,17 @@ const MessageBubble = ({
   const [editContent, setEditContent] = useState("");
 
   const isUser = message.role === "user";
-  
+  const isError = message.isError === true;
+
   // Get current content (from selected variant or default)
   const getCurrentContent = () => {
     if (message.selectedVariantId && message.variants) {
       const selectedVariant = message.variants.find(
         (v) => v.id === message.selectedVariantId
       );
-      return selectedVariant?.contentMd || message.contentMd || message.content || "";
+      return (
+        selectedVariant?.contentMd || message.contentMd || message.content || ""
+      );
     }
     return message.contentMd || message.content || "";
   };
@@ -137,12 +148,28 @@ const MessageBubble = ({
     >
       {/* Avatar for assistant */}
       {!isUser && (
-        <div className="w-8 h-8 rounded-full bg-primary flex items-center justify-center shrink-0">
-          <span className="text-sm font-medium text-primary-foreground">AI</span>
+        <div
+          className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0 ${
+            isError ? "bg-red-100 dark:bg-red-900/20" : "bg-primary"
+          }`}
+        >
+          <span
+            className={`text-sm font-medium ${
+              isError
+                ? "text-red-600 dark:text-red-400"
+                : "text-primary-foreground"
+            }`}
+          >
+            {isError ? "!" : "AI"}
+          </span>
         </div>
       )}
 
-      <div className={`flex-1 max-w-[85%] ${isUser ? "flex justify-end" : ""}`}>
+      <div
+        className={`flex-1 max-w-[85%] w-fit ${
+          isUser ? "flex flex-col justify-end items-end" : ""
+        }`}
+      >
         {/* Message Header (for assistant with variants) */}
         {!isUser && hasVariants && (
           <div className="flex items-center gap-2 mb-2 px-4">
@@ -198,6 +225,8 @@ const MessageBubble = ({
           className={`${
             isUser
               ? "rounded-2xl p-4 bg-primary/10 text-foreground shadow-sm"
+              : isError
+              ? "rounded-lg p-4 border border-red-300 dark:border-red-800 bg-red-50 dark:bg-red-900/10"
               : "rounded-none p-0 bg-transparent shadow-none border-0"
           }`}
         >
@@ -224,12 +253,24 @@ const MessageBubble = ({
             <p className="text-foreground whitespace-pre-wrap leading-relaxed">
               {content}
               {message.isEdited && (
-                <span className="text-xs text-muted-foreground ml-2">(edited)</span>
+                <span className="text-xs text-muted-foreground ml-2">
+                  (edited)
+                </span>
               )}
             </p>
           ) : (
             // Assistant message with markdown
-            <div className="prose prose-sm dark:prose-invert max-w-none leading-relaxed">
+            <div
+              className={`prose prose-sm dark:prose-invert max-w-none leading-relaxed ${
+                isError ? "text-red-800 dark:text-red-300" : ""
+              }`}
+            >
+              {isError ? (
+                // Error message - plain text
+                <p className="text-sm font-medium text-red-800 dark:text-red-300 mb-1">
+                  Error
+                </p>
+              ) : null}
               <ReactMarkdown
                 remarkPlugins={[remarkGfm]}
                 components={{
@@ -294,10 +335,14 @@ const MessageBubble = ({
                     </p>
                   ),
                   ul: ({ children }) => (
-                    <ul className="list-disc pl-5 mb-2 space-y-1">{children}</ul>
+                    <ul className="list-disc pl-5 mb-2 space-y-1">
+                      {children}
+                    </ul>
                   ),
                   ol: ({ children }) => (
-                    <ol className="list-decimal pl-5 mb-2 space-y-1">{children}</ol>
+                    <ol className="list-decimal pl-5 mb-2 space-y-1">
+                      {children}
+                    </ol>
                   ),
                   blockquote: ({ children }) => (
                     <blockquote className="pl-4 my-2 italic text-muted-foreground border-l-4 border-primary/60">
@@ -329,7 +374,9 @@ const MessageBubble = ({
           {/* Citations */}
           {!isUser && message.citations && message.citations.length > 0 && (
             <div className="mt-4 space-y-2">
-              <p className="text-xs font-medium text-muted-foreground">Sources:</p>
+              <p className="text-xs font-medium text-muted-foreground">
+                Sources:
+              </p>
               <div className="space-y-1">
                 {message.citations.map((citation, idx) => (
                   <a
@@ -415,7 +462,9 @@ const MessageBubble = ({
               <button
                 onClick={() => handleLike(true)}
                 className={`p-1.5 rounded hover:bg-muted transition-colors ${
-                  message.feedback?.like ? "text-green-500" : "text-muted-foreground"
+                  message.feedback?.like
+                    ? "text-green-500"
+                    : "text-muted-foreground"
                 }`}
                 title="Like"
               >
@@ -437,7 +486,9 @@ const MessageBubble = ({
               <button
                 onClick={() => handleLike(false)}
                 className={`p-1.5 rounded hover:bg-muted transition-colors ${
-                  message.feedback?.dislike ? "text-red-500" : "text-muted-foreground"
+                  message.feedback?.dislike
+                    ? "text-red-500"
+                    : "text-muted-foreground"
                 }`}
                 title="Dislike"
               >

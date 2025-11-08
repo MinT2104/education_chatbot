@@ -1,44 +1,50 @@
-import { useEffect, useMemo, useState } from 'react'
-import schools from '../data/schools.json'
-import { Checkbox } from '@/components/ui/checkbox'
-import { Label } from '@/components/ui/label'
+import { useEffect, useMemo, useState } from "react";
+import schools from "../data/schools.json";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Label } from "@/components/ui/label";
 
 interface SchoolPickerModalProps {
-  open: boolean
-  onClose: () => void
-  onSelect: (school: { id: string; name: string }, remember: boolean) => void
+  open: boolean;
+  onClose: () => void;
+  onSelect: (school: { name: string }, remember: boolean) => void;
 }
 
-const SchoolPickerModal = ({ open, onClose, onSelect }: SchoolPickerModalProps) => {
-  const [q, setQ] = useState('')
-  const [debounced, setDebounced] = useState('')
-  const [rememberChoice, setRememberChoice] = useState(false)
+const SchoolPickerModal = ({
+  open,
+  onClose,
+  onSelect,
+}: SchoolPickerModalProps) => {
+  const [q, setQ] = useState("");
+  const [debounced, setDebounced] = useState("");
+  const [rememberChoice, setRememberChoice] = useState(false);
 
   useEffect(() => {
-    const t = setTimeout(() => setDebounced(q), 300)
-    return () => clearTimeout(t)
-  }, [q])
+    const t = setTimeout(() => setDebounced(q), 300);
+    return () => clearTimeout(t);
+  }, [q]);
 
   const results = useMemo(() => {
-    const query = debounced.trim().toLowerCase()
-    if (!query) return schools
-    return schools.filter((s) => s.name.toLowerCase().includes(query))
-  }, [debounced])
+    const query = debounced.trim().toLowerCase();
+    if (!query) return schools;
+    return schools.filter((s) => s.name.toLowerCase().includes(query));
+  }, [debounced]);
 
   const handleSelect = (school: { id: string; name: string }) => {
-    onSelect(school, rememberChoice)
+    onSelect({ name: school.name }, rememberChoice);
     if (!rememberChoice) {
-      onClose()
+      onClose();
     }
-  }
+  };
 
-  if (!open) return null
+  if (!open) return null;
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center">
       <div className="absolute inset-0 bg-black/50" onClick={onClose} />
       <div className="relative z-10 w-full max-w-lg rounded-2xl bg-surface p-6 shadow-[0_8px_24px_rgba(0,0,0,.4),inset_0_0_0_1px_var(--border)]">
         <h2 className="text-lg font-semibold text-text">Choose your school</h2>
-        <p className="text-sm text-text-subtle mt-1">Enter your school name to get personalized content</p>
+        <p className="text-sm text-text-subtle mt-1">
+          Enter your school name to get personalized content
+        </p>
         <input
           autoFocus
           value={q}
@@ -75,9 +81,7 @@ const SchoolPickerModal = ({ open, onClose, onSelect }: SchoolPickerModalProps) 
         </div>
       </div>
     </div>
-  )
-}
+  );
+};
 
-export default SchoolPickerModal
-
-
+export default SchoolPickerModal;

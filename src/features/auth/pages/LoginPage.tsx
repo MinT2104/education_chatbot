@@ -14,12 +14,14 @@ interface LoginInlineProps {
   inline?: boolean;
   open?: boolean;
   onClose?: () => void;
+  onSwitchToSignup?: () => void;
 }
 
 const LoginPage = ({
   inline = false,
   open = true,
   onClose,
+  onSwitchToSignup,
 }: LoginInlineProps) => {
   const dispatch = useAppDispatch();
   const navigate = useNavigate();
@@ -161,11 +163,29 @@ const LoginPage = ({
             >
               {isLoading ? "Continuing..." : "Continue"}
             </button>
-            
+
             <p className="text-xs text-muted-foreground text-center mt-2">
-              Test mode: You can click Continue without entering email to login automatically
+              Test mode: You can click Continue without entering email to login
+              automatically
             </p>
           </form>
+
+          {/* Switch to Signup */}
+          <div className="text-center mt-4">
+            <button
+              type="button"
+              onClick={() => {
+                if (onSwitchToSignup) {
+                  onSwitchToSignup();
+                } else {
+                  navigate("/signup");
+                }
+              }}
+              className="text-sm text-primary-600 dark:text-primary-400 hover:text-primary-500 dark:hover:text-primary-300 transition-colors"
+            >
+              Don't have an account? Sign up
+            </button>
+          </div>
         </div>
       </DialogContent>
     </Dialog>

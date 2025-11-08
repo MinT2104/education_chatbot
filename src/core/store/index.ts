@@ -1,6 +1,7 @@
 import { configureStore } from '@reduxjs/toolkit'
 import { authReducer } from '../../features/auth/store/authSlice'
 import { chatReducer } from '../../features/chat/store/chatSlice'
+import conversationReducer from '../../features/chat/store/conversationSlice'
 import { uiReducer } from '../../features/ui/store/uiSlice'
 import { userReducer } from '../../features/user/store/userSlice'
 
@@ -8,6 +9,7 @@ export const store = configureStore({
   reducer: {
     auth: authReducer,
     chat: chatReducer,
+    conversation: conversationReducer,
     ui: uiReducer,
     user: userReducer,
   },

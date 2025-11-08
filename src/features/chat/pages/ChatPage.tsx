@@ -12,12 +12,13 @@ import OfflineBanner from "../components/OfflineBanner";
 import NetworkErrorBanner from "../components/NetworkErrorBanner";
 import RateLimitModal from "../components/RateLimitModal";
 import ExportModal from "../components/ExportModal";
-import { Conversation, NewMessage, ConversationTools } from "../types";
+import { NewMessage, ConversationTools } from "../types";
 import UpgradeModal from "../components/UpgradeModal";
 import prompts from "../data/prompts.json";
-import { getRandomResponse } from "../data/mockResponses";
+import { chatService } from "../services/chatService";
 import SchoolPickerModal from "../components/SchoolPickerModal";
-import { sessionService, UserSession } from "../services/sessionService";
+import { sessionService } from "../services/sessionService";
+import { useConversations } from "../hooks/useConversations";
 
 const ChatPage = () => {
   const navigate = useNavigate();
@@ -25,11 +26,21 @@ const ChatPage = () => {
   const user = useAppSelector((s) => s.auth?.user);
   const userId = user?.email || user?.id || null;
   const isAuthenticated = useAppSelector((s) => s.auth.isAuthenticated);
-  const [conversations, setConversations] = useState<Conversation[]>([]);
+
+  // Use conversations hook for Redux state management
+  const {
+    conversations,
+    selectedConversation,
+    selectedConversationId,
+    selectConversation,
+    create: createConversation,
+    update: updateConversation,
+    remove: deleteConversation,
+    addMessage: addMessageToConversation,
+    updateLocal,
+  } = useConversations();
+
   const [enterToSend, setEnterToSend] = useState(true);
-  const [selectedConversationId, setSelectedConversationId] = useState<
-    string | null
-  >(null);
   const [currentMessages, setCurrentMessages] = useState<NewMessage[]>([]);
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
   const [isStreaming, setIsStreaming] = useState(false);
@@ -58,29 +69,12 @@ const ChatPage = () => {
   const [showSchoolPicker, setShowSchoolPicker] = useState(false);
   const [role, setRole] = useState<"student" | "teacher">("student");
   const [pendingMessage, setPendingMessage] = useState<string | null>(null);
+  const [pendingSchoolName, setPendingSchoolName] = useState<string | null>(
+    null
+  );
 
   // Workflow state
   const [workflowStep, setWorkflowStep] = useState<1 | 2 | 3 | null>(null);
-  const [session, setSession] = useState<UserSession>(() =>
-    sessionService.getSession()
-  );
-
-  // Helper function to check if school picker should be shown
-  const shouldShowSchoolPicker = (): boolean => {
-    const shouldRemember = sessionService.shouldRememberSchool();
-    const rememberedSchool = sessionService.getRememberedSchool();
-    // Only show if school is not remembered AND no school is saved
-    return !shouldRemember || !rememberedSchool;
-  };
-
-  // Wrapper to prevent opening school picker if school is already remembered
-  const setShowSchoolPickerSafe = (show: boolean) => {
-    if (show && !shouldShowSchoolPicker()) {
-      // Don't open if school is already remembered
-      return;
-    }
-    setShowSchoolPicker(show);
-  };
 
   // Load settings on mount and when userId changes
   useEffect(() => {
@@ -97,105 +91,16 @@ const ChatPage = () => {
     return () => clearInterval(interval);
   }, [userId]);
 
-  // Load session on mount
+  // Update messages when conversation changes (from Redux)
   useEffect(() => {
-    const savedSession = sessionService.getSession();
-    setSession(savedSession);
-
-    // Check if school should be remembered
-    const rememberedSchool = sessionService.getRememberedSchool();
-    if (rememberedSchool) {
-      setSession({
-        ...savedSession,
-        schoolId: rememberedSchool.id,
-        schoolName: rememberedSchool.name,
-      });
-    }
-  }, []);
-
-  // Show school picker automatically when user is authenticated but has no school
-  useEffect(() => {
-    if (isAuthenticated && shouldShowSchoolPicker()) {
-      // Small delay to ensure page is fully loaded
-      const timer = setTimeout(() => {
-        setShowSchoolPickerSafe(true);
-      }, 300);
-      return () => clearTimeout(timer);
-    }
-  }, [isAuthenticated]);
-
-  // Load conversations only if user is authenticated
-  useEffect(() => {
-    if (isAuthenticated) {
-      // Only load conversations if user is logged in
-      const stored = localStorage.getItem("conversations");
-      if (stored) {
-        try {
-          const parsed = JSON.parse(stored) as Conversation[];
-          if (Array.isArray(parsed) && parsed.length > 0) {
-            setConversations(parsed);
-            // Only auto-select first conversation if it has messages
-            const firstConv = parsed[0];
-            if (firstConv.messages && firstConv.messages.length > 0) {
-              setSelectedConversationId(firstConv.id);
-              setCurrentMessages(firstConv.messages);
-              setTools(firstConv.tools || {});
-              setMemoryEnabled(firstConv.memory?.enabled || false);
-            } else {
-              // First conversation has no messages, show starter prompts
-              setSelectedConversationId(null);
-              setCurrentMessages([]);
-            }
-          } else {
-            // No conversations, show starter prompts
-            setConversations([]);
-            setSelectedConversationId(null);
-            setCurrentMessages([]);
-          }
-        } catch (error) {
-          console.error("Error parsing conversations:", error);
-          // Clear corrupted data
-          localStorage.removeItem("conversations");
-          setConversations([]);
-          setSelectedConversationId(null);
-          setCurrentMessages([]);
-        }
-      } else {
-        // No stored conversations, show starter prompts
-        setConversations([]);
-        setSelectedConversationId(null);
-        setCurrentMessages([]);
-      }
-    } else {
-      // User not authenticated - ALWAYS clear and show starter prompts
-      setConversations([]);
-      setSelectedConversationId(null);
-      setCurrentMessages([]);
-      setTools({ web: false, code: false, vision: false });
-      setMemoryEnabled(false);
-    }
-  }, [isAuthenticated]);
-
-  // Persist conversations (only if authenticated)
-  useEffect(() => {
-    if (isAuthenticated && conversations.length > 0) {
-      localStorage.setItem("conversations", JSON.stringify(conversations));
-    }
-  }, [conversations, isAuthenticated]);
-
-  // Update messages when conversation changes
-  useEffect(() => {
-    if (selectedConversationId) {
-      const conv = conversations.find((c) => c.id === selectedConversationId);
-      if (conv) {
-        setCurrentMessages(conv.messages);
-        setTools(conv.tools || {});
-        setMemoryEnabled(conv.memory?.enabled || false);
-      }
+    if (selectedConversation) {
+      setCurrentMessages(selectedConversation.messages);
+      setTools(selectedConversation.tools || {});
+      setMemoryEnabled(selectedConversation.memory?.enabled || false);
     } else {
       setCurrentMessages([]);
     }
-  }, [selectedConversationId, conversations]);
+  }, [selectedConversation]);
 
   // Keyboard shortcut for command palette (Cmd/Ctrl+K)
   useEffect(() => {
@@ -210,9 +115,7 @@ const ChatPage = () => {
     return () => document.removeEventListener("keydown", handleKeyDown);
   }, []);
 
-  const currentConversation = conversations.find(
-    (c) => c.id === selectedConversationId
-  );
+  const currentConversation = selectedConversation;
 
   const deriveConversationTitle = (text: string) => {
     const trimmed = text.trim();
@@ -222,79 +125,41 @@ const ChatPage = () => {
   };
 
   const handleNewChat = () => {
-    // Check if school should be asked
-    if (shouldShowSchoolPicker()) {
-      setShowSchoolPickerSafe(true);
-      return;
-    }
-
-    // Create a new empty conversation immediately and select it
-    const newConversation: Conversation = {
-      id: `conv_${Date.now()}`,
-      title: "New chat",
-      pinned: false,
-      createdAt: Date.now(),
-      updatedAt: Date.now(),
-      messages: [],
-      tools,
-      memory: { enabled: memoryEnabled },
-    };
-    setConversations((prev) => [newConversation, ...prev]);
-    setSelectedConversationId(newConversation.id);
+    // Just clear selection, don't create conversation yet
+    // Conversation will be created when user sends first message
+    selectConversation(null);
     setCurrentMessages([]);
     setIsStreaming(false);
     setWorkflowStep(null);
+    setPendingSchoolName(null);
   };
 
   const handleSchoolSelect = (
-    school: { id: string; name: string },
-    remember: boolean
+    school: { name: string },
+    _remember: boolean // Keep for backward compatibility but not used (school is per conversation now)
   ) => {
-    const newSession = {
-      ...session,
-      schoolId: school.id,
-      schoolName: school.name,
-    };
-    setSession(newSession);
-    sessionService.saveSession(newSession);
-    sessionService.setRememberSchool(remember);
-    setShowSchoolPickerSafe(false);
+    // Store school name for the conversation that will be created
+    setPendingSchoolName(school.name);
+    setShowSchoolPicker(false);
 
-    // If there's a pending message, send it now
+    // If there's a pending message, send it now with the school name
     if (pendingMessage) {
       const messageToSend = pendingMessage;
+      const schoolName = school.name;
       setPendingMessage(null);
       // Small delay to ensure modal is closed
       setTimeout(() => {
-        handleSendMessage(messageToSend);
+        handleSendMessage(messageToSend, schoolName);
       }, 100);
-      return;
     }
-
-    // Create a new conversation after school selection
-    const newConversation: Conversation = {
-      id: `conv_${Date.now()}`,
-      title: "New chat",
-      pinned: false,
-      createdAt: Date.now(),
-      updatedAt: Date.now(),
-      messages: [],
-      tools,
-      memory: { enabled: memoryEnabled },
-    };
-    setConversations((prev) => [newConversation, ...prev]);
-    setSelectedConversationId(newConversation.id);
-    setCurrentMessages([]);
-    setIsStreaming(false);
-    setWorkflowStep(null);
   };
 
   const handleSelectConversation = (id: string) => {
-    setSelectedConversationId(id);
+    selectConversation(id);
     setIsStreaming(false);
   };
 
-  const handleSendMessage = (content: string) => {
+  const handleSendMessage = async (content: string, schoolName?: string) => {
     if (!content.trim()) return;
     if (plan === "Free" && quotaUsed >= 25) {
       setShowUpgrade(true);
@@ -309,49 +174,74 @@ const ChatPage = () => {
       timestamp: Date.now(),
     };
 
+    // Store conversationId for chat API (will be set if we create a new conversation)
+    let conversationIdForChat: string | undefined;
+    let finalSchoolName: string | undefined;
+
     // If no conversation selected, check if school is needed first
     if (!selectedConversationId) {
-      // If school is not remembered, show school picker and store pending message
-      if (shouldShowSchoolPicker()) {
+      // Use pendingSchoolName if available, otherwise use passed schoolName
+      finalSchoolName = pendingSchoolName || schoolName;
+
+      // If no school name, show school picker and store pending message
+      if (!finalSchoolName) {
         setPendingMessage(content);
-        setShowSchoolPickerSafe(true);
+        setShowSchoolPicker(true);
         return;
       }
 
-      // Create new conversation
-      const newConversation: Conversation = {
-        id: `conv_${Date.now()}`,
-        title: deriveConversationTitle(content),
-        pinned: false,
-        createdAt: Date.now(),
-        updatedAt: Date.now(),
-        messages: [userMessage],
-        tools,
-        memory: { enabled: memoryEnabled },
-      };
-      setConversations([newConversation, ...conversations]);
-      setSelectedConversationId(newConversation.id);
-      setCurrentMessages([userMessage]);
+      // Create new conversation with school name (sync with backend)
+      try {
+        const newConversation = await createConversation({
+          title: deriveConversationTitle(content),
+          pinned: false,
+          messages: [userMessage],
+          tools,
+          memory: { enabled: memoryEnabled },
+          schoolName: finalSchoolName,
+        });
+        conversationIdForChat = newConversation.id; // Store ID for chat API call
+        selectConversation(newConversation.id);
+        setCurrentMessages([userMessage]);
+        setPendingSchoolName(null); // Clear pending school name
+      } catch (error) {
+        console.error("Failed to create conversation:", error);
+        toast.error("Failed to create conversation. Please try again.");
+        return;
+      }
     } else {
-      // Add to existing conversation
+      // Add to existing conversation (optimistic update + sync with backend)
       setCurrentMessages((prev) => [...prev, userMessage]);
-      setConversations((prev) =>
-        prev.map((conv) =>
-          conv.id === selectedConversationId
-            ? {
-                ...conv,
-                messages: [...conv.messages, userMessage],
-                updatedAt: Date.now(),
-                title:
-                  conv.messages.length === 0 ||
-                  !conv.title ||
-                  conv.title === "New chat"
-                    ? deriveConversationTitle(content)
-                    : conv.title,
-              }
-            : conv
-        )
+      addMessageToConversation(selectedConversationId, userMessage);
+
+      // Update conversation title if needed
+      const currentConv = conversations.find(
+        (c) => c.id === selectedConversationId
       );
+      if (
+        currentConv &&
+        (currentConv.messages.length === 0 ||
+          !currentConv.title ||
+          currentConv.title === "New chat")
+      ) {
+        updateLocal(selectedConversationId, {
+          title: deriveConversationTitle(content),
+        });
+        // Sync with backend
+        updateConversation(selectedConversationId, {
+          title: deriveConversationTitle(content),
+          messages: [...(currentConv.messages || []), userMessage],
+        }).catch((error) => {
+          console.error("Failed to update conversation:", error);
+        });
+      } else {
+        // Sync message update with backend
+        updateConversation(selectedConversationId, {
+          messages: [...(currentConv?.messages || []), userMessage],
+        }).catch((error) => {
+          console.error("Failed to update conversation:", error);
+        });
+      }
     }
 
     // Quota accounting (user message deducts 1)
@@ -413,12 +303,13 @@ const ChatPage = () => {
       }
 
       if (detectedSubject || detectedGrade) {
+        // Save subject and grade to session (for workflow, not school)
+        const currentSession = sessionService.getSession();
         const newSession = {
-          ...session,
-          subject: detectedSubject || session.subject,
-          grade: detectedGrade || session.grade,
+          ...currentSession,
+          subject: detectedSubject || currentSession.subject,
+          grade: detectedGrade || currentSession.grade,
         };
-        setSession(newSession);
         sessionService.saveSession(newSession);
         setWorkflowStep(2);
 
@@ -439,11 +330,11 @@ const ChatPage = () => {
       }
     } else if (workflowStep === 2) {
       // Step 2: User provides chapter/topic
+      const currentSession = sessionService.getSession();
       const newSession = {
-        ...session,
+        ...currentSession,
         topic: content,
       };
-      setSession(newSession);
       sessionService.saveSession(newSession);
       setWorkflowStep(3);
 
@@ -467,57 +358,73 @@ const ChatPage = () => {
     }
 
     // Prepare API call data with role and context
-    // Note: In production, this would call the actual API
-    // const apiData = {
-    //   userInput: content,
-    //   role: role, // Send role to backend
-    //   schoolId: session.schoolId,
-    //   schoolName: session.schoolName,
-    //   grade: session.grade,
-    //   subject: session.subject,
-    //   previousChat: currentMessages.map((m) => ({
-    //     user: m.role === 'user' ? m.content : '',
-    //     gemini: m.role === 'assistant' ? m.contentMd : '',
-    //   })),
-    // };
+    const session = sessionService.getSession();
+    // Use conversationIdForChat if we just created a new conversation, otherwise use selectedConversationId
+    const finalConversationId =
+      conversationIdForChat || selectedConversationId || undefined;
+    const apiData = {
+      userInput: content,
+      conversationId: finalConversationId, // Send conversationId to backend
+      role: role, // Send role to backend
+      schoolName: currentConversation?.schoolName || finalSchoolName, // School name from conversation
+      grade: session.grade,
+      subject: session.subject,
+      topic: session.topic,
+      previousChat: currentMessages.map((m) => ({
+        user: m.role === "user" ? m.content : "",
+        gemini: m.role === "assistant" ? m.contentMd : "",
+      })),
+    };
 
-    // TODO: Replace with actual API call when backend is ready
-    // const response = await chatService.createChat(apiData);
-
-    // Simulate streaming response
+    // Call backend API to get response
     setIsStreaming(true);
 
-    // Generate random response with slight delay for realistic streaming
-    const delay = 800 + Math.random() * 400; // 800-1200ms
-    setTimeout(() => {
-      // Get random response in English based on user input
-      // Use role-aware prompt if needed
-      const reply = getRandomResponse(content);
+    try {
+      const response = await chatService.createChat(apiData);
 
       const assistantMessage: NewMessage = {
-        id: `msg_${Date.now() + 1}`,
+        id: response.message.id || `msg_${Date.now() + 1}`,
         role: "assistant",
-        contentMd: reply,
-        timestamp: Date.now() + 1000,
+        contentMd: response.message.contentMd || response.message.content,
+        timestamp: response.message.timestamp || Date.now(),
         streamed: true,
       };
 
       setCurrentMessages((prev) => [...prev, assistantMessage]);
-      if (selectedConversationId) {
-        setConversations((prev) =>
-          prev.map((conv) =>
-            conv.id === selectedConversationId
-              ? {
-                  ...conv,
-                  messages: [...conv.messages, assistantMessage],
-                  updatedAt: Date.now(),
-                }
-              : conv
-          )
-        );
+      if (selectedConversationId && currentConversation) {
+        // Optimistic update + sync with backend
+        addMessageToConversation(selectedConversationId, assistantMessage);
+        updateConversation(selectedConversationId, {
+          messages: [...currentConversation.messages, assistantMessage],
+        }).catch((error) => {
+          console.error(
+            "Failed to update conversation with assistant message:",
+            error
+          );
+        });
       }
+    } catch (error: any) {
+      console.error("Failed to get chat response:", error);
+      const errorMessage =
+        error?.response?.data?.message ||
+        error?.message ||
+        "Failed to get response from chat API. Please try again.";
+
+      // Create error message as assistant message
+      const errorMessageObj: NewMessage = {
+        id: `error_${Date.now()}`,
+        role: "assistant",
+        content: errorMessage,
+        contentMd: errorMessage,
+        timestamp: Date.now(),
+        isError: true,
+      };
+
+      setCurrentMessages((prev) => [...prev, errorMessageObj]);
+      toast.error(errorMessage);
+    } finally {
       setIsStreaming(false);
-    }, delay);
+    }
   };
 
   const handleStopStreaming = () => {
@@ -562,26 +469,20 @@ const ChatPage = () => {
     );
 
     // Update conversation
-    if (selectedConversationId) {
-      setConversations((prev) =>
-        prev.map((conv) =>
-          conv.id === selectedConversationId
-            ? {
-                ...conv,
-                messages: conv.messages.map((msg) =>
-                  msg.id === messageId
-                    ? {
-                        ...msg,
-                        variants: [...(msg.variants || []), newVariant],
-                        selectedVariantId: variantId,
-                      }
-                    : msg
-                ),
-                updatedAt: Date.now(),
-              }
-            : conv
-        )
+    if (selectedConversationId && currentConversation) {
+      const updatedMessages = currentConversation.messages.map((msg) =>
+        msg.id === messageId
+          ? {
+              ...msg,
+              variants: [...(msg.variants || []), newVariant],
+              selectedVariantId: variantId,
+            }
+          : msg
       );
+      updateLocal(selectedConversationId, { messages: updatedMessages });
+      updateConversation(selectedConversationId, {
+        messages: updatedMessages,
+      }).catch((error) => console.error("Failed to update variant:", error));
     }
 
     toast.success("Response regenerated");
@@ -607,19 +508,14 @@ const ChatPage = () => {
       )
     );
 
-    if (selectedConversationId) {
-      setConversations((prev) =>
-        prev.map((conv) =>
-          conv.id === selectedConversationId
-            ? {
-                ...conv,
-                messages: conv.messages.map((msg) =>
-                  msg.id === messageId ? { ...msg, pinned: !msg.pinned } : msg
-                ),
-              }
-            : conv
-        )
+    if (selectedConversationId && currentConversation) {
+      const updatedMessages = currentConversation.messages.map((msg) =>
+        msg.id === messageId ? { ...msg, pinned: !msg.pinned } : msg
       );
+      updateLocal(selectedConversationId, { messages: updatedMessages });
+      updateConversation(selectedConversationId, {
+        messages: updatedMessages,
+      }).catch((error) => console.error("Failed to update pin:", error));
     }
 
     toast.success("Message pinned");
@@ -667,21 +563,14 @@ const ChatPage = () => {
       )
     );
 
-    if (selectedConversationId) {
-      setConversations((prev) =>
-        prev.map((conv) =>
-          conv.id === selectedConversationId
-            ? {
-                ...conv,
-                messages: conv.messages.map((msg) =>
-                  msg.id === messageId
-                    ? { ...msg, selectedVariantId: variantId }
-                    : msg
-                ),
-              }
-            : conv
-        )
+    if (selectedConversationId && currentConversation) {
+      const updatedMessages = currentConversation.messages.map((msg) =>
+        msg.id === messageId ? { ...msg, selectedVariantId: variantId } : msg
       );
+      updateLocal(selectedConversationId, { messages: updatedMessages });
+      updateConversation(selectedConversationId, {
+        messages: updatedMessages,
+      }).catch((error) => console.error("Failed to update variant:", error));
     }
   };
 
@@ -698,38 +587,42 @@ const ChatPage = () => {
       prev.map((msg) => (msg.id === messageId ? { ...msg, feedback } : msg))
     );
 
-    if (selectedConversationId) {
-      setConversations((prev) =>
-        prev.map((conv) =>
-          conv.id === selectedConversationId
-            ? {
-                ...conv,
-                messages: conv.messages.map((msg) =>
-                  msg.id === messageId ? { ...msg, feedback } : msg
-                ),
-              }
-            : conv
-        )
+    if (selectedConversationId && currentConversation) {
+      const updatedMessages = currentConversation.messages.map((msg) =>
+        msg.id === messageId ? { ...msg, feedback } : msg
       );
+      updateLocal(selectedConversationId, { messages: updatedMessages });
+      updateConversation(selectedConversationId, {
+        messages: updatedMessages,
+      }).catch((error) => console.error("Failed to update feedback:", error));
     }
 
     toast.success("Feedback submitted. Thank you!");
   };
 
-  const handleDeleteConversation = (id: string) => {
-    setConversations((prev) => prev.filter((conv) => conv.id !== id));
-    if (selectedConversationId === id) {
-      handleNewChat();
+  const handleDeleteConversation = async (id: string) => {
+    try {
+      await deleteConversation(id);
+      if (selectedConversationId === id) {
+        handleNewChat();
+      }
+      toast.success("Conversation deleted");
+    } catch (error) {
+      console.error("Failed to delete conversation:", error);
+      toast.error("Failed to delete conversation. Please try again.");
     }
-    toast.success("Conversation deleted");
   };
 
-  const handlePinConversation = (id: string) => {
-    setConversations((prev) =>
-      prev.map((conv) =>
-        conv.id === id ? { ...conv, pinned: !conv.pinned } : conv
-      )
-    );
+  const handlePinConversation = async (id: string) => {
+    const conversation = conversations.find((c) => c.id === id);
+    if (conversation) {
+      try {
+        await updateConversation(id, { pinned: !conversation.pinned });
+      } catch (error) {
+        console.error("Failed to pin conversation:", error);
+        toast.error("Failed to update conversation. Please try again.");
+      }
+    }
   };
 
   const handleExport = () => {
@@ -928,12 +821,14 @@ const ChatPage = () => {
               role={role}
               onRoleChange={(newRole) => {
                 setRole(newRole);
-                const updatedSession = { ...session, role: newRole };
-                setSession(updatedSession);
+                // Save role to session for workflow
+                const currentSession = sessionService.getSession();
+                const updatedSession = { ...currentSession, role: newRole };
                 sessionService.saveSession(updatedSession);
               }}
               compact={isAuthenticated && currentMessages.length === 0}
               onNewChat={handleNewChat}
+              schoolName={currentConversation?.schoolName}
             />
 
             {/* Suggestions UNDER the chat box when no messages */}

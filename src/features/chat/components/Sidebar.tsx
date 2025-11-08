@@ -13,14 +13,12 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { useNavigate } from "react-router-dom";
-import { useAppDispatch } from "../../../core/store/hooks";
+import { useAppDispatch, useAppSelector } from "../../../core/store/hooks";
 import { logout } from "../../auth/store/authSlice";
+import { useConversations } from "../hooks/useConversations";
 import {
   User,
   Settings,
-  CreditCard,
-  LogOut,
-  ChevronsUpDown,
   Home as HomeIcon,
   Clock,
   HelpCircle,
@@ -31,6 +29,9 @@ import {
   Archive,
   Trash2,
   Pin,
+  Sparkles,
+  ChevronRight,
+  DoorOpen,
 } from "lucide-react";
 import {
   TooltipProvider,
@@ -40,9 +41,9 @@ import {
 } from "@/components/ui/tooltip";
 
 interface SidebarProps {
-  conversations: Conversation[];
-  selectedConversationId: string | null;
-  onSelectConversation: (id: string) => void;
+  conversations?: Conversation[]; // Optional - will use from Redux if not provided
+  selectedConversationId?: string | null; // Optional - will use from Redux if not provided
+  onSelectConversation?: (id: string) => void; // Optional - will use from Redux if not provided
   onNewChat: () => void;
   onDeleteConversation?: (id: string) => void;
   onPinConversation?: (id: string) => void;
@@ -53,7 +54,7 @@ interface SidebarProps {
   isCollapsed?: boolean;
   onToggleCollapse?: () => void;
   userName?: string;
-  plan?: "Free" | "Go";
+  plan?: "Free" | "Go"; // Keep for backward compatibility, but will use from store
 }
 
 const NewChatIcon = ({ className }: { className?: string }) => (
@@ -71,9 +72,9 @@ const NewChatIcon = ({ className }: { className?: string }) => (
 );
 
 const Sidebar = ({
-  conversations,
-  selectedConversationId,
-  onSelectConversation,
+  conversations: propConversations,
+  selectedConversationId: propSelectedConversationId,
+  onSelectConversation: propOnSelectConversation,
   onNewChat,
   onDeleteConversation,
   onPinConversation,
@@ -83,8 +84,8 @@ const Sidebar = ({
   onMoveConversation,
   isCollapsed = false,
   onToggleCollapse,
-  userName,
-  plan,
+  userName: propUserName,
+  plan: propPlan,
 }: SidebarProps) => {
   const [hoveredId, setHoveredId] = useState<string | null>(null);
   const [openMenuId, setOpenMenuId] = useState<string | null>(null);
@@ -93,6 +94,52 @@ const Sidebar = ({
   const [searchQuery, setSearchQuery] = useState("");
   const navigate = useNavigate();
   const dispatch = useAppDispatch();
+
+  // Get conversations from Redux hook (or use props if provided)
+  const {
+    conversations: reduxConversations,
+    selectedConversationId: reduxSelectedConversationId,
+    selectConversation: reduxSelectConversation,
+  } = useConversations();
+
+  // Use props if provided, otherwise use Redux
+  const conversations = propConversations ?? reduxConversations;
+  const selectedConversationId =
+    propSelectedConversationId ?? reduxSelectedConversationId;
+  const onSelectConversation =
+    propOnSelectConversation ?? reduxSelectConversation;
+
+  // Get user data from store
+  const user = useAppSelector((state) => state.auth?.user);
+  const userName = propUserName || user?.name || "Guest";
+
+  // Get plan from user data, fallback to prop or "Free"
+  const getUserPlan = (): "Free" | "Go" => {
+    if (user?.plan) {
+      // Map backend plan values to frontend display values
+      const planMap: Record<string, "Free" | "Go"> = {
+        free: "Free",
+        starter: "Go",
+        pro: "Go",
+        enterprise: "Go",
+      };
+      return planMap[user.plan.toLowerCase()] || "Free";
+    }
+    // Fallback to subscription planName if available
+    if (user?.subscription?.planName) {
+      const planName = user.subscription.planName.toLowerCase();
+      if (planName.includes("free")) return "Free";
+      if (
+        planName.includes("go") ||
+        planName.includes("starter") ||
+        planName.includes("pro")
+      )
+        return "Go";
+    }
+    return propPlan || "Free";
+  };
+
+  const plan = getUserPlan();
 
   const filteredConversations = conversations;
 
@@ -318,8 +365,8 @@ const Sidebar = ({
             >
               <path d="M9.38759 8.53403C10.0712 8.43795 10.7036 8.91485 10.7997 9.59849C10.8956 10.2819 10.4195 10.9133 9.73622 11.0096C9.05259 11.1057 8.4202 10.6298 8.32411 9.94614C8.22804 9.26258 8.70407 8.63022 9.38759 8.53403Z"></path>
               <path
-                fill-rule="evenodd"
-                clip-rule="evenodd"
+                fillRule="evenodd"
+                clipRule="evenodd"
                 d="M10.3886 5.58677C10.8476 5.5681 11.2608 5.5975 11.6581 5.74204L11.8895 5.83677C12.4185 6.07813 12.8721 6.46152 13.1991 6.94614L13.2831 7.07993C13.4673 7.39617 13.5758 7.74677 13.6571 8.14048C13.7484 8.58274 13.8154 9.13563 13.8993 9.81919L14.245 12.6317L14.3554 13.5624C14.3852 13.8423 14.4067 14.0936 14.4159 14.3192C14.4322 14.7209 14.4118 15.0879 14.3095 15.4393L14.2606 15.5887C14.0606 16.138 13.7126 16.6202 13.2577 16.9823L13.0565 17.1297C12.7061 17.366 12.312 17.4948 11.8622 17.5877C11.6411 17.6334 11.3919 17.673 11.1132 17.7118L10.1835 17.8299L7.37098 18.1756C6.68748 18.2596 6.13466 18.3282 5.68348 18.3465C5.28176 18.3628 4.9148 18.3424 4.56337 18.2401L4.41395 18.1913C3.86454 17.9912 3.38258 17.6432 3.0204 17.1883L2.87294 16.9872C2.63655 16.6367 2.50788 16.2427 2.41493 15.7928C2.36926 15.5717 2.32964 15.3226 2.29091 15.0438L2.17274 14.1141L1.82704 11.3016C1.74311 10.6181 1.67455 10.0653 1.65614 9.61411C1.63747 9.15518 1.66697 8.74175 1.81141 8.34458L1.90614 8.11313C2.14741 7.58441 2.53115 7.13051 3.01552 6.80356L3.1493 6.71958C3.46543 6.53545 3.8163 6.42688 4.20985 6.34556C4.65206 6.25423 5.20506 6.18729 5.88856 6.10337L8.70106 5.75767L9.63173 5.64731C9.91161 5.61744 10.163 5.59597 10.3886 5.58677ZM6.75673 13.0594C6.39143 12.978 6.00943 13.0106 5.66298 13.1522C5.5038 13.2173 5.32863 13.3345 5.06923 13.5829C4.80403 13.8368 4.49151 14.1871 4.04091 14.6932L3.64833 15.1327C3.67072 15.2763 3.69325 15.4061 3.71766 15.5243C3.79389 15.893 3.87637 16.0961 3.97548 16.243L4.06141 16.3602C4.27134 16.6237 4.5507 16.8253 4.86903 16.9413L5.00477 16.9813C5.1536 17.0148 5.34659 17.0289 5.6288 17.0174C6.01317 17.0018 6.50346 16.9419 7.20888 16.8553L10.0214 16.5106L10.9306 16.3944C11.0173 16.3824 11.0997 16.3693 11.1776 16.3573L8.61513 14.3065C8.08582 13.8831 7.71807 13.5905 7.41395 13.3846C7.19112 13.2338 7.02727 13.1469 6.88856 13.0975L6.75673 13.0594ZM10.4432 6.91587C10.2511 6.9237 10.0319 6.94288 9.77333 6.97056L8.86317 7.07798L6.05067 7.42271C5.34527 7.50932 4.85514 7.57047 4.47841 7.64829C4.20174 7.70549 4.01803 7.76626 3.88173 7.83481L3.75966 7.9061C3.47871 8.09575 3.25597 8.35913 3.1161 8.66587L3.06141 8.79966C3.00092 8.96619 2.96997 9.18338 2.98524 9.55942C3.00091 9.94382 3.06074 10.4341 3.14735 11.1395L3.42274 13.3895L3.64442 13.1434C3.82631 12.9454 3.99306 12.7715 4.1493 12.6219C4.46768 12.3171 4.78299 12.0748 5.16005 11.9208L5.38661 11.8377C5.92148 11.6655 6.49448 11.6387 7.04579 11.7616L7.19325 11.7987C7.53151 11.897 7.8399 12.067 8.15907 12.2831C8.51737 12.5256 8.9325 12.8582 9.4452 13.2684L12.5966 15.7889C12.7786 15.6032 12.9206 15.3806 13.0106 15.1336L13.0507 14.9979C13.0842 14.8491 13.0982 14.6561 13.0868 14.3739C13.079 14.1817 13.0598 13.9625 13.0321 13.704L12.9247 12.7938L12.58 9.9813C12.4933 9.27584 12.4322 8.78581 12.3544 8.40903C12.2972 8.13219 12.2364 7.94873 12.1679 7.81235L12.0966 7.69028C11.9069 7.40908 11.6437 7.18669 11.3368 7.04673L11.203 6.99204C11.0364 6.93147 10.8195 6.90059 10.4432 6.91587Z"
               ></path>
               <path d="M9.72841 1.5897C10.1797 1.60809 10.7322 1.67665 11.4159 1.7606L14.2284 2.1063L15.1581 2.22446C15.4371 2.26322 15.6859 2.3028 15.9071 2.34849C16.3571 2.44144 16.7509 2.57006 17.1015 2.80649L17.3026 2.95396C17.7576 3.31618 18.1055 3.79802 18.3056 4.34751L18.3544 4.49692C18.4567 4.84845 18.4772 5.21519 18.4608 5.61704C18.4516 5.84273 18.4292 6.09381 18.3993 6.37388L18.2899 7.30454L17.9442 10.117C17.8603 10.8007 17.7934 11.3535 17.702 11.7958C17.6207 12.1895 17.5122 12.5401 17.328 12.8563L17.244 12.9901C17.0958 13.2098 16.921 13.4086 16.7255 13.5829L16.6171 13.662C16.3496 13.8174 16.0009 13.769 15.787 13.5292C15.5427 13.255 15.5666 12.834 15.8407 12.5897L16.0018 12.4276C16.0519 12.3703 16.0986 12.3095 16.1415 12.2459L16.2128 12.1239C16.2813 11.9875 16.3421 11.8041 16.3993 11.5272C16.4771 11.1504 16.5383 10.6605 16.6249 9.95493L16.9696 7.14243L17.077 6.23228C17.1047 5.97357 17.1239 5.7546 17.1317 5.56235C17.1432 5.27997 17.1291 5.08722 17.0956 4.93833L17.0556 4.80259C16.9396 4.4842 16.7381 4.20493 16.4745 3.99497L16.3573 3.90903C16.2103 3.80991 16.0075 3.72745 15.6386 3.65122C15.4502 3.61231 15.2331 3.57756 14.9755 3.54185L14.0663 3.42563L11.2538 3.08091C10.5481 2.99426 10.0582 2.93444 9.67372 2.9188C9.39129 2.90732 9.19861 2.92142 9.0497 2.95493L8.91395 2.99497C8.59536 3.11093 8.31538 3.31224 8.10536 3.57603L8.0204 3.69321C7.95293 3.79324 7.89287 3.91951 7.83778 4.10532L7.787 4.23032C7.64153 4.50308 7.31955 4.64552 7.01161 4.55454C6.65948 4.45019 6.45804 4.07952 6.56239 3.72739L6.63075 3.52036C6.70469 3.31761 6.79738 3.12769 6.91786 2.94907L7.06532 2.7479C7.42756 2.29294 7.90937 1.94497 8.45888 1.74497L8.60829 1.69614C8.95981 1.59385 9.32655 1.57335 9.72841 1.5897Z"></path>
@@ -571,68 +618,96 @@ const Sidebar = ({
 
       {/* Footer */}
       {userName && (
-        <div className="border-t border-slate-200/70 px-4 py-4 dark:border-white/10">
-          <div className="flex items-center gap-3 rounded-xl border border-slate-200/70 bg-white px-4 py-3 shadow-sm dark:border-white/10 dark:bg-white/5">
-            <div className="flex h-8 w-8 items-center justify-center rounded-full bg-slate-900/10 text-slate-800 text-sm font-medium shadow-sm dark:bg-white/10 dark:text-white">
-              {userName.charAt(0).toUpperCase()}
-            </div>
-            <div className="flex-1 min-w-0">
-              <div className="truncate text-sm font-medium text-slate-900 dark:text-white">
-                {userName}
+        <div className="border-t border-slate-200/70 dark:border-white/10 px-3 py-3">
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <button className="w-full rounded-xl bg-gray-50 dark:bg-gray-800/50 px-4 py-3 flex items-center gap-3 hover:bg-gray-100 dark:hover:bg-gray-700/50 transition-colors">
+                <div className="flex h-10 w-10 items-center justify-center rounded-full bg-blue-500 text-white text-sm font-medium shadow-sm">
+                  {userName.charAt(0).toUpperCase()}
+                </div>
+                <div className="flex-1 min-w-0 text-left">
+                  <div className="text-sm font-medium text-gray-900 dark:text-white truncate">
+                    {userName}
+                  </div>
+                  <div className="text-xs text-gray-500 dark:text-gray-400">
+                    {plan === "Go" ? "Plus" : plan}
+                  </div>
+                </div>
+                <ChevronRight className="h-4 w-4 text-gray-400" />
+              </button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent
+              align="end"
+              side="top"
+              className="w-[280px] p-0 rounded-xl bg-white dark:bg-gray-800 border border-slate-200/70 dark:border-white/10 shadow-lg"
+            >
+              {/* User Account Section */}
+              <div className="flex items-center gap-3 px-4 py-3 border-b border-slate-200/70 dark:border-white/10">
+                <div className="flex h-10 w-10 items-center justify-center rounded-full bg-gray-200 dark:bg-gray-700">
+                  <User className="h-5 w-5 text-gray-600 dark:text-gray-300" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <div className="text-sm text-gray-600 dark:text-gray-300 truncate">
+                    {user?.email || "user@example.com"}
+                  </div>
+                </div>
               </div>
-              <div className="text-xs text-slate-500 dark:text-slate-400">
-                {plan}
-              </div>
-            </div>
-            <div className="flex items-center gap-2">
-              {plan === "Free" && (
-                <button
-                  type="button"
+
+              {/* Menu Items */}
+              <div className="py-2">
+                <DropdownMenuItem
                   onClick={() => navigate("/upgrade")}
-                  className="rounded-lg border border-slate-200/70 px-3 py-1 text-xs font-medium text-slate-700 transition-colors hover:bg-slate-900/10 hover:text-slate-900 dark:border-white/10 dark:text-slate-200 dark:hover:bg-white/10 dark:hover:text-white"
+                  className="flex items-center gap-3 px-4 py-2.5 cursor-pointer focus:bg-gray-50 dark:focus:bg-gray-700/50"
                 >
-                  Upgrade
-                </button>
-              )}
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="h-9 w-9 rounded-lg border border-slate-200/70 bg-slate-900/5 text-slate-600 transition-colors hover:bg-slate-900/10 hover:text-slate-900 dark:border-white/10 dark:bg-white/5 dark:text-slate-300 dark:hover:bg-white/10 dark:hover:text-white"
-                    aria-label="Account menu"
-                  >
-                    <ChevronsUpDown className="h-4 w-4" />
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className="w-[200px]">
-                  <DropdownMenuItem onClick={() => navigate("/profile")}>
-                    <User className="mr-2 h-4 w-4" />
-                    Profile
-                  </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => navigate("/subscription")}>
-                    <CreditCard className="mr-2 h-4 w-4" />
-                    Subscription
-                  </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => navigate("/settings")}>
-                    <Settings className="mr-2 h-4 w-4" />
+                  <div className="flex h-5 w-5 items-center justify-center">
+                    <Sparkles className="h-4 w-4 text-gray-600 dark:text-gray-400" />
+                  </div>
+                  <span className="flex-1 text-sm text-gray-700 dark:text-gray-200">
+                    Upgrade plan
+                  </span>
+                </DropdownMenuItem>
+
+                <DropdownMenuItem
+                  onClick={() => navigate("/personalization")}
+                  className="flex items-center gap-3 px-4 py-2.5 cursor-pointer focus:bg-gray-50 dark:focus:bg-gray-700/50"
+                >
+                  <div className="flex h-5 w-5 items-center justify-center">
+                    <Clock className="h-4 w-4 text-gray-600 dark:text-gray-400" />
+                  </div>
+                  <span className="flex-1 text-sm text-gray-700 dark:text-gray-200">
+                    Personalization
+                  </span>
+                </DropdownMenuItem>
+
+                <DropdownMenuItem
+                  onClick={() => navigate("/settings")}
+                  className="flex items-center gap-3 px-4 py-2.5 cursor-pointer focus:bg-gray-50 dark:focus:bg-gray-700/50"
+                >
+                  <div className="flex h-5 w-5 items-center justify-center">
+                    <Settings className="h-4 w-4 text-gray-600 dark:text-gray-400" />
+                  </div>
+                  <span className="flex-1 text-sm text-gray-700 dark:text-gray-200">
                     Settings
-                  </DropdownMenuItem>
-                  <DropdownMenuSeparator />
-                  <DropdownMenuItem
-                    onClick={() => {
-                      dispatch(logout());
-                      navigate("/login", { replace: true });
-                    }}
-                    className="text-destructive"
-                  >
-                    <LogOut className="mr-2 h-4 w-4" />
-                    Logout
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
-            </div>
-          </div>
+                  </span>
+                </DropdownMenuItem>
+
+                <DropdownMenuSeparator className="bg-slate-200/70 dark:bg-white/10 my-1" />
+
+                <DropdownMenuItem
+                  onClick={() => {
+                    dispatch(logout());
+                    navigate("/login", { replace: true });
+                  }}
+                  className="flex items-center gap-3 px-4 py-2.5 cursor-pointer focus:bg-gray-50 dark:focus:bg-gray-700/50 text-gray-700 dark:text-gray-200"
+                >
+                  <div className="flex h-5 w-5 items-center justify-center">
+                    <DoorOpen className="h-4 w-4 text-gray-600 dark:text-gray-400" />
+                  </div>
+                  <span className="flex-1 text-sm">Log out</span>
+                </DropdownMenuItem>
+              </div>
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
       )}
 

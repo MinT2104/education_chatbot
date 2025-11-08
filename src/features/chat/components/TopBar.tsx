@@ -15,8 +15,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import LoginPage from "../../auth/pages/LoginPage";
-import SignupPage from "../../auth/pages/SignupPage";
+import AuthDialog from "../../auth/components/AuthDialog";
 import { cn } from "@/lib/utils";
 import { toggleDarkMode } from "../../ui/store/uiSlice";
 import { settingsService } from "../../auth/services/settingsService";
@@ -40,8 +39,7 @@ const TopBar = ({
   onSettings,
 }: TopBarProps) => {
   const [shareOpen, setShareOpen] = useState(false);
-  const [showLogin, setShowLogin] = useState(false);
-  const [showSignup, setShowSignup] = useState(false);
+  const [authModal, setAuthModal] = useState<"login" | "signup" | null>(null);
   const isAuthenticated = useAppSelector((s) => s.auth.isAuthenticated);
   const isDark = useAppSelector((s) => s.ui.isDark);
   const user = useAppSelector((s) => s.auth.user);
@@ -245,13 +243,13 @@ const TopBar = ({
           ) : (
             <>
               <button
-                onClick={() => setShowLogin(true)}
+                onClick={() => setAuthModal("login")}
                 className="h-9 px-4 inline-flex items-center rounded-md bg-white text-black text-sm hover:bg-gray-100 whitespace-nowrap border border-border"
               >
                 Log in
               </button>
               <button
-                onClick={() => setShowSignup(true)}
+                onClick={() => setAuthModal("signup")}
                 className="h-9 px-4 inline-flex items-center rounded-md bg-black text-white text-sm hover:bg-gray-900 whitespace-nowrap border border-border"
               >
                 Sign up
@@ -297,18 +295,12 @@ const TopBar = ({
           </div>
         </DialogContent>
       </Dialog>
-      {!isAuthenticated && showLogin && (
-        <LoginPage
+      {!isAuthenticated && (
+        <AuthDialog
           inline
-          open={showLogin}
-          onClose={() => setShowLogin(false)}
-        />
-      )}
-      {!isAuthenticated && showSignup && (
-        <SignupPage
-          inline
-          open={showSignup}
-          onClose={() => setShowSignup(false)}
+          open={authModal !== null}
+          onClose={() => setAuthModal(null)}
+          initialMode={authModal || "login"}
         />
       )}
     </div>
