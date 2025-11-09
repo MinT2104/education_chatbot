@@ -56,5 +56,12 @@ export const chatService = {
   async addToFavorites(historyId: string): Promise<void> {
     await apiClient.post(`/chat/favorite/${historyId}`)
   },
+
+  async getSchools(): Promise<Array<{ id: string; name: string; address?: string; country?: string }>> {
+    const response = await apiClient.get('/school/public', {
+      params: { page: 1, limit: 1000 },
+    })
+    return response.data
+  },
 }
 

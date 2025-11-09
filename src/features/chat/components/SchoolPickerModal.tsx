@@ -1,7 +1,14 @@
 import { useEffect, useMemo, useState } from "react";
-import schools from "../data/schools.json";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
+import { chatService } from "../services/chatService";
+
+interface School {
+  id: string;
+  name: string;
+  address?: string;
+  country?: string;
+}
 
 interface SchoolPickerModalProps {
   open: boolean;
@@ -17,17 +24,40 @@ const SchoolPickerModal = ({
   const [q, setQ] = useState("");
   const [debounced, setDebounced] = useState("");
   const [rememberChoice, setRememberChoice] = useState(false);
+  const [schools, setSchools] = useState<School[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     const t = setTimeout(() => setDebounced(q), 300);
     return () => clearTimeout(t);
   }, [q]);
 
+  useEffect(() => {
+    if (open && schools.length === 0) {
+      loadSchools();
+    }
+  }, [open]);
+
+  const loadSchools = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      const data = await chatService.getSchools();
+      setSchools(data);
+    } catch (err: any) {
+      console.error("Failed to load schools:", err);
+      setError(err.response?.data?.message || "Failed to load schools");
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const results = useMemo(() => {
     const query = debounced.trim().toLowerCase();
     if (!query) return schools;
     return schools.filter((s) => s.name.toLowerCase().includes(query));
-  }, [debounced]);
+  }, [debounced, schools]);
 
   const handleSelect = (school: { id: string; name: string }) => {
     onSelect({ name: school.name }, rememberChoice);
@@ -51,9 +81,26 @@ const SchoolPickerModal = ({
           onChange={(e) => setQ(e.target.value)}
           placeholder="Search by name..."
           className="mt-3 w-full px-4 py-2 rounded-xl bg-surface-muted focus:outline-none focus:shadow-[0_0_0_3px_rgba(124,77,255,.12),inset_0_0_0_1px_rgba(124,77,255,.20)]"
+          disabled={loading}
         />
         <div className="mt-4 max-h-80 overflow-y-auto space-y-2">
-          {results.map((s) => (
+          {loading && (
+            <div className="text-sm text-text-subtle text-center py-8">
+              Loading schools...
+            </div>
+          )}
+          {error && (
+            <div className="text-sm text-red-500 text-center py-4">
+              {error}
+              <button
+                onClick={loadSchools}
+                className="ml-2 text-primary-500 hover:underline"
+              >
+                Retry
+              </button>
+            </div>
+          )}
+          {!loading && !error && results.map((s) => (
             <button
               key={s.id}
               onClick={() => handleSelect(s)}
@@ -62,8 +109,15 @@ const SchoolPickerModal = ({
               {s.name}
             </button>
           ))}
-          {results.length === 0 && (
-            <div className="text-sm text-text-subtle">No schools found</div>
+          {!loading && !error && results.length === 0 && schools.length > 0 && (
+            <div className="text-sm text-text-subtle text-center py-4">
+              No schools found matching "{debounced}"
+            </div>
+          )}
+          {!loading && !error && schools.length === 0 && (
+            <div className="text-sm text-text-subtle text-center py-4">
+              No schools available
+            </div>
           )}
         </div>
         <div className="mt-4 pt-4 border-t border-border flex items-center gap-2">

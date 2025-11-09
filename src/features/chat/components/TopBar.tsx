@@ -35,7 +35,7 @@ interface TopBarProps {
 }
 
 const TopBar = ({
-  model = "GPT-4",
+  model = "EduBot 1",
   conversationId,
   onModelChange,
   onSettings,
@@ -108,50 +108,18 @@ const TopBar = ({
               className="w-56 shadow-xl rounded-lg border border-border/50 p-1 bg-popover backdrop-blur-sm"
             >
               <DropdownMenuItem
-                key="GPT-4o"
-                onClick={() => onModelChange?.("GPT-4o")}
+                key="EduBot 1"
+                onClick={() => onModelChange?.("EduBot 1")}
                 className={cn(
                   "flex flex-col items-start py-2.5 px-3.5 cursor-pointer rounded-md transition-colors",
-                  model === "GPT-4o"
+                  model === "EduBot 1"
                     ? "bg-accent text-accent-foreground"
                     : "hover:bg-muted/70"
                 )}
               >
-                <span className="font-medium">GPT-4o</span>
+                <span className="font-medium">EduBot 1</span>
                 <span className="text-xs text-muted-foreground">
                   Fast, multimodal, balanced accuracy
-                </span>
-              </DropdownMenuItem>
-
-              <DropdownMenuItem
-                key="GPT-4"
-                onClick={() => onModelChange?.("GPT-4")}
-                className={cn(
-                  "flex flex-col items-start py-2.5 px-3.5 cursor-pointer rounded-md transition-colors",
-                  model === "GPT-4"
-                    ? "bg-accent text-accent-foreground"
-                    : "hover:bg-muted/70"
-                )}
-              >
-                <span className="font-medium">GPT-4</span>
-                <span className="text-xs text-muted-foreground">
-                  Advanced reasoning, slightly slower
-                </span>
-              </DropdownMenuItem>
-
-              <DropdownMenuItem
-                key="GPT-3.5"
-                onClick={() => onModelChange?.("GPT-3.5")}
-                className={cn(
-                  "flex flex-col items-start py-2.5 px-3.5 cursor-pointer rounded-md transition-colors",
-                  model === "GPT-3.5"
-                    ? "bg-accent text-accent-foreground"
-                    : "hover:bg-muted/70"
-                )}
-              >
-                <span className="font-medium">GPT-3.5</span>
-                <span className="text-xs text-muted-foreground">
-                  Lightweight and cost-effective
                 </span>
               </DropdownMenuItem>
             </DropdownMenuContent>

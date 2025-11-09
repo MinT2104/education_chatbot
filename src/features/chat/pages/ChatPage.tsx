@@ -48,7 +48,7 @@ const ChatPage = () => {
   const [currentMessages, setCurrentMessages] = useState<NewMessage[]>([]);
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
   const [isStreaming, setIsStreaming] = useState(false);
-  const [model, setModel] = useState("GPT-4");
+  const [model, setModel] = useState("EduBot 1");
   const [tools, setTools] = useState<ConversationTools>({
     web: false,
     code: false,

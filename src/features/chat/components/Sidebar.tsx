@@ -672,19 +672,6 @@ const Sidebar = ({
                     Upgrade plan
                   </span>
                 </DropdownMenuItem>
-
-                <DropdownMenuItem
-                  onClick={() => navigate("/personalization")}
-                  className="flex items-center gap-3 px-4 py-2.5 cursor-pointer focus:bg-gray-50 dark:focus:bg-gray-700/50"
-                >
-                  <div className="flex h-5 w-5 items-center justify-center">
-                    <Clock className="h-4 w-4 text-gray-600 dark:text-gray-400" />
-                  </div>
-                  <span className="flex-1 text-sm text-gray-700 dark:text-gray-200">
-                    Personalization
-                  </span>
-                </DropdownMenuItem>
-
                 <DropdownMenuItem
                   onClick={() => navigate("/settings")}
                   className="flex items-center gap-3 px-4 py-2.5 cursor-pointer focus:bg-gray-50 dark:focus:bg-gray-700/50"

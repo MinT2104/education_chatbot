@@ -224,7 +224,7 @@ const Composer = ({
         } relative`}
       >
         {/* Quick suggestions row - hidden when compact (empty state) */}
-        {!hasAnyVisibleCharacter && !isStreaming && !compact && (
+        {/* {!hasAnyVisibleCharacter && !isStreaming && !compact && (
           <div className="mb-2 flex flex-wrap items-center gap-2">
             {[
               "Summarize this article",
@@ -246,7 +246,7 @@ const Composer = ({
               </button>
             ))}
           </div>
-        )}
+        )} */}
 
         <div className="flex items-center gap-2">
           {/* New Chat button - only visible when compact (no messages) */}
@@ -296,7 +296,7 @@ const Composer = ({
             {/* Left dock: camera, attach, and school chip pinned to bottom-left - hidden when compact */}
             {!compact && (
               <div className="absolute left-2 bottom-2 flex items-center gap-1.5">
-                <Button
+                {/* <Button
                   variant="ghost"
                   size="icon"
                   className="h-8 w-8 rounded-full border border-border bg-background hover:bg-muted focus:outline-none focus:ring-0 focus-visible:ring-0"
@@ -316,8 +316,8 @@ const Composer = ({
                     <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h3l2-3h8l2 3h3a2 2 0 0 1 2 2z" />
                     <circle cx="12" cy="13" r="4" />
                   </svg>
-                </Button>
-                <Button
+                </Button> */}
+                {/* <Button
                   variant="ghost"
                   size="icon"
                   className="h-8 w-8 rounded-full border border-border bg-background hover:bg-muted focus:outline-none focus:ring-0 focus-visible:ring-0"
@@ -337,7 +337,7 @@ const Composer = ({
                   >
                     <path d="m16 6-8.414 8.586a2 2 0 0 0 2.829 2.829l8.414-8.586a4 4 0 1 0-5.657-5.657l-8.379 8.551a6 6 0 1 0 8.485 8.485l8.379-8.551" />
                   </svg>
-                </Button>
+                </Button> */}
                 {schoolName && (
                   <div className="ml-1 px-2 py-1 rounded-md bg-background border border-border text-[11px] leading-none text-muted-foreground max-w-[160px] truncate">
                     {schoolName}

@@ -65,14 +65,14 @@ const SpaceStarter: React.FC = () => {
         <div className="absolute bottom-8 -right-12 w-[640px] h-[360px] rounded-full bg-[radial-gradient(closest-side,rgba(244,114,182,0.28),transparent_70%)] dark:bg-[radial-gradient(closest-side,rgba(244,114,182,0.24),transparent_70%)] blur-3xl"></div>
       </div>
       <div className="relative p-2 sm:p-3">
-        <div className="flex items-center justify-between mb-1.5 sm:mb-2">
+        {/* <div className="flex items-center justify-between mb-1.5 sm:mb-2">
           <h2 className="text-sm sm:text-base font-semibold text-foreground">
             Start with a Space
           </h2>
           <button className="text-xs sm:text-sm font-medium text-foreground hover:text-foreground/80 transition-colors">
             Explore hundreds more →
           </button>
-        </div>
+        </div> */}
 
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-1.5 sm:gap-2">
           {SPACES.map((space, idx) => (
