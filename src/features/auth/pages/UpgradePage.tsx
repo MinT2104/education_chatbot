@@ -24,11 +24,9 @@ const UpgradePage = () => {
     setPlan(getStoredPlan())
   }, [])
 
-  const handleMockPayPal = () => {
-    localStorage.setItem('plan', 'Go')
-    localStorage.removeItem('quota_used')
-    setPlan('Go')
-    navigate('/profile')
+  const handleMockPayPal = async () => {
+    // Redirect to payment page for real PayPal integration
+    navigate('/upgrade')
   }
 
   return (

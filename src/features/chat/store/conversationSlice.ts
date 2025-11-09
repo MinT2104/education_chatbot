@@ -212,7 +212,15 @@ const conversationSlice = createSlice({
           (c) => c.id === action.payload.id
         );
         if (index >= 0) {
-          state.conversations[index] = action.payload;
+          // Merge updates instead of replacing entire conversation
+          // This preserves messages and other fields that backend might not return
+          const existingConversation = state.conversations[index];
+          state.conversations[index] = {
+            ...existingConversation,
+            ...action.payload,
+            // Preserve messages if backend doesn't return them
+            messages: action.payload.messages || existingConversation.messages,
+          };
         }
         // Sort by updatedAt descending
         state.conversations.sort((a, b) => b.updatedAt - a.updatedAt);

@@ -1,5 +1,5 @@
-import { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useState, useEffect, useRef } from "react";
+import { useNavigate, useParams, useLocation } from "react-router-dom";
 import { useAppSelector } from "../../../core/store/hooks";
 import { toast } from "react-toastify";
 import { settingsService } from "../../auth/services/settingsService";
@@ -22,6 +22,9 @@ import { useConversations } from "../hooks/useConversations";
 
 const ChatPage = () => {
   const navigate = useNavigate();
+  const location = useLocation();
+  const params = useParams<{ id?: string }>();
+  const conversationIdFromUrl = params.id;
   const userName = useAppSelector((s) => s.auth?.user?.name ?? "Guest");
   const user = useAppSelector((s) => s.auth?.user);
   const userId = user?.email || user?.id || null;
@@ -38,6 +41,7 @@ const ChatPage = () => {
     remove: deleteConversation,
     addMessage: addMessageToConversation,
     updateLocal,
+    refetch: refetchConversations,
   } = useConversations();
 
   const [enterToSend, setEnterToSend] = useState(true);
@@ -51,13 +55,35 @@ const ChatPage = () => {
     vision: false,
   });
   const [memoryEnabled, setMemoryEnabled] = useState(false);
-  const [plan, setPlan] = useState<"Free" | "Go">(
-    (localStorage.getItem("plan") as any) || "Free"
-  );
+
+  // Get plan from user data in Redux store
+  const getUserPlan = (): "Free" | "Go" => {
+    if (user?.plan) {
+      const planLower = user.plan.toLowerCase();
+      if (planLower === "free") return "Free";
+      if (planLower === "go") return "Go";
+      // Fallback for other plan types
+      const planMap: Record<string, "Free" | "Go"> = {
+        starter: "Go",
+        pro: "Go",
+        enterprise: "Go",
+      };
+      return planMap[planLower] || "Free";
+    }
+    // Fallback to subscription planName if available
+    if (user?.subscription?.planName) {
+      const planName = user.subscription.planName.toLowerCase();
+      if (planName.includes("free")) return "Free";
+      if (planName.includes("go")) return "Go";
+    }
+    return "Free";
+  };
+
+  const plan = getUserPlan();
+  const quotaLimit = plan === "Free" ? 25 : null;
   const [quotaUsed, setQuotaUsed] = useState<number>(
     parseInt(localStorage.getItem("quota_used") || "0", 10)
   );
-  const quotaLimit = plan === "Free" ? 25 : null;
   const quotaRemaining =
     quotaLimit != null ? Math.max(quotaLimit - quotaUsed, 0) : null;
   const [showUpgrade, setShowUpgrade] = useState(false);
@@ -72,6 +98,24 @@ const ChatPage = () => {
   const [pendingSchoolName, setPendingSchoolName] = useState<string | null>(
     null
   );
+
+  // Guest session ID (stored in localStorage)
+  const [guestSessionId, setGuestSessionId] = useState<string | null>(() => {
+    // Load guest session ID from localStorage on mount
+    if (typeof window !== "undefined") {
+      return localStorage.getItem("guest_session_id");
+    }
+    return null;
+  });
+
+  // Guest school name (stored in localStorage, linked to guestSessionId)
+  const [guestSchoolName, setGuestSchoolName] = useState<string | null>(() => {
+    // Load guest school name from localStorage on mount
+    if (typeof window !== "undefined") {
+      return localStorage.getItem("guest_school_name");
+    }
+    return null;
+  });
 
   // Workflow state
   const [workflowStep, setWorkflowStep] = useState<1 | 2 | 3 | null>(null);
@@ -97,10 +141,97 @@ const ChatPage = () => {
       setCurrentMessages(selectedConversation.messages);
       setTools(selectedConversation.tools || {});
       setMemoryEnabled(selectedConversation.memory?.enabled || false);
-    } else {
+
+      // Update URL if conversation has messages and URL doesn't match
+      if (
+        selectedConversation.messages.length > 0 &&
+        conversationIdFromUrl !== selectedConversation.id
+      ) {
+        navigate(`/app/${selectedConversation.id}`, { replace: true });
+      }
+    } else if (isAuthenticated) {
+      // Only clear messages for authenticated users
+      // Guest messages are managed separately
       setCurrentMessages([]);
+
+      // Navigate to /app if no conversation selected and URL has ID
+      if (conversationIdFromUrl) {
+        navigate("/app", { replace: true });
+      }
     }
-  }, [selectedConversation]);
+  }, [selectedConversation, isAuthenticated, conversationIdFromUrl, navigate]);
+
+  // Track previous authentication state to detect logout
+  const prevIsAuthenticatedRef = useRef(isAuthenticated);
+
+  // Clear messages and navigate when user logs out
+  useEffect(() => {
+    // Only clear if user was authenticated before and now is not (logout happened)
+    const wasAuthenticated = prevIsAuthenticatedRef.current;
+    const isNowUnauthenticated = !isAuthenticated;
+
+    if (wasAuthenticated && isNowUnauthenticated) {
+      // User just logged out - clear everything
+      console.log("[Logout] Clearing conversation data...");
+
+      // Clear all messages
+      setCurrentMessages([]);
+      selectConversation(null);
+      setIsStreaming(false);
+      setWorkflowStep(null);
+
+      // Clear guest session data from localStorage
+      setGuestSessionId(null);
+      setGuestSchoolName(null);
+      localStorage.removeItem("guest_session_id");
+      localStorage.removeItem("guest_school_name");
+
+      // Navigate to /app if currently on /app/:id
+      if (conversationIdFromUrl) {
+        navigate("/app", { replace: true });
+      }
+    }
+
+    // Update ref for next comparison
+    prevIsAuthenticatedRef.current = isAuthenticated;
+  }, [isAuthenticated, conversationIdFromUrl, navigate, selectConversation]);
+
+  // Load conversation from URL if ID is provided
+  useEffect(() => {
+    if (
+      conversationIdFromUrl &&
+      isAuthenticated &&
+      conversationIdFromUrl !== selectedConversationId
+    ) {
+      // Check if conversation exists in Redux store
+      const conversationFromStore = conversations.find(
+        (c) => c.id === conversationIdFromUrl
+      );
+      if (conversationFromStore) {
+        selectConversation(conversationIdFromUrl);
+      } else {
+        // TODO: Fetch conversation from API if not in store
+        // For now, just select it (will be loaded when conversations are fetched)
+        selectConversation(conversationIdFromUrl);
+      }
+    }
+  }, [
+    conversationIdFromUrl,
+    isAuthenticated,
+    selectedConversationId,
+    conversations,
+    selectConversation,
+  ]);
+
+  // Redirect root path (/) to /app on initial load
+  useEffect(() => {
+    if (location.pathname === "/" && !conversationIdFromUrl) {
+      navigate("/app", { replace: true });
+    }
+  }, [location.pathname, conversationIdFromUrl, navigate]);
+
+  // Guest messages are only stored in state (not persisted)
+  // When page reloads, messages will be lost (expected behavior for guest)
 
   // Keyboard shortcut for command palette (Cmd/Ctrl+K)
   useEffect(() => {
@@ -132,20 +263,33 @@ const ChatPage = () => {
     setIsStreaming(false);
     setWorkflowStep(null);
     setPendingSchoolName(null);
+    // For guest users, keep guestSchoolName (don't clear it)
+    // For authenticated users, schoolName is stored in conversation
+
+    // Navigate to /app (no ID) when starting new chat
+    navigate("/app", { replace: true });
   };
 
   const handleSchoolSelect = (
     school: { name: string },
     _remember: boolean // Keep for backward compatibility but not used (school is per conversation now)
   ) => {
+    const schoolName = school.name;
+
     // Store school name for the conversation that will be created
-    setPendingSchoolName(school.name);
+    setPendingSchoolName(schoolName);
+
+    // For guest users, also save to localStorage so it persists across requests
+    if (!isAuthenticated) {
+      setGuestSchoolName(schoolName);
+      localStorage.setItem("guest_school_name", schoolName);
+    }
+
     setShowSchoolPicker(false);
 
     // If there's a pending message, send it now with the school name
     if (pendingMessage) {
       const messageToSend = pendingMessage;
-      const schoolName = school.name;
       setPendingMessage(null);
       // Small delay to ensure modal is closed
       setTimeout(() => {
@@ -178,8 +322,45 @@ const ChatPage = () => {
     let conversationIdForChat: string | undefined;
     let finalSchoolName: string | undefined;
 
-    // If no conversation selected, check if school is needed first
-    if (!selectedConversationId) {
+    // For guest users: Backend handles guest ID via cookie now
+    // But we still need conversationId for frontend state tracking
+    if (!isAuthenticated) {
+      // Generate conversationId for guest if not exists (for frontend state tracking)
+      // This is different from backend cookie-based guest ID
+      if (!guestSessionId) {
+        const newSessionId = `guest_${Date.now()}_${Math.random()
+          .toString(36)
+          .substr(2, 9)}`;
+        setGuestSessionId(newSessionId);
+        localStorage.setItem("guest_session_id", newSessionId);
+        conversationIdForChat = newSessionId;
+      } else {
+        conversationIdForChat = guestSessionId;
+      }
+
+      // Use pendingSchoolName, guestSchoolName (from localStorage), or passed schoolName
+      finalSchoolName = pendingSchoolName || guestSchoolName || schoolName;
+
+      // If no school name, show school picker and store pending message
+      // DON'T add message to state yet - wait until school is selected
+      if (!finalSchoolName) {
+        setPendingMessage(content);
+        setShowSchoolPicker(true);
+        return; // Exit early, don't add message or send request
+      }
+
+      // Save schoolName to localStorage for future requests
+      if (finalSchoolName && finalSchoolName !== guestSchoolName) {
+        setGuestSchoolName(finalSchoolName);
+        localStorage.setItem("guest_school_name", finalSchoolName);
+      }
+
+      // Only add message to state AFTER we have schoolName
+      setCurrentMessages((prev) => [...prev, userMessage]);
+      setPendingSchoolName(null); // Clear pending school name (but keep guestSchoolName)
+    }
+    // For authenticated users: create or use existing conversation
+    else if (!selectedConversationId) {
       // Use pendingSchoolName if available, otherwise use passed schoolName
       finalSchoolName = pendingSchoolName || schoolName;
 
@@ -204,17 +385,21 @@ const ChatPage = () => {
         selectConversation(newConversation.id);
         setCurrentMessages([userMessage]);
         setPendingSchoolName(null); // Clear pending school name
+
+        // Navigate to /app/:id when conversation is created
+        navigate(`/app/${newConversation.id}`, { replace: true });
       } catch (error) {
         console.error("Failed to create conversation:", error);
         toast.error("Failed to create conversation. Please try again.");
         return;
       }
     } else {
-      // Add to existing conversation (optimistic update + sync with backend)
+      // Add to existing conversation (optimistic local update only)
+      // Backend will save messages when chat API is called
       setCurrentMessages((prev) => [...prev, userMessage]);
       addMessageToConversation(selectedConversationId, userMessage);
 
-      // Update conversation title if needed
+      // Update conversation title if needed (only title, not messages)
       const currentConv = conversations.find(
         (c) => c.id === selectedConversationId
       );
@@ -227,21 +412,15 @@ const ChatPage = () => {
         updateLocal(selectedConversationId, {
           title: deriveConversationTitle(content),
         });
-        // Sync with backend
+        // Sync only title with backend (messages will be saved by chat API)
         updateConversation(selectedConversationId, {
           title: deriveConversationTitle(content),
-          messages: [...(currentConv.messages || []), userMessage],
         }).catch((error) => {
-          console.error("Failed to update conversation:", error);
-        });
-      } else {
-        // Sync message update with backend
-        updateConversation(selectedConversationId, {
-          messages: [...(currentConv?.messages || []), userMessage],
-        }).catch((error) => {
-          console.error("Failed to update conversation:", error);
+          console.error("Failed to update conversation title:", error);
         });
       }
+      // Note: We don't save user message to backend here
+      // Backend will save both user and assistant messages when chat API is called
     }
 
     // Quota accounting (user message deducts 1)
@@ -360,11 +539,18 @@ const ChatPage = () => {
     // Prepare API call data with role and context
     const session = sessionService.getSession();
     // Use conversationIdForChat if we just created a new conversation, otherwise use selectedConversationId
+    // For guest, use guestSessionId; for authenticated users, use conversationId
     const finalConversationId =
-      conversationIdForChat || selectedConversationId || undefined;
+      conversationIdForChat ||
+      (!isAuthenticated ? guestSessionId : selectedConversationId) ||
+      undefined;
+
+    // For guest users: Backend now handles guest ID via cookie (ci)
+    // No need to send sessionId from frontend anymore
     const apiData = {
       userInput: content,
       conversationId: finalConversationId, // Send conversationId to backend
+      // sessionId removed - backend handles via cookie middleware
       role: role, // Send role to backend
       schoolName: currentConversation?.schoolName || finalSchoolName, // School name from conversation
       grade: session.grade,
@@ -391,20 +577,52 @@ const ChatPage = () => {
       };
 
       setCurrentMessages((prev) => [...prev, assistantMessage]);
-      if (selectedConversationId && currentConversation) {
-        // Optimistic update + sync with backend
+
+      // For guest: Backend handles guest ID via cookie for rate limiting
+      // But we still use conversationId (guestSessionId) for frontend state tracking
+      if (!isAuthenticated) {
+        // Guest messages are stored in local state only (no backend conversation)
+        // conversationId is used for frontend state tracking
+        // Backend cookie (ci) is used for rate limiting
+        // Update conversationId from response if backend returned one
+        if (
+          response.chatHistoryId &&
+          response.chatHistoryId !== guestSessionId
+        ) {
+          setGuestSessionId(response.chatHistoryId);
+          localStorage.setItem("guest_session_id", response.chatHistoryId);
+        }
+      } else if (selectedConversationId) {
+        // For authenticated users: update local state and sync with backend
         addMessageToConversation(selectedConversationId, assistantMessage);
-        updateConversation(selectedConversationId, {
-          messages: [...currentConversation.messages, assistantMessage],
-        }).catch((error) => {
-          console.error(
-            "Failed to update conversation with assistant message:",
-            error
-          );
-        });
+
+        // Refetch conversations to sync with backend after a short delay
+        // This ensures we have the latest messages from backend (including user message)
+        // We use a small delay to avoid race conditions with backend save
+        setTimeout(() => {
+          refetchConversations().catch((error) => {
+            console.error("Failed to refetch conversations:", error);
+          });
+        }, 500);
       }
     } catch (error: any) {
       console.error("Failed to get chat response:", error);
+
+      // Handle rate limit error specifically
+      if (
+        error?.response?.status === 429 ||
+        error?.response?.data?.error === "RATE_LIMIT_EXCEEDED"
+      ) {
+        const rateLimitData = error?.response?.data;
+        const errorMessage = rateLimitData?.message || "Rate limit exceeded";
+
+        toast.error(errorMessage);
+        setShowRateLimit(true);
+
+        // Don't add error message to chat, just show toast
+        return;
+      }
+
       const errorMessage =
         error?.response?.data?.message ||
         error?.message ||
@@ -440,52 +658,99 @@ const ChatPage = () => {
     // Share is handled in ShareModal component
   };
 
-  const handleRegenerate = (messageId: string) => {
+  const handleRegenerate = async (messageId: string) => {
     const message = currentMessages.find((m) => m.id === messageId);
     if (!message || message.role !== "assistant") return;
 
-    // Create a new variant
-    const variantId = `var_${Date.now()}`;
-    const newVariant = {
-      id: variantId,
-      contentMd: `Regenerated response for: "${message.contentMd?.slice(
-        0,
-        50
-      )}..."`,
-      timestamp: Date.now(),
-    };
+    // Find the user message that came before this assistant message
+    const messageIndex = currentMessages.findIndex((m) => m.id === messageId);
+    if (messageIndex === -1) return;
 
-    // Update message with new variant
-    setCurrentMessages((prev) =>
-      prev.map((msg) =>
-        msg.id === messageId
-          ? {
-              ...msg,
-              variants: [...(msg.variants || []), newVariant],
-              selectedVariantId: variantId,
-            }
-          : msg
-      )
-    );
-
-    // Update conversation
-    if (selectedConversationId && currentConversation) {
-      const updatedMessages = currentConversation.messages.map((msg) =>
-        msg.id === messageId
-          ? {
-              ...msg,
-              variants: [...(msg.variants || []), newVariant],
-              selectedVariantId: variantId,
-            }
-          : msg
-      );
-      updateLocal(selectedConversationId, { messages: updatedMessages });
-      updateConversation(selectedConversationId, {
-        messages: updatedMessages,
-      }).catch((error) => console.error("Failed to update variant:", error));
+    // Find the previous user message
+    let userMessage: NewMessage | undefined;
+    for (let i = messageIndex - 1; i >= 0; i--) {
+      if (currentMessages[i].role === "user") {
+        userMessage = currentMessages[i];
+        break;
+      }
     }
 
-    toast.success("Response regenerated");
+    if (!userMessage) {
+      toast.error("Cannot regenerate: No user message found");
+      return;
+    }
+
+    // Get conversation context
+    const session = sessionService.getSession();
+    const finalConversationId =
+      (!isAuthenticated ? guestSessionId : selectedConversationId) || undefined;
+    const finalSchoolName =
+      currentConversation?.schoolName || guestSchoolName || undefined;
+
+    // Prepare API call with the same user input
+    const apiData = {
+      userInput: userMessage.content || "",
+      conversationId: finalConversationId,
+      role: role,
+      schoolName: finalSchoolName,
+      grade: session.grade,
+      subject: session.subject,
+      topic: session.topic,
+      // Include messages up to (but not including) the message being regenerated
+      previousChat: currentMessages.slice(0, messageIndex).map((m) => ({
+        user: m.role === "user" ? m.content || "" : "",
+        gemini: m.role === "assistant" ? m.contentMd || "" : "",
+      })),
+    };
+
+    setIsStreaming(true);
+
+    try {
+      const response = await chatService.createChat(apiData);
+
+      const regeneratedMessage: NewMessage = {
+        id: response.message.id || `msg_${Date.now() + 1}`,
+        role: "assistant",
+        contentMd: response.message.contentMd || response.message.content,
+        timestamp: response.message.timestamp || Date.now(),
+        streamed: false,
+      };
+
+      // Replace the assistant message with the regenerated one
+      setCurrentMessages((prev) =>
+        prev.map((msg) => (msg.id === messageId ? regeneratedMessage : msg))
+      );
+
+      // Update conversation if authenticated
+      if (selectedConversationId && currentConversation) {
+        const updatedMessages = currentConversation.messages.map((msg) =>
+          msg.id === messageId ? regeneratedMessage : msg
+        );
+        updateLocal(selectedConversationId, { messages: updatedMessages });
+        addMessageToConversation(selectedConversationId, regeneratedMessage);
+
+        // Refetch conversations to sync with backend
+        setTimeout(() => {
+          refetchConversations().catch((error) => {
+            console.error(
+              "Failed to refetch conversations after regenerate:",
+              error
+            );
+          });
+        }, 500);
+      }
+
+      toast.success("Response regenerated");
+    } catch (error: any) {
+      console.error("Failed to regenerate response:", error);
+      const errorMessage =
+        error?.response?.data?.message ||
+        error?.message ||
+        "Failed to regenerate response. Please try again.";
+      toast.error(errorMessage);
+    } finally {
+      setIsStreaming(false);
+    }
   };
 
   const handleLike = (messageId: string, like: boolean) => {
@@ -499,32 +764,6 @@ const ChatPage = () => {
           : msg
       )
     );
-  };
-
-  const handlePin = (messageId: string) => {
-    setCurrentMessages((prev) =>
-      prev.map((msg) =>
-        msg.id === messageId ? { ...msg, pinned: !msg.pinned } : msg
-      )
-    );
-
-    if (selectedConversationId && currentConversation) {
-      const updatedMessages = currentConversation.messages.map((msg) =>
-        msg.id === messageId ? { ...msg, pinned: !msg.pinned } : msg
-      );
-      updateLocal(selectedConversationId, { messages: updatedMessages });
-      updateConversation(selectedConversationId, {
-        messages: updatedMessages,
-      }).catch((error) => console.error("Failed to update pin:", error));
-    }
-
-    toast.success("Message pinned");
-  };
-
-  const handleQuote = (_messageId: string, content: string) => {
-    // This would insert quoted text into composer
-    // For now, just show a toast
-    toast.info(`Quoted: ${content.slice(0, 50)}...`);
   };
 
   const handleContinue = (messageId: string) => {
@@ -610,18 +849,6 @@ const ChatPage = () => {
     } catch (error) {
       console.error("Failed to delete conversation:", error);
       toast.error("Failed to delete conversation. Please try again.");
-    }
-  };
-
-  const handlePinConversation = async (id: string) => {
-    const conversation = conversations.find((c) => c.id === id);
-    if (conversation) {
-      try {
-        await updateConversation(id, { pinned: !conversation.pinned });
-      } catch (error) {
-        console.error("Failed to pin conversation:", error);
-        toast.error("Failed to update conversation. Please try again.");
-      }
     }
   };
 
@@ -719,13 +946,35 @@ const ChatPage = () => {
                 }
               }}
               onDeleteConversation={handleDeleteConversation}
-              onPinConversation={handlePinConversation}
+              onRenameConversation={async (id: string, title: string) => {
+                try {
+                  // Optimistic update first
+                  updateLocal(id, { title });
+
+                  // Then sync with backend
+                  await updateConversation(id, { title });
+
+                  // Refetch to ensure we have the latest data
+                  setTimeout(() => {
+                    refetchConversations().catch((error) => {
+                      console.error("Failed to refetch conversations:", error);
+                    });
+                  }, 300);
+
+                  toast.success("Conversation renamed");
+                } catch (error) {
+                  console.error("Failed to rename conversation:", error);
+                  toast.error("Failed to rename conversation");
+                  // Revert optimistic update on error
+                  refetchConversations();
+                }
+              }}
               isCollapsed={isSidebarCollapsed}
               onToggleCollapse={() =>
                 setIsSidebarCollapsed(!isSidebarCollapsed)
               }
               userName={userName}
-              plan={plan}
+              plan={plan.toLowerCase() as "free" | "go"}
             />
           </div>
         )}
@@ -740,7 +989,7 @@ const ChatPage = () => {
 
         {/* Main Chat Area */}
         <div
-          className={`flex-1 flex flex-col overflow-hidden bg-background pb-24 md:pb-8 ${
+          className={`flex-1 flex flex-col overflow-hidden bg-background ${
             !isAuthenticated ? "px-4 md:px-6" : ""
           }`}
         >
@@ -770,6 +1019,9 @@ const ChatPage = () => {
           {/* Top Bar */}
           <TopBar
             currentConversation={currentConversation || null}
+            conversationId={
+              selectedConversationId || conversationIdFromUrl || undefined
+            }
             model={model}
             tools={tools}
             memoryEnabled={memoryEnabled}
@@ -792,8 +1044,6 @@ const ChatPage = () => {
             onShare={handleShare}
             onRegenerate={handleRegenerate}
             onLike={handleLike}
-            onPin={handlePin}
-            onQuote={handleQuote}
             onContinue={handleContinue}
             onEdit={handleEdit}
             onSelectVariant={handleSelectVariant}
@@ -805,9 +1055,9 @@ const ChatPage = () => {
           {/* Composer and bottom elements container */}
           <div
             className="pb-20 md:pb-4"
-            style={{
-              paddingBottom: "max(5rem, env(safe-area-inset-bottom, 1.25rem))",
-            }}
+            // style={{
+            //   paddingBottom: "max(5rem, env(safe-area-inset-bottom, 1.25rem))",
+            // }}
           >
             {/* Composer */}
             <Composer
@@ -942,7 +1192,7 @@ const ChatPage = () => {
                     </button>
                   </span>
                 ) : (
-                  <span>Plan Go: Unlimited messages</span>
+                  <span>Go Plan: Unlimited messages</span>
                 )}
               </div>
             )}
@@ -951,12 +1201,9 @@ const ChatPage = () => {
             open={showUpgrade}
             onClose={() => setShowUpgrade(false)}
             onUpgrade={() => {
-              localStorage.setItem("plan", "Go");
-              localStorage.removeItem("quota_used");
-              setPlan("Go");
-              setQuotaUsed(0);
+              // Navigate to upgrade page for real payment
+              navigate("/upgrade");
               setShowUpgrade(false);
-              toast.success("Upgraded to Go (mock)");
             }}
           />
 
@@ -1001,20 +1248,6 @@ const ChatPage = () => {
             onClose={() => setShowSchoolPicker(false)}
             onSelect={handleSchoolSelect}
           />
-
-          {/* Test Button - Clear Cache (Bottom Right) */}
-          <div
-            className="fixed right-4 z-50"
-            style={{ bottom: "max(1rem, env(safe-area-inset-bottom, 1rem))" }}
-          >
-            <button
-              onClick={handleClearAllCache}
-              className="px-3 py-1.5 text-xs font-medium rounded-md bg-red-500/10 text-red-600 dark:text-red-400 border border-red-500/20 hover:bg-red-500/20 transition-colors shadow-lg"
-              title="Clear all cache and reload (for testing)"
-            >
-              🧪 Clear Cache
-            </button>
-          </div>
         </div>
       </div>
     </div>

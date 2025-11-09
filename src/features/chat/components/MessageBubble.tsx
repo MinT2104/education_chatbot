@@ -7,12 +7,6 @@ import { NewMessage } from "../types";
 import ShareModal from "./ShareModal";
 import FeedbackDialog from "./FeedbackDialog";
 import { Button } from "@/components/ui/button";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
 
 interface MessageBubbleProps {
   message: NewMessage;
@@ -21,8 +15,6 @@ interface MessageBubbleProps {
   onShare?: (messageId: string) => void;
   onRegenerate?: (messageId: string) => void;
   onLike?: (messageId: string, like: boolean) => void;
-  onPin?: (messageId: string) => void;
-  onQuote?: (messageId: string, content: string) => void;
   onContinue?: (messageId: string) => void;
   onEdit?: (messageId: string, newContent: string) => void;
   onSelectVariant?: (messageId: string, variantId: string) => void;
@@ -42,8 +34,6 @@ const MessageBubble = ({
   conversationId,
   onCopy,
   onRegenerate,
-  onPin,
-  onQuote,
   onContinue,
   onEdit,
   onSelectVariant,
@@ -575,71 +565,6 @@ const MessageBubble = ({
               </svg>
             </button>
           )}
-
-          {/* Pin */}
-          <button
-            onClick={() => onPin?.(message.id)}
-            className={`p-1.5 rounded hover:bg-muted transition-colors ${
-              message.pinned ? "text-primary" : "text-muted-foreground"
-            }`}
-            title={message.pinned ? "Unpin" : "Pin"}
-          >
-            <svg
-              className="w-4 h-4"
-              fill={message.pinned ? "currentColor" : "none"}
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z"
-              />
-            </svg>
-          </button>
-
-          {/* More actions dropdown */}
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <button
-                className="p-1.5 rounded hover:bg-muted transition-colors"
-                title="More"
-              >
-                <svg
-                  className="w-4 h-4 text-muted-foreground"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M12 5v.01M12 12v.01M12 19v.01M12 6a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2z"
-                  />
-                </svg>
-              </button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="start">
-              <DropdownMenuItem onClick={() => onQuote?.(message.id, content)}>
-                <svg
-                  className="w-4 h-4 mr-2"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z"
-                  />
-                </svg>
-                Quote
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
         </div>
       </div>
 

@@ -3,7 +3,7 @@ import { getCookie } from "../utils/cookie";
 
 const apiClient = axios.create({
   baseURL: import.meta.env.VITE_BACKEND_URL || "http://localhost:3000/api",
-  withCredentials: true,
+  withCredentials: true, // Important: enables cookies (ci cookie for guest ID)
   headers: {
     "Content-Type": "application/json",
   },
@@ -60,6 +60,17 @@ apiClient.interceptors.response.use(
 
     // Handle 401 Unauthorized
     if (error.response?.status === 401 && !originalRequest._retry) {
+      // Check if this is a guest request (no token was sent)
+      const hasToken =
+        getCookie("access_token") || localStorage.getItem("access_token");
+
+      // If no token, this might be a guest request - don't try to refresh
+      if (!hasToken) {
+        // Guest users don't have tokens, so 401 is expected for some endpoints
+        // But chat endpoint should allow guest, so just reject the error
+        return Promise.reject(error);
+      }
+
       if (isRefreshing) {
         // If already refreshing, queue this request
         return new Promise((resolve, reject) => {

@@ -7,11 +7,28 @@ import {
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuSeparator,
-  DropdownMenuSub,
-  DropdownMenuSubContent,
-  DropdownMenuSubTrigger,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import { Input } from "@/components/ui/input";
+import { toast } from "react-toastify";
 import { useNavigate } from "react-router-dom";
 import { useAppDispatch, useAppSelector } from "../../../core/store/hooks";
 import { logout } from "../../auth/store/authSlice";
@@ -25,10 +42,7 @@ import {
   MoreHorizontal,
   Share2,
   Pencil,
-  FolderGit2,
-  Archive,
   Trash2,
-  Pin,
   Sparkles,
   ChevronRight,
   DoorOpen,
@@ -46,15 +60,12 @@ interface SidebarProps {
   onSelectConversation?: (id: string) => void; // Optional - will use from Redux if not provided
   onNewChat: () => void;
   onDeleteConversation?: (id: string) => void;
-  onPinConversation?: (id: string) => void;
   onRenameConversation?: (id: string, title: string) => void;
-  onArchiveConversation?: (id: string) => void;
   onShareConversation?: (id: string) => void;
-  onMoveConversation?: (id: string, project: string) => void;
   isCollapsed?: boolean;
   onToggleCollapse?: () => void;
   userName?: string;
-  plan?: "Free" | "Go"; // Keep for backward compatibility, but will use from store
+  plan?: "free" | "go"; // Keep for backward compatibility, but will use from store
 }
 
 const NewChatIcon = ({ className }: { className?: string }) => (
@@ -77,11 +88,8 @@ const Sidebar = ({
   onSelectConversation: propOnSelectConversation,
   onNewChat,
   onDeleteConversation,
-  onPinConversation,
   onRenameConversation,
-  onArchiveConversation,
   onShareConversation,
-  onMoveConversation,
   isCollapsed = false,
   onToggleCollapse,
   userName: propUserName,
@@ -92,6 +100,13 @@ const Sidebar = ({
   const [isHistoryCollapsed, setIsHistoryCollapsed] = useState(false);
   const [showSearchModal, setShowSearchModal] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
+  const [showRenameDialog, setShowRenameDialog] = useState(false);
+  const [renameConversation, setRenameConversation] =
+    useState<Conversation | null>(null);
+  const [renameValue, setRenameValue] = useState("");
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [deleteConversation, setDeleteConversation] =
+    useState<Conversation | null>(null);
   const navigate = useNavigate();
   const dispatch = useAppDispatch();
 
@@ -117,26 +132,28 @@ const Sidebar = ({
   const getUserPlan = (): "Free" | "Go" => {
     if (user?.plan) {
       // Map backend plan values to frontend display values
+      const planLower = user.plan.toLowerCase();
+      if (planLower === "free") return "Free";
+      if (planLower === "go") return "Go";
+      // Fallback for other plan types
       const planMap: Record<string, "Free" | "Go"> = {
-        free: "Free",
         starter: "Go",
         pro: "Go",
         enterprise: "Go",
       };
-      return planMap[user.plan.toLowerCase()] || "Free";
+      return planMap[planLower] || "Free";
     }
     // Fallback to subscription planName if available
     if (user?.subscription?.planName) {
       const planName = user.subscription.planName.toLowerCase();
       if (planName.includes("free")) return "Free";
-      if (
-        planName.includes("go") ||
-        planName.includes("starter") ||
-        planName.includes("pro")
-      )
-        return "Go";
+      if (planName.includes("go")) return "Go";
     }
-    return propPlan || "Free";
+    // Fallback to prop if provided, otherwise default to "Free"
+    if (propPlan) {
+      return propPlan === "go" ? "Go" : "Free";
+    }
+    return "Free";
   };
 
   const plan = getUserPlan();
@@ -149,48 +166,91 @@ const Sidebar = ({
     return b.updatedAt - a.updatedAt;
   });
 
-  const handleShare = (conversation: Conversation) => {
+  const handleShare = async (conversation: Conversation) => {
+    // Create share URL similar to TopBar
+    const shareUrl = `${window.location.origin}/app/${conversation.id}`;
+
     onShareConversation?.(conversation.id);
+
     if (typeof navigator !== "undefined") {
       if (navigator.share) {
-        navigator
-          .share({
+        try {
+          await navigator.share({
             title: conversation.title,
             text: conversation.title,
-          })
-          .catch(() => {
-            /* no-op */
+            url: shareUrl,
           });
+        } catch (error) {
+          // User cancelled or error occurred, fallback to copy
+          try {
+            await navigator.clipboard.writeText(shareUrl);
+            toast.success("Link copied to clipboard");
+          } catch (err) {
+            toast.error("Failed to copy link");
+          }
+        }
       } else if (navigator.clipboard?.writeText) {
-        navigator.clipboard.writeText(conversation.title).catch(() => {
-          /* no-op */
-        });
+        try {
+          await navigator.clipboard.writeText(shareUrl);
+          toast.success("Link copied to clipboard");
+        } catch (err) {
+          toast.error("Failed to copy link");
+        }
       }
     }
   };
 
   const handleRename = (conversation: Conversation) => {
-    if (!onRenameConversation || typeof window === "undefined") {
+    if (!onRenameConversation) {
       return;
     }
-    const nextTitle = window.prompt("Rename conversation", conversation.title);
-    if (
-      nextTitle &&
-      nextTitle.trim() &&
-      nextTitle.trim() !== conversation.title
-    ) {
-      onRenameConversation(conversation.id, nextTitle.trim());
+    setRenameConversation(conversation);
+    setRenameValue(conversation.title);
+    setShowRenameDialog(true);
+  };
+
+  const handleRenameSubmit = () => {
+    if (!renameConversation || !onRenameConversation) return;
+
+    const trimmedValue = renameValue.trim();
+    if (!trimmedValue) {
+      toast.error("Conversation title cannot be empty");
+      return;
     }
+
+    if (trimmedValue !== renameConversation.title) {
+      onRenameConversation(renameConversation.id, trimmedValue);
+    }
+
+    setShowRenameDialog(false);
+    setRenameConversation(null);
+    setRenameValue("");
   };
 
-  const handleArchive = (conversation: Conversation) => {
-    onArchiveConversation?.(conversation.id);
+  const handleRenameCancel = () => {
+    setShowRenameDialog(false);
+    setRenameConversation(null);
+    setRenameValue("");
   };
 
-  const projectOptions = ["General", "Research", "Product"];
+  const handleDelete = (conversation: Conversation) => {
+    if (!onDeleteConversation) {
+      return;
+    }
+    setDeleteConversation(conversation);
+    setShowDeleteDialog(true);
+  };
 
-  const handleMoveToProject = (conversation: Conversation, project: string) => {
-    onMoveConversation?.(conversation.id, project);
+  const handleDeleteConfirm = () => {
+    if (!deleteConversation || !onDeleteConversation) return;
+    onDeleteConversation(deleteConversation.id);
+    setShowDeleteDialog(false);
+    setDeleteConversation(null);
+  };
+
+  const handleDeleteCancel = () => {
+    setShowDeleteDialog(false);
+    setDeleteConversation(null);
   };
 
   if (isCollapsed && onToggleCollapse) {
@@ -526,7 +586,6 @@ const Sidebar = ({
                               Share
                             </DropdownMenuItem>
                             <DropdownMenuItem
-                              disabled={!onRenameConversation}
                               onSelect={(event) => {
                                 event.stopPropagation();
                                 handleRename(conv);
@@ -536,53 +595,6 @@ const Sidebar = ({
                               <Pencil className="h-4 w-4" />
                               Rename
                             </DropdownMenuItem>
-                            <DropdownMenuSub>
-                              <DropdownMenuSubTrigger
-                                className="cursor-pointer"
-                                disabled={!onMoveConversation}
-                              >
-                                <FolderGit2 className="h-4 w-4" />
-                                Move to project
-                              </DropdownMenuSubTrigger>
-                              <DropdownMenuSubContent className="border border-slate-200 bg-white text-slate-700 dark:border-white/10 dark:bg-[#1f2937] dark:text-slate-200">
-                                {projectOptions.map((project) => (
-                                  <DropdownMenuItem
-                                    key={project}
-                                    disabled={!onMoveConversation}
-                                    onSelect={(event) => {
-                                      event.stopPropagation();
-                                      handleMoveToProject(conv, project);
-                                    }}
-                                    className="cursor-pointer"
-                                  >
-                                    {project}
-                                  </DropdownMenuItem>
-                                ))}
-                              </DropdownMenuSubContent>
-                            </DropdownMenuSub>
-                            {onPinConversation && (
-                              <DropdownMenuItem
-                                onSelect={(event) => {
-                                  event.stopPropagation();
-                                  onPinConversation(conv.id);
-                                }}
-                                className="cursor-pointer"
-                              >
-                                <Pin className="h-4 w-4" />
-                                {conv.pinned ? "Unpin" : "Pin"}
-                              </DropdownMenuItem>
-                            )}
-                            <DropdownMenuItem
-                              disabled={!onArchiveConversation}
-                              onSelect={(event) => {
-                                event.stopPropagation();
-                                handleArchive(conv);
-                              }}
-                              className="cursor-pointer"
-                            >
-                              <Archive className="h-4 w-4" />
-                              Archive
-                            </DropdownMenuItem>
                             {onDeleteConversation && (
                               <>
                                 <DropdownMenuSeparator className="bg-slate-200 dark:bg-white/10" />
@@ -590,13 +602,7 @@ const Sidebar = ({
                                   className="cursor-pointer text-rose-500 focus:text-rose-400 dark:text-rose-400 dark:focus:text-rose-300"
                                   onSelect={(event) => {
                                     event.stopPropagation();
-                                    if (
-                                      window.confirm(
-                                        "Delete this conversation?"
-                                      )
-                                    ) {
-                                      onDeleteConversation(conv.id);
-                                    }
+                                    handleDelete(conv);
                                   }}
                                 >
                                   <Trash2 className="h-4 w-4" />
@@ -630,7 +636,7 @@ const Sidebar = ({
                     {userName}
                   </div>
                   <div className="text-xs text-gray-500 dark:text-gray-400">
-                    {plan === "Go" ? "Plus" : plan}
+                    {plan}
                   </div>
                 </div>
                 <ChevronRight className="h-4 w-4 text-gray-400" />
@@ -936,6 +942,63 @@ const Sidebar = ({
           </div>,
           document.body
         )}
+
+      {/* Rename Dialog */}
+      <Dialog open={showRenameDialog} onOpenChange={setShowRenameDialog}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Rename Conversation</DialogTitle>
+            <DialogDescription>
+              Enter a new name for this conversation.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <Input
+              value={renameValue}
+              onChange={(e) => setRenameValue(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") {
+                  handleRenameSubmit();
+                } else if (e.key === "Escape") {
+                  handleRenameCancel();
+                }
+              }}
+              placeholder="Conversation name"
+              autoFocus
+            />
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={handleRenameCancel}>
+              Cancel
+            </Button>
+            <Button onClick={handleRenameSubmit}>Save</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete Confirmation Dialog */}
+      <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Conversation</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete "{deleteConversation?.title}"?
+              This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={handleDeleteCancel}>
+              Cancel
+            </AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleDeleteConfirm}
+              className="bg-rose-500 hover:bg-rose-600 focus:ring-rose-500"
+            >
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };

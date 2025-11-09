@@ -22,6 +22,7 @@ import { settingsService } from "../../auth/services/settingsService";
 
 interface TopBarProps {
   currentConversation?: Conversation | null;
+  conversationId?: string;
   model?: string;
   tools?: ConversationTools;
   memoryEnabled?: boolean;
@@ -35,6 +36,7 @@ interface TopBarProps {
 
 const TopBar = ({
   model = "GPT-4",
+  conversationId,
   onModelChange,
   onSettings,
 }: TopBarProps) => {
@@ -46,8 +48,13 @@ const TopBar = ({
   const userId = user?.email || user?.id || null;
   const dispatch = useAppDispatch();
   const shareUrl = useMemo(() => {
-    return window.location.origin + "/share";
-  }, []);
+    // If conversation has ID and has messages, share the conversation URL
+    if (conversationId) {
+      return `${window.location.origin}/app/${conversationId}`;
+    }
+    // Otherwise, share the base app URL
+    return `${window.location.origin}/app`;
+  }, [conversationId]);
 
   const handleThemeToggle = () => {
     dispatch(toggleDarkMode());

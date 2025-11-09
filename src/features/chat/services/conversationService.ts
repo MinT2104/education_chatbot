@@ -35,23 +35,32 @@ const mapBackendToFrontend = (backend: BackendConversation): Conversation => {
 };
 
 // Convert frontend format to backend format
+// Only include fields that are explicitly provided (not undefined)
 const mapFrontendToBackend = (frontend: Partial<Conversation>) => {
-  return {
-    title: frontend.title,
-    pinned: frontend.pinned,
-    messages: frontend.messages || [],
-    tools: frontend.tools || {},
-    memory: frontend.memory || { enabled: false },
-    folder_id: frontend.folderId || null,
-    school_name: frontend.schoolName || null,
-    subject: frontend.subject || null,
-  };
+  const backend: any = {};
+
+  // Only include fields that are explicitly provided
+  if (frontend.title !== undefined) backend.title = frontend.title;
+  if (frontend.pinned !== undefined) backend.pinned = frontend.pinned;
+  if (frontend.messages !== undefined) backend.messages = frontend.messages;
+  if (frontend.tools !== undefined) backend.tools = frontend.tools;
+  if (frontend.memory !== undefined) backend.memory = frontend.memory;
+  if (frontend.folderId !== undefined)
+    backend.folder_id = frontend.folderId || null;
+  if (frontend.schoolName !== undefined)
+    backend.school_name = frontend.schoolName || null;
+  if (frontend.subject !== undefined)
+    backend.subject = frontend.subject || null;
+
+  return backend;
 };
 
 export const conversationService = {
   // Get all conversations for the authenticated user
   async getConversations(): Promise<Conversation[]> {
-    const response = await apiClient.get<BackendConversation[]>("/conversation");
+    const response = await apiClient.get<BackendConversation[]>(
+      "/conversation"
+    );
     return response.data.map(mapBackendToFrontend);
   },
 
@@ -93,4 +102,3 @@ export const conversationService = {
     await apiClient.delete(`/conversation/${id}`);
   },
 };
-

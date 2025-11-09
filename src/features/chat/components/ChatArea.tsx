@@ -12,8 +12,6 @@ interface ChatAreaProps {
   onShare?: (messageId: string) => void;
   onRegenerate?: (messageId: string) => void;
   onLike?: (messageId: string, like: boolean) => void;
-  onPin?: (messageId: string) => void;
-  onQuote?: (messageId: string, content: string) => void;
   onContinue?: (messageId: string) => void;
   onEdit?: (messageId: string, newContent: string) => void;
   onSelectVariant?: (messageId: string, variantId: string) => void;
@@ -38,8 +36,6 @@ const ChatArea = ({
   onShare,
   onRegenerate,
   onLike,
-  onPin,
-  onQuote,
   onContinue,
   onEdit,
   onSelectVariant,
@@ -118,8 +114,6 @@ const ChatArea = ({
             onShare={onShare}
             onRegenerate={onRegenerate}
             onLike={onLike}
-            onPin={onPin}
-            onQuote={onQuote}
             onContinue={onContinue}
             onEdit={onEdit}
             onSelectVariant={onSelectVariant}

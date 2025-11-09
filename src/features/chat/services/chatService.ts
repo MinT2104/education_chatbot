@@ -5,6 +5,7 @@ export const chatService = {
   async createChat(data: {
     userInput: string
     conversationId?: string
+    // sessionId removed - backend handles via cookie
     previousChat?: any[]
     chatHistoryId?: string | null
     chatType?: string

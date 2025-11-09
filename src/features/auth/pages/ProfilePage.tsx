@@ -17,11 +17,33 @@ const ProfilePage = () => {
   }, [])
 
   const handleUpgrade = () => navigate('/upgrade')
-  const handleCancel = () => {
-    if (confirm('Cancel subscription and switch to Free?')) {
-      localStorage.setItem('plan', 'Free')
-      // keep used, enforce limit 25
-      setPlan('Free')
+  const handleCancel = async () => {
+    if (!confirm('Cancel subscription and switch to Free?')) {
+      return;
+    }
+    
+    try {
+      // Call backend API to cancel subscription
+      const response = await fetch('/api/payment/cancel', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('access_token') || ''}`,
+          'Content-Type': 'application/json',
+        },
+        credentials: 'include',
+      });
+      
+      if (response.ok) {
+        localStorage.setItem('plan', 'Free')
+        setPlan('Free')
+        // Refresh page to update plan
+        window.location.reload();
+      } else {
+        alert('Failed to cancel subscription. Please try again.');
+      }
+    } catch (error) {
+      console.error('Error cancelling subscription:', error);
+      alert('Failed to cancel subscription. Please try again.');
     }
   }
 

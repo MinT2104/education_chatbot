@@ -14,10 +14,14 @@ const CoursePlayerPage = lazy(
 );
 const AdminPage = lazy(() => import("../../features/admin/pages/AdminPage"));
 const UpgradePage = lazy(() => import("../../features/auth/pages/UpgradePage"));
+const PaymentPage = lazy(() => import("../../features/payment/pages/PaymentPage"));
+const PaymentSuccessPage = lazy(() => import("../../features/payment/pages/PaymentSuccessPage"));
+const PaymentCancelPage = lazy(() => import("../../features/payment/pages/PaymentCancelPage"));
 const ProfilePage = lazy(() => import("../../features/auth/pages/ProfilePage"));
 const SettingsPage = lazy(() => import("../../features/auth/pages/SettingsPage"));
 const FaqPage = lazy(() => import("../../features/misc/pages/FaqPage"));
 const LibraryPage = lazy(() => import("../../features/library/pages/LibraryPage"));
+const GoogleCallbackPage = lazy(() => import("../../features/auth/pages/GoogleCallbackPage"));
 
 export interface AppRoute {
   path: string;
@@ -39,21 +43,29 @@ export const routes: AppRoute[] = [
   {
     path: "/app",
     component: ChatPage,
-    protected: true,
   },
   {
-    path: "/app/:historyId",
+    path: "/app/:id",
     component: ChatPage,
-    protected: true,
   },
   {
     path: "/upgrade",
-    component: UpgradePage,
+    component: PaymentPage,
     protected: true,
   },
   {
     path: "/subscription",
-    component: UpgradePage,
+    component: PaymentPage,
+    protected: true,
+  },
+  {
+    path: "/payment/success",
+    component: PaymentSuccessPage,
+    protected: true,
+  },
+  {
+    path: "/payment/cancel",
+    component: PaymentCancelPage,
     protected: true,
   },
   {
@@ -108,5 +120,9 @@ export const routes: AppRoute[] = [
   {
     path: "/admin/*",
     component: AdminPage,
+  },
+  {
+    path: "/auth/google/callback",
+    component: GoogleCallbackPage,
   },
 ];
