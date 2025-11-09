@@ -1,5 +1,5 @@
 import apiClient from '../../../core/api/axios'
-import type { ChatMessage, ChatHistory } from '../types'
+import type { ChatHistory } from '../types'
 
 export const chatService = {
   async createChat(data: {

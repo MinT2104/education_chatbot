@@ -5,15 +5,13 @@ import {
   FileText,
   Users,
   CreditCard,
-  Settings2,
 } from "lucide-react";
 
 interface AdminTabsProps {
-  activeTab: string;
   onTabChange: (value: string) => void;
 }
 
-export const AdminTabs = ({ activeTab, onTabChange }: AdminTabsProps) => {
+export const AdminTabs = ({ onTabChange }: AdminTabsProps) => {
   return (
     <TabsList className="flex flex-wrap gap-2 mb-8">
       <TabsTrigger

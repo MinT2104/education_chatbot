@@ -1,10 +1,6 @@
 import { useState, useEffect } from "react";
 import { Tabs, TabsContent } from "@/components/ui/tabs";
-import {
-  mockDocuments,
-  mockStatistics,
-  mockHomeContent,
-} from "../data/mockData";
+import { mockDocuments, mockHomeContent } from "../data/mockData";
 import { Document as DocumentType, HomePageContent } from "../types";
 import { AdminHeader } from "../components/AdminHeader";
 import { AdminTabs } from "../components/AdminTabs";
@@ -14,38 +10,30 @@ import { AdminOrders } from "../components/orders/AdminOrders";
 import { AdminDocuments } from "../components/documents/AdminDocuments";
 import { AdminSchools } from "../components/schools/AdminSchools";
 import { AdminContent } from "../components/content/AdminContent";
-import { adminService } from "../services/adminService";
+import { adminService, School } from "../services/adminService";
 
 const AdminPage = () => {
   const [activeTab, setActiveTab] = useState("dashboard");
   const [documents] = useState<DocumentType[]>(mockDocuments);
   const [homeContent, setHomeContent] =
     useState<HomePageContent>(mockHomeContent);
-  const [stats, setStats] = useState(mockStatistics);
   const [users, setUsers] = useState<any[]>([]);
   const [orders, setOrders] = useState<any[]>([]);
+  const [schools, setSchools] = useState<School[]>([]);
 
   useEffect(() => {
     // Load real data for dashboard
     const loadDashboardData = async () => {
       try {
-        const [usersData, subscriptionsData] = await Promise.all([
+        const [usersData, subscriptionsData, schoolsData] = await Promise.all([
           adminService.getAllUsers(),
           adminService.getAllSubscriptions(),
+          adminService.getAllSchools(),
         ]);
 
         setUsers(usersData);
         setOrders(subscriptionsData.subscriptions || []);
-
-        // Update stats with real data
-        setStats({
-          ...mockStatistics,
-          totalUsers: usersData.length,
-          activeSubscriptions:
-            subscriptionsData.subscriptions?.filter(
-              (s) => s.status === "active"
-            ).length || 0,
-        });
+        setSchools(Array.isArray(schoolsData) ? schoolsData : []);
       } catch (error) {
         console.error("Failed to load dashboard data:", error);
       }
@@ -62,14 +50,14 @@ const AdminPage = () => {
 
       <main className="container mx-auto px-6 py-8">
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-          <AdminTabs activeTab={activeTab} onTabChange={setActiveTab} />
+          <AdminTabs onTabChange={setActiveTab} />
 
           <TabsContent value="dashboard" className="space-y-6">
             <AdminDashboard
-              stats={stats}
               documents={documents}
               users={users}
               orders={orders}
+              schools={schools}
             />
           </TabsContent>
 

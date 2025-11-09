@@ -6,8 +6,7 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import { UserCircle, ShieldCheck, Settings2, RefreshCcw } from "lucide-react";
+import { UserCircle, ShieldCheck } from "lucide-react";
 import { AdminUser } from "../../services/adminService";
 
 interface UserDetailPanelProps {

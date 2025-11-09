@@ -17,8 +17,10 @@ const MainLayout = ({ children }: MainLayoutProps) => {
     string | null
   >(null);
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
-  const [plan] = useState<"Free" | "Go">(
-    (localStorage.getItem("plan") as any) || "Free"
+  const [plan] = useState<"free" | "go">(
+    ((localStorage.getItem("plan") as any) || "free").toLowerCase() as
+      | "free"
+      | "go"
   );
 
   // Load conversations only if user is authenticated
@@ -58,14 +60,6 @@ const MainLayout = ({ children }: MainLayoutProps) => {
     }
   };
 
-  const handlePinConversation = (id: string) => {
-    setConversations((prev) =>
-      prev.map((conv) =>
-        conv.id === id ? { ...conv, pinned: !conv.pinned } : conv
-      )
-    );
-  };
-
   return (
     <div className="h-screen flex flex-col bg-background overflow-hidden">
       <div className="flex flex-1 overflow-hidden relative">
@@ -94,7 +88,6 @@ const MainLayout = ({ children }: MainLayoutProps) => {
                 }
               }}
               onDeleteConversation={handleDeleteConversation}
-              onPinConversation={handlePinConversation}
               isCollapsed={isSidebarCollapsed}
               onToggleCollapse={() =>
                 setIsSidebarCollapsed(!isSidebarCollapsed)

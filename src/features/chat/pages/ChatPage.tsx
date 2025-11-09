@@ -871,40 +871,6 @@ const ChatPage = () => {
     setMemoryEnabled((prev) => !prev);
   };
 
-  const handleClearAllCache = () => {
-    // Clear all user-related localStorage
-    localStorage.removeItem("edu_chat_session");
-    localStorage.removeItem("edu_chat_remember_school");
-    localStorage.removeItem("conversations");
-    localStorage.removeItem("mock_users");
-    localStorage.removeItem("access_token");
-    localStorage.removeItem("refresh_token");
-    localStorage.removeItem("mock_user_email");
-    localStorage.removeItem("plan");
-    localStorage.removeItem("quota_used");
-
-    // Clear all user-related sessionStorage
-    const email = user?.email || localStorage.getItem("mock_user_email");
-    if (email) {
-      sessionStorage.removeItem(`user_settings_${email}`);
-    }
-    sessionStorage.removeItem("user_settings_guest");
-
-    // Clear all sessionStorage keys that start with 'user_settings_'
-    Object.keys(sessionStorage).forEach((key) => {
-      if (key.startsWith("user_settings_")) {
-        sessionStorage.removeItem(key);
-      }
-    });
-
-    toast.success("All cache cleared! Page will reload.");
-
-    // Clear Redux state by reloading page
-    setTimeout(() => {
-      window.location.reload();
-    }, 500);
-  };
-
   return (
     <div className="h-screen flex flex-col bg-background overflow-hidden">
       {/* Global Error States */}

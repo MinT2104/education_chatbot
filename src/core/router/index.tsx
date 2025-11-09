@@ -13,7 +13,6 @@ const CoursePlayerPage = lazy(
   () => import("../../features/courses/pages/CoursePlayerPage")
 );
 const AdminPage = lazy(() => import("../../features/admin/pages/AdminPage"));
-const UpgradePage = lazy(() => import("../../features/auth/pages/UpgradePage"));
 const PaymentPage = lazy(() => import("../../features/payment/pages/PaymentPage"));
 const PaymentSuccessPage = lazy(() => import("../../features/payment/pages/PaymentSuccessPage"));
 const PaymentCancelPage = lazy(() => import("../../features/payment/pages/PaymentCancelPage"));
