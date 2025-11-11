@@ -1,5 +1,12 @@
 import { useState, useRef, useEffect, KeyboardEvent } from "react";
 import { Button } from "@/components/ui/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 
 interface ComposerProps {
   onSend: (message: string) => void;
@@ -37,11 +44,13 @@ const Composer = ({
   const [internalRole, setInternalRole] = useState<"student" | "teacher">(
     "student"
   );
+  const [modeDialogOpen, setModeDialogOpen] = useState(false);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   // Use external role if provided, otherwise use internal state
   const role = externalRole !== undefined ? externalRole : internalRole;
   const handleRoleChange = (newRole: "student" | "teacher") => {
+    setModeDialogOpen(true);
     if (onRoleChange) {
       onRoleChange(newRole);
     } else {
@@ -131,100 +140,101 @@ const Composer = ({
       : placeholder;
 
   return (
-    <div className="bg-background/50 backdrop-blur-sm relative">
-      {/* Context Chips */}
-      {(tools?.web || tools?.code || tools?.vision || memoryEnabled) && (
-        <div className="mx-auto max-w-[900px] px-4 pt-2">
-          <div className="flex items-center gap-2 flex-wrap">
-            {tools?.web && (
-              <div className="px-2 py-1 rounded-full bg-primary/10 text-primary text-xs font-medium flex items-center gap-1">
-                <svg
-                  className="w-3 h-3"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9m-9 9a9 9 0 019-9"
-                  />
-                </svg>
-                Web
-              </div>
-            )}
-            {tools?.code && (
-              <div className="px-2 py-1 rounded-full bg-primary/10 text-primary text-xs font-medium flex items-center gap-1">
-                <svg
-                  className="w-3 h-3"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4"
-                  />
-                </svg>
-                Code
-              </div>
-            )}
-            {tools?.vision && (
-              <div className="px-2 py-1 rounded-full bg-primary/10 text-primary text-xs font-medium flex items-center gap-1">
-                <svg
-                  className="w-3 h-3"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
-                  />
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"
-                  />
-                </svg>
-                Vision
-              </div>
-            )}
-            {memoryEnabled && (
-              <div className="px-2 py-1 rounded-full bg-primary/10 text-primary text-xs font-medium flex items-center gap-1">
-                <svg
-                  className="w-3 h-3"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M9 3v2m6-2v2M9 19v2m6-2v2M5 9H3m2 6H3m18-6h-2m2 6h-2M7 19h10a2 2 0 002-2V7a2 2 0 00-2-2H7a2 2 0 00-2 2v10a2 2 0 002 2zM9 9h6v6H9V9z"
-                  />
-                </svg>
-                Memory
-              </div>
-            )}
+    <>
+      <div className="bg-background/50 backdrop-blur-sm relative">
+        {/* Context Chips */}
+        {(tools?.web || tools?.code || tools?.vision || memoryEnabled) && (
+          <div className="mx-auto max-w-[900px] px-4 pt-2">
+            <div className="flex items-center gap-2 flex-wrap">
+              {tools?.web && (
+                <div className="px-2 py-1 rounded-full bg-primary/10 text-primary text-xs font-medium flex items-center gap-1">
+                  <svg
+                    className="w-3 h-3"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9m-9 9a9 9 0 019-9"
+                    />
+                  </svg>
+                  Web
+                </div>
+              )}
+              {tools?.code && (
+                <div className="px-2 py-1 rounded-full bg-primary/10 text-primary text-xs font-medium flex items-center gap-1">
+                  <svg
+                    className="w-3 h-3"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4"
+                    />
+                  </svg>
+                  Code
+                </div>
+              )}
+              {tools?.vision && (
+                <div className="px-2 py-1 rounded-full bg-primary/10 text-primary text-xs font-medium flex items-center gap-1">
+                  <svg
+                    className="w-3 h-3"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
+                    />
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"
+                    />
+                  </svg>
+                  Vision
+                </div>
+              )}
+              {memoryEnabled && (
+                <div className="px-2 py-1 rounded-full bg-primary/10 text-primary text-xs font-medium flex items-center gap-1">
+                  <svg
+                    className="w-3 h-3"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M9 3v2m6-2v2M9 19v2m6-2v2M5 9H3m2 6H3m18-6h-2m2 6h-2M7 19h10a2 2 0 002-2V7a2 2 0 00-2-2H7a2 2 0 00-2 2v10a2 2 0 002 2zM9 9h6v6H9V9z"
+                    />
+                  </svg>
+                  Memory
+                </div>
+              )}
+            </div>
           </div>
-        </div>
-      )}
+        )}
 
-      <div
-        className={`mx-auto max-w-[900px] px-4 ${
-          compact ? "pt-0 pb-2" : "py-4"
-        } relative`}
-      >
-        {/* Quick suggestions row - hidden when compact (empty state) */}
-        {/* {!hasAnyVisibleCharacter && !isStreaming && !compact && (
+        <div
+          className={`mx-auto max-w-[900px] px-4 ${
+            compact ? "pt-0 pb-2" : "py-4"
+          } relative`}
+        >
+          {/* Quick suggestions row - hidden when compact (empty state) */}
+          {/* {!hasAnyVisibleCharacter && !isStreaming && !compact && (
           <div className="mb-2 flex flex-wrap items-center gap-2">
             {[
               "Summarize this article",
@@ -248,55 +258,55 @@ const Composer = ({
           </div>
         )} */}
 
-        <div className="flex items-center gap-2">
-          {/* New Chat button - only visible when compact (no messages) */}
-          {onNewChat && compact && (
-            <Button
-              onClick={onNewChat}
-              variant="ghost"
-              size="icon"
-              className="h-8 w-8 rounded-full border border-border bg-background hover:bg-muted shrink-0 focus:outline-none focus:ring-0 focus-visible:ring-0"
-              aria-label="New chat"
-            >
-              <svg
-                className="w-4 h-4"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
+          <div className="flex items-center gap-2">
+            {/* New Chat button - only visible when compact (no messages) */}
+            {onNewChat && compact && (
+              <Button
+                onClick={onNewChat}
+                variant="ghost"
+                size="icon"
+                className="h-8 w-8 rounded-full border border-border bg-background hover:bg-muted shrink-0 focus:outline-none focus:ring-0 focus-visible:ring-0"
+                aria-label="New chat"
               >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M12 4v16m8-8H4"
-                />
-              </svg>
-            </Button>
-          )}
-          {/* Textarea container with inline actions */}
-          <div className="flex-1 relative flex items-center">
-            <textarea
-              ref={textareaRef}
-              value={input}
-              onChange={(e) => setInput(e.target.value)}
-              onKeyDown={handleKeyDown}
-              onCompositionStart={handleCompositionStart}
-              onCompositionEnd={handleCompositionEnd}
-              placeholder={roleBasedPlaceholder}
-              disabled={disabled || isStreaming}
-              rows={1}
-              className={`w-full ${
-                compact ? "px-3 py-3 pr-48" : "px-4 py-5 pr-52"
-              } bg-muted/50 border border-border rounded-2xl resize-none focus:outline-none focus:ring-0 focus:border-border disabled:opacity-50 disabled:cursor-not-allowed max-h-[320px] overflow-y-auto transition-all`}
-              style={{
-                minHeight: compact ? "56px" : "112px",
-                height: compact && !input.trim() ? "56px" : "auto",
-              }}
-            />
-            {/* Left dock: camera, attach, and school chip pinned to bottom-left - hidden when compact */}
-            {!compact && (
-              <div className="absolute left-2 bottom-2 flex items-center gap-1.5">
-                {/* <Button
+                <svg
+                  className="w-4 h-4"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M12 4v16m8-8H4"
+                  />
+                </svg>
+              </Button>
+            )}
+            {/* Textarea container with inline actions */}
+            <div className="flex-1 relative flex items-center">
+              <textarea
+                ref={textareaRef}
+                value={input}
+                onChange={(e) => setInput(e.target.value)}
+                onKeyDown={handleKeyDown}
+                onCompositionStart={handleCompositionStart}
+                onCompositionEnd={handleCompositionEnd}
+                placeholder={roleBasedPlaceholder}
+                disabled={disabled || isStreaming}
+                rows={1}
+                className={`w-full ${
+                  compact ? "px-3 py-3 pr-48" : "px-4 py-5 pr-52"
+                } bg-muted/50 border border-border rounded-2xl resize-none focus:outline-none focus:ring-0 focus:border-border disabled:opacity-50 disabled:cursor-not-allowed max-h-[320px] overflow-y-auto transition-all`}
+                style={{
+                  minHeight: compact ? "56px" : "112px",
+                  height: compact && !input.trim() ? "56px" : "auto",
+                }}
+              />
+              {/* Left dock: camera, attach, and school chip pinned to bottom-left - hidden when compact */}
+              {!compact && (
+                <div className="absolute left-2 bottom-2 flex items-center gap-1.5">
+                  {/* <Button
                   variant="ghost"
                   size="icon"
                   className="h-8 w-8 rounded-full border border-border bg-background hover:bg-muted focus:outline-none focus:ring-0 focus-visible:ring-0"
@@ -317,7 +327,7 @@ const Composer = ({
                     <circle cx="12" cy="13" r="4" />
                   </svg>
                 </Button> */}
-                {/* <Button
+                  {/* <Button
                   variant="ghost"
                   size="icon"
                   className="h-8 w-8 rounded-full border border-border bg-background hover:bg-muted focus:outline-none focus:ring-0 focus-visible:ring-0"
@@ -338,196 +348,222 @@ const Composer = ({
                     <path d="m16 6-8.414 8.586a2 2 0 0 0 2.829 2.829l8.414-8.586a4 4 0 1 0-5.657-5.657l-8.379 8.551a6 6 0 1 0 8.485 8.485l8.379-8.551" />
                   </svg>
                 </Button> */}
-                {schoolName && (
-                  <div className="ml-1 px-2 py-1 rounded-md bg-background border border-border text-[11px] leading-none text-muted-foreground max-w-[160px] truncate">
-                    {schoolName}
-                  </div>
-                )}
-              </div>
-            )}
+                  {schoolName && (
+                    <div className="ml-1 px-2 py-1 rounded-md bg-background border border-border text-[11px] leading-none text-muted-foreground max-w-[160px] truncate">
+                      {schoolName}
+                    </div>
+                  )}
+                </div>
+              )}
 
-            {/* Inline controls - center when compact, bottom-right when normal */}
-            {compact ? (
-              <div className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center gap-2">
-                {/* Role toggle button with sliding background */}
-                <button
-                  type="button"
-                  onClick={() =>
-                    handleRoleChange(role === "student" ? "teacher" : "student")
-                  }
-                  className="relative px-1 py-1 rounded-md bg-muted/50 border border-border hover:bg-muted transition-colors focus:outline-none focus:ring-0 text-[10px] font-medium leading-tight overflow-hidden"
-                  aria-label="Toggle role"
-                >
-                  {/* Sliding background */}
-                  <span
-                    className={`absolute inset-y-1 rounded transition-all duration-300 ease-in-out bg-black ${
-                      role === "student"
-                        ? "left-1 right-1/2"
-                        : "left-1/2 right-1"
-                    }`}
-                  />
-                  <div className="relative flex items-center gap-1">
+              {/* Inline controls - center when compact, bottom-right when normal */}
+              {compact ? (
+                <div className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center gap-2">
+                  {/* Role toggle button with sliding background */}
+                  <button
+                    type="button"
+                    onClick={() =>
+                      handleRoleChange(
+                        role === "student" ? "teacher" : "student"
+                      )
+                    }
+                    className="relative px-1 py-1 rounded-md bg-muted/50 border border-border hover:bg-muted transition-colors focus:outline-none focus:ring-0 text-[10px] font-medium leading-tight overflow-hidden"
+                    aria-label="Toggle role"
+                  >
+                    {/* Sliding background */}
                     <span
-                      className={`px-2 py-0.5 rounded transition-colors duration-300 ${
+                      className={`absolute inset-y-1 rounded transition-all duration-300 ease-in-out bg-black ${
                         role === "student"
-                          ? "text-white font-semibold"
-                          : "text-muted-foreground"
+                          ? "left-1 right-1/2"
+                          : "left-1/2 right-1"
                       }`}
-                    >
-                      Student
-                    </span>
-                    <span
-                      className={`px-2 py-0.5 rounded transition-colors duration-300 ${
-                        role === "teacher"
-                          ? "text-white font-semibold"
-                          : "text-muted-foreground"
-                      }`}
-                    >
-                      Teacher
-                    </span>
-                  </div>
-                </button>
+                    />
+                    <div className="relative flex items-center gap-1">
+                      <span
+                        className={`px-2 py-0.5 rounded transition-colors duration-300 ${
+                          role === "student"
+                            ? "text-white font-semibold"
+                            : "text-muted-foreground"
+                        }`}
+                      >
+                        Student
+                      </span>
+                      <span
+                        className={`px-2 py-0.5 rounded transition-colors duration-300 ${
+                          role === "teacher"
+                            ? "text-white font-semibold"
+                            : "text-muted-foreground"
+                        }`}
+                      >
+                        Teacher
+                      </span>
+                    </div>
+                  </button>
 
-                {/* Send/Stop button inside input */}
-                {isStreaming && onStop ? (
-                  <Button
-                    onClick={onStop}
-                    variant="destructive"
-                    size="icon"
-                    className="h-9 w-9 rounded-full"
-                    aria-label="Stop generating"
-                  >
-                    <svg
-                      className="w-4 h-4"
-                      fill="currentColor"
-                      viewBox="0 0 24 24"
+                  {/* Send/Stop button inside input */}
+                  {isStreaming && onStop ? (
+                    <Button
+                      onClick={onStop}
+                      variant="destructive"
+                      size="icon"
+                      className="h-9 w-9 rounded-full"
+                      aria-label="Stop generating"
                     >
-                      <path d="M6 6h12v12H6z" />
-                    </svg>
-                  </Button>
-                ) : (
-                  <Button
-                    onClick={handleSend}
-                    disabled={!hasAnyVisibleCharacter || disabled}
-                    size="icon"
-                    className="h-9 w-9 rounded-lg bg-black text-white hover:bg-black/90 disabled:opacity-50"
-                    aria-label="Send message"
-                  >
-                    <svg
-                      className="w-4 h-4"
-                      fill="none"
-                      stroke="currentColor"
-                      viewBox="0 0 24 24"
+                      <svg
+                        className="w-4 h-4"
+                        fill="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path d="M6 6h12v12H6z" />
+                      </svg>
+                    </Button>
+                  ) : (
+                    <Button
+                      onClick={handleSend}
+                      disabled={!hasAnyVisibleCharacter || disabled}
+                      size="icon"
+                      className="h-9 w-9 rounded-lg bg-black text-white hover:bg-black/90 disabled:opacity-50"
+                      aria-label="Send message"
                     >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M12 19V5"
-                      />
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="m5 12 7-7 7 7"
-                      />
-                    </svg>
-                  </Button>
-                )}
-              </div>
-            ) : (
-              <div className="absolute right-2 bottom-2 flex items-center gap-2">
-                {/* Role toggle button with sliding background */}
-                <button
-                  type="button"
-                  onClick={() =>
-                    handleRoleChange(role === "student" ? "teacher" : "student")
-                  }
-                  className="relative px-1 py-1 rounded-md bg-muted/50 border border-border hover:bg-muted transition-colors focus:outline-none focus:ring-0 text-[10px] font-medium leading-tight overflow-hidden"
-                  aria-label="Toggle role"
-                >
-                  {/* Sliding background */}
-                  <span
-                    className={`absolute inset-y-1 rounded transition-all duration-300 ease-in-out bg-black ${
-                      role === "student"
-                        ? "left-1 right-1/2"
-                        : "left-1/2 right-1"
-                    }`}
-                  />
-                  <div className="relative flex items-center gap-1">
+                      <svg
+                        className="w-4 h-4"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M12 19V5"
+                        />
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="m5 12 7-7 7 7"
+                        />
+                      </svg>
+                    </Button>
+                  )}
+                </div>
+              ) : (
+                <div className="absolute right-2 bottom-2 flex items-center gap-2">
+                  {/* Role toggle button with sliding background */}
+                  <button
+                    type="button"
+                    onClick={() =>
+                      handleRoleChange(
+                        role === "student" ? "teacher" : "student"
+                      )
+                    }
+                    className="relative px-1 py-1 rounded-md bg-muted/50 border border-border hover:bg-muted transition-colors focus:outline-none focus:ring-0 text-[10px] font-medium leading-tight overflow-hidden"
+                    aria-label="Toggle role"
+                  >
+                    {/* Sliding background */}
                     <span
-                      className={`px-2 py-0.5 rounded transition-colors duration-300 ${
+                      className={`absolute inset-y-1 rounded transition-all duration-300 ease-in-out bg-black ${
                         role === "student"
-                          ? "text-white font-semibold"
-                          : "text-muted-foreground"
+                          ? "left-1 right-1/2"
+                          : "left-1/2 right-1"
                       }`}
-                    >
-                      Student
-                    </span>
-                    <span
-                      className={`px-2 py-0.5 rounded transition-colors duration-300 ${
-                        role === "teacher"
-                          ? "text-white font-semibold"
-                          : "text-muted-foreground"
-                      }`}
-                    >
-                      Teacher
-                    </span>
-                  </div>
-                </button>
+                    />
+                    <div className="relative flex items-center gap-1">
+                      <span
+                        className={`px-2 py-0.5 rounded transition-colors duration-300 ${
+                          role === "student"
+                            ? "text-white font-semibold"
+                            : "text-muted-foreground"
+                        }`}
+                      >
+                        Student
+                      </span>
+                      <span
+                        className={`px-2 py-0.5 rounded transition-colors duration-300 ${
+                          role === "teacher"
+                            ? "text-white font-semibold"
+                            : "text-muted-foreground"
+                        }`}
+                      >
+                        Teacher
+                      </span>
+                    </div>
+                  </button>
 
-                {/* Send/Stop button inside input */}
-                {isStreaming && onStop ? (
-                  <Button
-                    onClick={onStop}
-                    variant="destructive"
-                    size="icon"
-                    className="h-9 w-9 rounded-full"
-                    aria-label="Stop generating"
-                  >
-                    <svg
-                      className="w-4 h-4"
-                      fill="currentColor"
-                      viewBox="0 0 24 24"
+                  {/* Send/Stop button inside input */}
+                  {isStreaming && onStop ? (
+                    <Button
+                      onClick={onStop}
+                      variant="destructive"
+                      size="icon"
+                      className="h-9 w-9 rounded-full"
+                      aria-label="Stop generating"
                     >
-                      <path d="M6 6h12v12H6z" />
-                    </svg>
-                  </Button>
-                ) : (
-                  <Button
-                    onClick={handleSend}
-                    disabled={!hasAnyVisibleCharacter || disabled}
-                    size="icon"
-                    className="h-9 w-9 rounded-lg bg-black text-white hover:bg-black/90 disabled:opacity-50"
-                    aria-label="Send message"
-                  >
-                    <svg
-                      className="w-4 h-4"
-                      fill="none"
-                      stroke="currentColor"
-                      viewBox="0 0 24 24"
+                      <svg
+                        className="w-4 h-4"
+                        fill="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path d="M6 6h12v12H6z" />
+                      </svg>
+                    </Button>
+                  ) : (
+                    <Button
+                      onClick={handleSend}
+                      disabled={!hasAnyVisibleCharacter || disabled}
+                      size="icon"
+                      className="h-9 w-9 rounded-lg bg-black text-white hover:bg-black/90 disabled:opacity-50"
+                      aria-label="Send message"
                     >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M12 19V5"
-                      />
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="m5 12 7-7 7 7"
-                      />
-                    </svg>
-                  </Button>
-                )}
-              </div>
-            )}
+                      <svg
+                        className="w-4 h-4"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M12 19V5"
+                        />
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="m5 12 7-7 7 7"
+                        />
+                      </svg>
+                    </Button>
+                  )}
+                </div>
+              )}
+            </div>
           </div>
         </div>
       </div>
-    </div>
+      <Dialog open={modeDialogOpen} onOpenChange={setModeDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>
+              {role === "teacher"
+                ? "You’re now in Teacher mode."
+                : "You’re now using the chatbot in Student mode."}
+            </DialogTitle>
+            <DialogDescription>
+              {role === "teacher"
+                ? "I’ll provide classroom resources, activity ideas, and teaching insights designed for educators."
+                : "Responses will focus on learning support, explanations, and study guidance."}
+            </DialogDescription>
+          </DialogHeader>
+          <div className="mt-4">
+            <Button className="w-full" onClick={() => setModeDialogOpen(false)}>
+              Got it
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+    </>
   );
 };
 

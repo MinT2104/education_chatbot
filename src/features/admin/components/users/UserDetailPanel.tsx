@@ -7,13 +7,35 @@ import {
 } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { UserCircle, ShieldCheck } from "lucide-react";
-import { AdminUser } from "../../services/adminService";
+import { AdminUser, adminService } from "../../services/adminService";
+import { useEffect, useState } from "react";
 
 interface UserDetailPanelProps {
   user: AdminUser | null;
 }
 
 export const UserDetailPanel = ({ user }: UserDetailPanelProps) => {
+  const [logs, setLogs] = useState<any[]>([]);
+  const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    const fetchLogs = async () => {
+      if (!user?.id) {
+        setLogs([]);
+        return;
+      }
+      try {
+        setLoading(true);
+        const res = await adminService.getUserLogs(user.id, { limit: 20 });
+        setLogs(res.logs || []);
+      } catch (e) {
+        setLogs([]);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchLogs();
+  }, [user?.id]);
   if (!user) {
     return (
       <Card className="h-full">
@@ -101,6 +123,42 @@ export const UserDetailPanel = ({ user }: UserDetailPanelProps) => {
               )}
             </>
           )}
+        </div>
+
+        <div className="space-y-2">
+          <div className="flex items-center justify-between">
+            <h4 className="text-sm font-medium">Recent Activity</h4>
+            {!loading && (
+              <span className="text-xs text-muted-foreground">
+                {logs.length} items
+              </span>
+            )}
+          </div>
+          <div className="rounded-lg border border-border">
+            <div className="max-h-64 overflow-y-auto divide-y divide-border">
+              {loading ? (
+                <div className="p-4 text-sm text-muted-foreground">Loading...</div>
+              ) : logs.length === 0 ? (
+                <div className="p-4 text-sm text-muted-foreground">No activity yet</div>
+              ) : (
+                logs.map((log, idx) => (
+                  <div key={idx} className="p-3 text-xs flex items-center justify-between gap-3">
+                    <div className="flex-1 min-w-0">
+                      <div className="font-medium">{log.type}</div>
+                      {log.metadata && (
+                        <div className="text-muted-foreground truncate">
+                          {JSON.stringify(log.metadata)}
+                        </div>
+                      )}
+                    </div>
+                    <div className="text-right text-muted-foreground min-w-[140px]">
+                      {new Date(log.created_at).toLocaleString()}
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
+          </div>
         </div>
       </CardContent>
     </Card>

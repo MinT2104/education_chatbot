@@ -35,7 +35,7 @@ interface TopBarProps {
 }
 
 const TopBar = ({
-  model = "EduBot 1",
+  model = "Government School",
   conversationId,
   onModelChange,
   onSettings,
@@ -108,16 +108,31 @@ const TopBar = ({
               className="w-56 shadow-xl rounded-lg border border-border/50 p-1 bg-popover backdrop-blur-sm"
             >
               <DropdownMenuItem
-                key="EduBot 1"
-                onClick={() => onModelChange?.("EduBot 1")}
+                key="Government School"
+                onClick={() => onModelChange?.("Government School")}
                 className={cn(
                   "flex flex-col items-start py-2.5 px-3.5 cursor-pointer rounded-md transition-colors",
-                  model === "EduBot 1"
+                  model === "Government School"
                     ? "bg-accent text-accent-foreground"
                     : "hover:bg-muted/70"
                 )}
               >
-                <span className="font-medium">EduBot 1</span>
+                <span className="font-medium">Government School</span>
+                <span className="text-xs text-muted-foreground">
+                  Fast, multimodal, balanced accuracy
+                </span>
+              </DropdownMenuItem>
+              <DropdownMenuItem
+                key="Private School"
+                onClick={() => onModelChange?.("Private School")}
+                className={cn(
+                  "flex flex-col items-start py-2.5 px-3.5 cursor-pointer rounded-md transition-colors",
+                  model === "Private School"
+                    ? "bg-accent text-accent-foreground"
+                    : "hover:bg-muted/70"
+                )}
+              >
+                <span className="font-medium">Private School</span>
                 <span className="text-xs text-muted-foreground">
                   Fast, multimodal, balanced accuracy
                 </span>

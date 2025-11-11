@@ -29,6 +29,7 @@ import {
 import { Search, Plus, Edit, Trash2, Loader2 } from "lucide-react";
 import { adminService, School } from "../../services/adminService";
 import { toast } from "react-toastify";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 export const AdminSchools = () => {
   const [schoolSearch, setSchoolSearch] = useState("");
@@ -44,6 +45,11 @@ export const AdminSchools = () => {
     name: "",
     address: "",
     country: "",
+    state: "",
+    city: "",
+    schoolBoard: "",
+    languages: [] as string[],
+    category: "government",
   });
 
   useEffect(() => {
@@ -86,10 +92,15 @@ export const AdminSchools = () => {
         name: formData.name.trim(),
         address: formData.address.trim() || undefined,
         country: formData.country.trim() || undefined,
+        state: formData.state.trim() || undefined,
+        city: formData.city.trim() || undefined,
+        schoolBoard: formData.schoolBoard.trim() || undefined,
+        languages: formData.languages,
+        category: formData.category as any,
       });
       toast.success("School created successfully");
       setIsAddSchoolOpen(false);
-      setFormData({ name: "", address: "", country: "" });
+      setFormData({ name: "", address: "", country: "", state: "", city: "", schoolBoard: "", languages: [], category: "government" });
       await loadSchools();
     } catch (error: any) {
       console.error("Failed to create school:", error);
@@ -105,6 +116,11 @@ export const AdminSchools = () => {
       name: school.name,
       address: school.address || "",
       country: school.country || "",
+      state: (school as any).state || "",
+      city: (school as any).city || "",
+      schoolBoard: (school as any).schoolBoard || "",
+      languages: (school as any).languages || [],
+      category: (school as any).category || "government",
     });
     setIsEditSchoolOpen(true);
   };
@@ -121,11 +137,16 @@ export const AdminSchools = () => {
         name: formData.name.trim(),
         address: formData.address.trim() || undefined,
         country: formData.country.trim() || undefined,
+        state: formData.state.trim() || undefined,
+        city: formData.city.trim() || undefined,
+        schoolBoard: formData.schoolBoard.trim() || undefined,
+        languages: formData.languages,
+        category: formData.category as any,
       });
       toast.success("School updated successfully");
       setIsEditSchoolOpen(false);
       setSelectedSchool(null);
-      setFormData({ name: "", address: "", country: "" });
+      setFormData({ name: "", address: "", country: "", state: "", city: "", schoolBoard: "", languages: [], category: "government" });
       await loadSchools();
     } catch (error: any) {
       console.error("Failed to update school:", error);
@@ -195,7 +216,7 @@ export const AdminSchools = () => {
               onOpenChange={(open) => {
                 setIsAddSchoolOpen(open);
                 if (!open) {
-                  setFormData({ name: "", address: "", country: "" });
+                  setFormData({ name: "", address: "", country: "", state: "", city: "", schoolBoard: "", languages: [], category: "government" });
                 }
               }}
             >
@@ -246,13 +267,89 @@ export const AdminSchools = () => {
                       }
                     />
                   </div>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="school-state">State</Label>
+                      <Input
+                        id="school-state"
+                        placeholder="Enter state"
+                        value={formData.state}
+                        onChange={(e) =>
+                          setFormData({ ...formData, state: e.target.value })
+                        }
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="school-city">City</Label>
+                      <Input
+                        id="school-city"
+                        placeholder="Enter city"
+                        value={formData.city}
+                        onChange={(e) =>
+                          setFormData({ ...formData, city: e.target.value })
+                        }
+                      />
+                    </div>
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="school-board">School Board</Label>
+                    <Input
+                      id="school-board"
+                      placeholder="Enter school board"
+                      value={formData.schoolBoard}
+                      onChange={(e) =>
+                        setFormData({ ...formData, schoolBoard: e.target.value })
+                      }
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Languages</Label>
+                    <div className="flex flex-wrap gap-3 text-sm">
+                      {["english", "hindi", "gujarati"].map((lang) => {
+                        const checked = formData.languages.includes(lang);
+                        return (
+                          <label key={lang} className="flex items-center gap-2">
+                            <input
+                              type="checkbox"
+                              className="h-4 w-4"
+                              checked={checked}
+                              onChange={(e) => {
+                                const next = new Set(formData.languages);
+                                if (e.target.checked) next.add(lang);
+                                else next.delete(lang);
+                                setFormData({ ...formData, languages: Array.from(next) });
+                              }}
+                            />
+                            <span className="capitalize">{lang}</span>
+                          </label>
+                        );
+                      })}
+                    </div>
+                  </div>
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="school-category">Category</Label>
+                  <Select
+                    value={formData.category}
+                    onValueChange={(v) =>
+                      setFormData({ ...formData, category: v as any })
+                    }
+                  >
+                    <SelectTrigger id="school-category">
+                      <SelectValue placeholder="Select category" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="government">Government</SelectItem>
+                      <SelectItem value="private">Private</SelectItem>
+                    </SelectContent>
+                  </Select>
                 </div>
                 <DialogFooter>
                   <Button
                     variant="outline"
                     onClick={() => {
                       setIsAddSchoolOpen(false);
-                      setFormData({ name: "", address: "", country: "" });
+                      setFormData({ name: "", address: "", country: "", state: "", city: "", schoolBoard: "", languages: [], category: "government" });
                     }}
                     disabled={processing}
                   >
@@ -291,6 +388,7 @@ export const AdminSchools = () => {
                 <TableRow>
                   <TableHead>School Name</TableHead>
                   <TableHead>Location</TableHead>
+                  <TableHead>Languages</TableHead>
                   <TableHead>Students</TableHead>
                   <TableHead>Teachers</TableHead>
                   <TableHead>Created</TableHead>
@@ -315,10 +413,21 @@ export const AdminSchools = () => {
                       </TableCell>
                       <TableCell>
                         <div className="text-sm">
-                          <div>{school.country || "—"}</div>
+                          <div>
+                            {[school.country, (school as any).state, (school as any).city]
+                              .filter(Boolean)
+                              .join(", ") || "—"}
+                          </div>
                           <div className="text-muted-foreground text-xs">
                             {school.address || "—"}
                           </div>
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <div className="text-xs">
+                          {Array.isArray((school as any).languages) && (school as any).languages.length > 0
+                            ? (school as any).languages.map((l: string) => l.charAt(0).toUpperCase() + l.slice(1)).join(", ")
+                            : "—"}
                         </div>
                       </TableCell>
                       <TableCell>{school.totalStudents || 0}</TableCell>
@@ -362,7 +471,7 @@ export const AdminSchools = () => {
           setIsEditSchoolOpen(open);
           if (!open) {
             setSelectedSchool(null);
-            setFormData({ name: "", address: "", country: "" });
+            setFormData({ name: "", address: "", country: "", state: "", city: "", schoolBoard: "", languages: [], category: "government" });
           }
         }}
       >
@@ -405,6 +514,82 @@ export const AdminSchools = () => {
                 }
               />
             </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="edit-school-state">State</Label>
+                <Input
+                  id="edit-school-state"
+                  placeholder="Enter state"
+                  value={formData.state}
+                  onChange={(e) =>
+                    setFormData({ ...formData, state: e.target.value })
+                  }
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="edit-school-city">City</Label>
+                <Input
+                  id="edit-school-city"
+                  placeholder="Enter city"
+                  value={formData.city}
+                  onChange={(e) =>
+                    setFormData({ ...formData, city: e.target.value })
+                  }
+                />
+              </div>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="edit-school-board">School Board</Label>
+              <Input
+                id="edit-school-board"
+                placeholder="Enter school board"
+                value={formData.schoolBoard}
+                onChange={(e) =>
+                  setFormData({ ...formData, schoolBoard: e.target.value })
+                }
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>Languages</Label>
+              <div className="flex flex-wrap gap-3 text-sm">
+                {["english", "hindi", "gujarati"].map((lang) => {
+                  const checked = formData.languages.includes(lang);
+                  return (
+                    <label key={lang} className="flex items-center gap-2">
+                      <input
+                        type="checkbox"
+                        className="h-4 w-4"
+                        checked={checked}
+                        onChange={(e) => {
+                          const next = new Set(formData.languages);
+                          if (e.target.checked) next.add(lang);
+                          else next.delete(lang);
+                          setFormData({ ...formData, languages: Array.from(next) });
+                        }}
+                      />
+                      <span className="capitalize">{lang}</span>
+                    </label>
+                  );
+                })}
+              </div>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="edit-school-category">Category</Label>
+              <Select
+                value={formData.category}
+                onValueChange={(v) =>
+                  setFormData({ ...formData, category: v as any })
+                }
+              >
+                <SelectTrigger id="edit-school-category">
+                  <SelectValue placeholder="Select category" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="government">Government</SelectItem>
+                  <SelectItem value="private">Private</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
           </div>
           <DialogFooter>
             <Button
@@ -412,7 +597,7 @@ export const AdminSchools = () => {
               onClick={() => {
                 setIsEditSchoolOpen(false);
                 setSelectedSchool(null);
-                setFormData({ name: "", address: "", country: "" });
+                setFormData({ name: "", address: "", country: "", state: "", city: "", schoolBoard: "", languages: [], category: "government" });
               }}
               disabled={processing}
             >

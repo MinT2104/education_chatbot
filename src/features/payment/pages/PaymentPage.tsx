@@ -7,8 +7,10 @@ import {
 } from "../services/paymentService";
 import { toast } from "react-toastify";
 import { Loader2 } from "lucide-react";
+import { adminService } from "../../admin/services/adminService";
 
 type Plan = "Free" | "Go";
+type SchoolCategory = "government" | "private";
 
 const Feature = ({ children }: { children: string }) => (
   <li className="flex items-start gap-2 text-sm text-text">
@@ -39,6 +41,8 @@ const PaymentPage = () => {
   const [loading, setLoading] = useState(true);
   const [processing, setProcessing] = useState(false);
   const [currentPlan, setCurrentPlan] = useState<Plan>("Free");
+  const [category, setCategory] = useState<SchoolCategory>("government");
+  const [appSettings, setAppSettings] = useState<Record<string, string>>({});
 
   useEffect(() => {
     if (!isAuthenticated) {
@@ -70,6 +74,18 @@ const PaymentPage = () => {
     }
   };
 
+  useEffect(() => {
+    // Load pricing settings
+    (async () => {
+      try {
+        const res = await adminService.getAppSettings();
+        setAppSettings(res.settings || {});
+      } catch {
+        // ignore
+      }
+    })();
+  }, []);
+
   const handleUpgrade = async () => {
     if (processing) return;
 
@@ -91,6 +107,12 @@ const PaymentPage = () => {
       );
       setProcessing(false);
     }
+  };
+
+  const priceByCategory = (cat: SchoolCategory) => {
+    const gov = appSettings.go_price_government_inr || "299";
+    const pri = appSettings.go_price_private_inr || "399";
+    return cat === "government" ? `₹${gov}` : `₹${pri}`;
   };
 
   const handleSwitchToFree = async () => {
@@ -187,6 +209,34 @@ const PaymentPage = () => {
           Upgrade your plan
         </h1>
 
+        {/* Category Tabs */}
+        <div className="flex items-center justify-center mb-8">
+          <div className="inline-flex rounded-2xl bg-surface shadow-[inset_0_0_0_1px_var(--border)] p-1 border border-border">
+            <button
+              className={`px-4 py-2 rounded-xl text-sm transition-colors min-w-[160px] ${
+                category === "government"
+                  ? "bg-primary-500 text-white shadow"
+                  : "bg-surface-muted text-text hover:bg-primary-500/10"
+              }`}
+              onClick={() => setCategory("government")}
+              aria-current={category === "government" ? "true" : "false"}
+            >
+              Government schools
+            </button>
+            <button
+              className={`px-4 py-2 rounded-xl text-sm transition-colors min-w-[160px] ${
+                category === "private"
+                  ? "bg-primary-500 text-white shadow"
+                  : "bg-surface-muted text-text hover:bg-primary-500/10"
+              }`}
+              onClick={() => setCategory("private")}
+              aria-current={category === "private" ? "true" : "false"}
+            >
+              Private schools
+            </button>
+          </div>
+        </div>
+
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           {/* Free Card */}
           <div
@@ -243,7 +293,7 @@ const PaymentPage = () => {
               </span>
             </div>
             <div className="mt-2 text-3xl font-semibold text-text">
-              ₹399
+              {priceByCategory(category)}
               <span className="text-base font-normal text-text-subtle ml-1">
                 / month
               </span>

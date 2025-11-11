@@ -5,7 +5,7 @@ export interface User {
   nickname?: string;
   email: string;
   lang?: string;
-  profileImg?: string;
+  avatar_url?: string;
   phone?: string;
   chatType?: string;
   biography?: string;

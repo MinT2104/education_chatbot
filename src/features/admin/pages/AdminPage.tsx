@@ -11,6 +11,11 @@ import { AdminDocuments } from "../components/documents/AdminDocuments";
 import { AdminSchools } from "../components/schools/AdminSchools";
 import { AdminContent } from "../components/content/AdminContent";
 import { adminService, School } from "../services/adminService";
+import { AdminLogs } from "../components/logs/AdminLogs";
+import { AdminPricing } from "../components/pricing/AdminPricing";
+import { AdminSpaces } from "../components/spaces/AdminSpaces";
+import { AdminPrompts } from "../components/prompts/AdminPrompts";
+import { AdminStaticPages } from "../components/pages/AdminStaticPages";
 
 const AdminPage = () => {
   const [activeTab, setActiveTab] = useState("dashboard");
@@ -75,6 +80,26 @@ const AdminPage = () => {
 
           <TabsContent value="schools" className="space-y-6">
             <AdminSchools />
+          </TabsContent>
+
+          <TabsContent value="logs" className="space-y-6">
+            <AdminLogs />
+          </TabsContent>
+
+          <TabsContent value="pricing" className="space-y-6">
+            <AdminPricing />
+          </TabsContent>
+
+          <TabsContent value="prompts" className="space-y-6">
+            <AdminPrompts />
+          </TabsContent>
+
+          <TabsContent value="pages" className="space-y-6">
+            <AdminStaticPages />
+          </TabsContent>
+
+          <TabsContent value="spaces" className="space-y-6">
+            <AdminSpaces />
           </TabsContent>
 
           <TabsContent value="content" className="space-y-6">

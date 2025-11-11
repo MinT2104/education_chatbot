@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
 import { chatService } from "../services/chatService";
+import { X } from "lucide-react";
 
 interface School {
   id: string;
@@ -71,6 +72,13 @@ const SchoolPickerModal = ({
     <div className="fixed inset-0 z-50 flex items-center justify-center">
       <div className="absolute inset-0 bg-black/50" onClick={onClose} />
       <div className="relative z-10 w-full max-w-lg rounded-2xl bg-surface p-6 shadow-[0_8px_24px_rgba(0,0,0,.4),inset_0_0_0_1px_var(--border)]">
+        <button
+          aria-label="Close"
+          onClick={onClose}
+          className="absolute cursor-pointer right-3 top-3 rounded-md p-2 text-text-subtle hover:bg-surface-muted hover:text-text focus:outline-none focus:ring-2 focus:ring-primary-500/40"
+        >
+          <X className="cursor-pointer" size={18} />
+        </button>
         <h2 className="text-lg font-semibold text-text">Choose your school</h2>
         <p className="text-sm text-text-subtle mt-1">
           Enter your school name to get personalized content
@@ -100,15 +108,17 @@ const SchoolPickerModal = ({
               </button>
             </div>
           )}
-          {!loading && !error && results.map((s) => (
-            <button
-              key={s.id}
-              onClick={() => handleSelect(s)}
-              className="w-full text-left px-4 py-2 rounded-xl bg-surface hover:bg-primary-500/8 transition-colors"
-            >
-              {s.name}
-            </button>
-          ))}
+          {!loading &&
+            !error &&
+            results.map((s) => (
+              <button
+                key={s.id}
+                onClick={() => handleSelect(s)}
+                className="w-full text-left px-4 py-2 rounded-xl bg-surface hover:bg-primary-500/8 transition-colors"
+              >
+                {s.name}
+              </button>
+            ))}
           {!loading && !error && results.length === 0 && schools.length > 0 && (
             <div className="text-sm text-text-subtle text-center py-4">
               No schools found matching "{debounced}"

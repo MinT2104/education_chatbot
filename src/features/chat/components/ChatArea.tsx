@@ -1,4 +1,4 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import cuteIcon from "../../../public/cute.png";
 import MessageBubble from "./MessageBubble";
 import SpaceStarter from "./SpaceStarter";
@@ -45,6 +45,24 @@ const ChatArea = ({
 }: ChatAreaProps) => {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
+  const computeHeroScale = () => {
+    if (typeof window === "undefined") return 1;
+    const ratio = Math.min(1, window.innerHeight / 826);
+    return Math.min(1, 0.85 + 0.15 * ratio);
+  };
+  const [heroScale, setHeroScale] = useState(computeHeroScale);
+
+  useEffect(() => {
+    const handleResize = () => {
+      setHeroScale((prev) => {
+        const next = computeHeroScale();
+        return Math.abs(next - prev) > 0.01 ? next : prev;
+      });
+    };
+    handleResize();
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
+  }, []);
 
   useEffect(() => {
     // Auto scroll to bottom when new message arrives
@@ -68,6 +86,15 @@ const ChatArea = ({
           } ${
             isAuthenticated ? "px-3 sm:px-4" : "px-2 sm:px-3 md:px-4"
           } text-center min-h-full w-full`}
+          style={
+            heroScale < 1
+              ? {
+                  transform: `scale(${heroScale})`,
+                  transformOrigin: "top center",
+                  zoom: heroScale,
+                }
+              : undefined
+          }
         >
           {/* removed decorative icon above header */}
 
@@ -78,7 +105,9 @@ const ChatArea = ({
           />
           <div
             className={`-mt-1.5 sm:-mt-2 md:-mt-4 lg:-mt-5 ${
-              isAuthenticated ? "mb-4 sm:mb-6 md:mb-8" : "mb-1.5 sm:mb-2 md:mb-4"
+              isAuthenticated
+                ? "mb-4 sm:mb-6 md:mb-8"
+                : "mb-1.5 sm:mb-2 md:mb-4"
             } leading-tight relative z-10 px-2 sm:px-3 md:px-4 w-full`}
           >
             <p className="text-xl sm:text-2xl md:text-3xl lg:text-4xl font-bold text-foreground">

@@ -13,14 +13,29 @@ const CoursePlayerPage = lazy(
   () => import("../../features/courses/pages/CoursePlayerPage")
 );
 const AdminPage = lazy(() => import("../../features/admin/pages/AdminPage"));
-const PaymentPage = lazy(() => import("../../features/payment/pages/PaymentPage"));
-const PaymentSuccessPage = lazy(() => import("../../features/payment/pages/PaymentSuccessPage"));
-const PaymentCancelPage = lazy(() => import("../../features/payment/pages/PaymentCancelPage"));
+const PaymentPage = lazy(
+  () => import("../../features/payment/pages/PaymentPage")
+);
+const PaymentSuccessPage = lazy(
+  () => import("../../features/payment/pages/PaymentSuccessPage")
+);
+const PaymentCancelPage = lazy(
+  () => import("../../features/payment/pages/PaymentCancelPage")
+);
 const ProfilePage = lazy(() => import("../../features/auth/pages/ProfilePage"));
-const SettingsPage = lazy(() => import("../../features/auth/pages/SettingsPage"));
+const SettingsPage = lazy(
+  () => import("../../features/auth/pages/SettingsPage")
+);
 const FaqPage = lazy(() => import("../../features/misc/pages/FaqPage"));
-const LibraryPage = lazy(() => import("../../features/library/pages/LibraryPage"));
-const GoogleCallbackPage = lazy(() => import("../../features/auth/pages/GoogleCallbackPage"));
+const CookiesPage = lazy(() => import("../../features/misc/pages/CookiesPage"));
+const TermsPage = lazy(() => import("../../features/misc/pages/TermsPage"));
+const PrivacyPage = lazy(() => import("../../features/misc/pages/PrivacyPage"));
+const LibraryPage = lazy(
+  () => import("../../features/library/pages/LibraryPage")
+);
+const GoogleCallbackPage = lazy(
+  () => import("../../features/auth/pages/GoogleCallbackPage")
+);
 
 export interface AppRoute {
   path: string;
@@ -87,6 +102,18 @@ export const routes: AppRoute[] = [
     component: FaqPage,
   },
   {
+    path: "/cookies",
+    component: CookiesPage,
+  },
+  {
+    path: "/terms",
+    component: TermsPage,
+  },
+  {
+    path: "/privacy",
+    component: PrivacyPage,
+  },
+  {
     path: "/prayers",
     component: CommunityPage,
   },
@@ -113,13 +140,13 @@ export const routes: AppRoute[] = [
     protected: true,
   },
   {
-    path: "/admin",
+    path: "/console",
     component: AdminPage,
     protected: true,
     adminOnly: true,
   },
   {
-    path: "/admin/*",
+    path: "/console/*",
     component: AdminPage,
     protected: true,
     adminOnly: true,

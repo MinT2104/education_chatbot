@@ -91,6 +91,73 @@ export const adminService = {
   },
 
   /**
+   * Get activity logs for a user (admin only)
+   */
+  async getUserLogs(
+    userId: string,
+    params?: {
+      limit?: number;
+      offset?: number;
+      type?: string;
+      from?: string;
+      to?: string;
+    }
+  ): Promise<{ success: boolean; logs: any[] }> {
+    const response = await apiClient.get(`/admin/users/${userId}/logs`, {
+      params,
+    });
+    return response.data;
+  },
+
+  /**
+   * Get all activity logs (admin only)
+   */
+  async getAllLogs(params?: {
+    limit?: number;
+    offset?: number;
+    type?: string;
+    from?: string;
+    to?: string;
+  }): Promise<{ success: boolean; logs: any[] }> {
+    const response = await apiClient.get(`/admin/logs`, { params });
+    return response.data;
+  },
+  /**
+   * Admin: Cancel a user's subscription
+   */
+  async cancelUserSubscription(
+    userId: string
+  ): Promise<{ success: boolean; message: string }> {
+    const response = await apiClient.post(`/payment/admin/cancel/${userId}`);
+    return response.data;
+  },
+
+  /**
+   * Admin: Refund user's last payment (if supported)
+   */
+  async refundUserSubscription(
+    userId: string
+  ): Promise<{ success?: boolean; message: string }> {
+    const response = await apiClient.post(`/payment/admin/refund/${userId}`);
+    return response.data;
+  },
+  /**
+   * App settings (pricing/limits)
+   */
+  async getAppSettings(): Promise<{
+    success: boolean;
+    settings: Record<string, string>;
+  }> {
+    const response = await apiClient.get("/settings");
+    return response.data;
+  },
+  async updateAppSettings(
+    payload: Record<string, string | number>
+  ): Promise<{ success: boolean; settings: Record<string, string> }> {
+    const response = await apiClient.put("/settings", payload);
+    return response.data;
+  },
+  /**
    * Get all schools (admin only)
    */
   async getAllSchools(): Promise<School[]> {
@@ -113,6 +180,11 @@ export const adminService = {
     name: string;
     address?: string;
     country?: string;
+    state?: string;
+    city?: string;
+    schoolBoard?: string;
+    languages?: string[];
+    category?: "government" | "private";
   }): Promise<School> {
     const response = await apiClient.post("/school", data);
     return response.data;
@@ -127,6 +199,11 @@ export const adminService = {
       name?: string;
       address?: string;
       country?: string;
+      state?: string;
+      city?: string;
+      schoolBoard?: string;
+      languages?: string[];
+      category?: "government" | "private";
       totalStudents?: number;
       totalTeachers?: number;
     }
@@ -141,6 +218,40 @@ export const adminService = {
   async deleteSchool(id: string): Promise<void> {
     await apiClient.delete(`/school/${id}`);
   },
+
+  /**
+   * Prompts management
+   */
+  async getRolePrompts(): Promise<{ success: boolean; prompts: RolePrompt[] }> {
+    const response = await apiClient.get("/prompt");
+    return response.data;
+  },
+
+  async updateRolePrompts(
+    prompts: RolePrompt[]
+  ): Promise<{ success: boolean; prompts: RolePrompt[] }> {
+    const response = await apiClient.put("/prompt", prompts);
+    return response.data;
+  },
+
+  /**
+   * Static pages
+   */
+  async getStaticPages(): Promise<{
+    success: boolean;
+    pages: StaticPageSummary[];
+  }> {
+    const response = await apiClient.get("/pages");
+    return response.data;
+  },
+
+  async updateStaticPage(
+    id: string,
+    payload: { title?: string; content?: string }
+  ): Promise<{ success: boolean; page: StaticPageSummary }> {
+    const response = await apiClient.put(`/pages/${id}`, payload);
+    return response.data;
+  },
 };
 
 export interface School {
@@ -148,8 +259,26 @@ export interface School {
   name: string;
   address?: string;
   country?: string;
+  state?: string;
+  city?: string;
+  schoolBoard?: string;
+  languages?: string[];
+  category?: "government" | "private";
   totalStudents: number;
   totalTeachers: number;
   createdAt: string;
   updatedAt?: string;
+}
+
+export interface RolePrompt {
+  id?: string;
+  role: "student" | "teacher" | string;
+  content: string;
+}
+
+export interface StaticPageSummary {
+  id: string;
+  slug: string;
+  title: string;
+  content: string;
 }

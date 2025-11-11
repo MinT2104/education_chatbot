@@ -1,47 +1,112 @@
-import React from "react";
+import React, { useMemo } from "react";
 
 type SpaceItem = {
   title: string;
   description: string;
   icon: string;
+  content?: string;
 };
 
-const SPACES: SpaceItem[] = [
+const DEFAULT_SPACES: SpaceItem[] = [
   {
     title: "Lesson Plan Generator",
     description: "Generate and modify comprehensive lesson plans on any topic",
     icon: "📘",
+    content:
+      "Create a standards-aligned lesson plan for Grade 5 Science on photosynthesis. Include objectives, materials, step-by-step activities, and an exit ticket.",
   },
   {
     title: "Multiple Choice Quiz Builder",
     description: "Generate a quiz and export to popular formats",
     icon: "📝",
+    content:
+      "Generate a 10-question multiple-choice quiz about the water cycle with answer key and explanations.",
   },
   {
     title: "Text Translator",
     description: "Convert text between 100+ languages",
     icon: "🌐",
+    content:
+      "Translate the following text to Vietnamese and simplify for Grade 7 reading level:",
   },
   {
     title: "Worksheet Generator",
     description: "Create a worksheet for any subject",
     icon: "📄",
+    content:
+      "Create a printable worksheet with 8 short-answer questions about fractions for Grade 4.",
   },
   {
     title: "Rubric Generator",
     description: "Generate a rubric for an assignment",
     icon: "📊",
+    content:
+      "Create a 4-level rubric to assess a persuasive writing assignment for Grade 8.",
   },
   {
     title: "Text Leveler",
     description: "Adjust reading level for any grade",
     icon: "🔧",
+    content:
+      "Rewrite the following passage to a Grade 3 reading level while preserving meaning:",
   },
 ];
 
+import { useEffect, useState } from "react";
+import { chatService } from "../services/chatService";
+
 const SpaceStarter: React.FC = () => {
+  const [spaces, setSpaces] = useState<SpaceItem[]>(DEFAULT_SPACES);
+  const computeScale = () => {
+    if (typeof window === "undefined") return 1;
+    const ratio = Math.min(1, window.innerHeight / 826);
+    return Math.min(1, 0.85 + 0.15 * ratio);
+  };
+  const [scale, setScale] = useState(computeScale);
+
+  useEffect(() => {
+    const handleResize = () => {
+      setScale((prev) => {
+        const next = computeScale();
+        return Math.abs(next - prev) > 0.01 ? next : prev;
+      });
+    };
+    handleResize();
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
+  }, []);
+
+  useEffect(() => {
+    (async () => {
+      try {
+        const res = await chatService.getPublicSettings();
+        const raw = res?.settings?.spaces_config;
+        if (raw) {
+          const parsed = JSON.parse(raw);
+          if (Array.isArray(parsed) && parsed.length > 0) {
+            setSpaces(parsed);
+          }
+        }
+      } catch {
+        // fallback to defaults
+      }
+    })();
+  }, []);
+  const containerStyle = useMemo(() => {
+    if (scale >= 1) return undefined;
+    const style: React.CSSProperties & { zoom?: number } = {
+      transform: `scale(${scale})`,
+      transformOrigin: "top center",
+    };
+    style.zoom = scale;
+    return style;
+  }, [scale]);
+
   return (
-    <div className="relative w-full max-w-5xl mx-auto rounded-2xl overflow-visible dark:bg-card/70">
+    <div
+      className="relative w-full max-w-5xl mx-auto rounded-2xl overflow-visible dark:bg-card/70"
+      style={containerStyle}
+    >
       {/* Pastel radial mist overlays */}
       <div className="pointer-events-none absolute inset-0">
         {/* Blue left (extend toward center to blend) */}
@@ -66,10 +131,17 @@ const SpaceStarter: React.FC = () => {
         </div> */}
 
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-1.5 sm:gap-2">
-          {SPACES.map((space, idx) => (
-            <div
+          {spaces.map((space, idx) => (
+            <button
               key={idx}
-              className="group rounded-lg bg-card/60 dark:bg-card/40 hover:bg-card/75 dark:hover:bg-card/55 transition-colors p-2 sm:p-2.5 md:p-3 flex gap-1.5 sm:gap-2 shadow-[0_1px_2px_rgba(0,0,0,.06)] dark:shadow-[0_1px_2px_rgba(0,0,0,.2)] text-left min-h-20 sm:min-h-24"
+              className="group rounded-lg bg-card/60 dark:bg-card/40 hover:bg-card/75 dark:hover:bg-card/55 transition-colors p-2 sm:p-2.5 md:p-3 flex gap-1.5 sm:gap-2 shadow-[0_1px_2px_rgba(0,0,0,.06)] dark:shadow-[0_1px_2px_rgba(0,0,0,.2)] text-left min-h-20 sm:min-h-24 focus:outline-none focus:ring-2 focus:ring-primary"
+              onClick={() => {
+                const detail = space.content || space.title;
+                window.dispatchEvent(
+                  new CustomEvent("suggestion-click", { detail })
+                );
+              }}
+              type="button"
             >
               <div className="text-xl sm:text-2xl shrink-0 leading-none self-start">
                 {space.icon}
@@ -82,7 +154,7 @@ const SpaceStarter: React.FC = () => {
                   {space.description}
                 </div>
               </div>
-            </div>
+            </button>
           ))}
         </div>
       </div>

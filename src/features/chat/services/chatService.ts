@@ -5,7 +5,7 @@ export const chatService = {
   async createChat(data: {
     userInput: string
     conversationId?: string
-    // sessionId removed - backend handles via cookie
+    sessionId?: string
     previousChat?: any[]
     chatHistoryId?: string | null
     chatType?: string
@@ -26,6 +26,7 @@ export const chatService = {
       streamed: boolean
     }
     chatHistoryId: string | null
+    sessionId?: string | null
     relatedQuestions?: string[]
     sources?: any[]
   }> {
@@ -61,6 +62,11 @@ export const chatService = {
     const response = await apiClient.get('/school/public', {
       params: { page: 1, limit: 1000 },
     })
+    return response.data
+  },
+
+  async getPublicSettings(): Promise<{ success: boolean; settings: Record<string, string> }> {
+    const response = await apiClient.get('/settings/public')
     return response.data
   },
 }

@@ -194,7 +194,8 @@ const authSlice = createSlice({
       .addCase(getMe.fulfilled, (state, action) => {
         state.isLoading = false;
         // Convert Date objects to strings to avoid serialization issues
-        const user = { ...action.payload };
+        // Merge with existing user to preserve transient fields like avatar_url from OAuth redirect
+        const user = { ...(state.user || {}), ...action.payload };
         if (user.subscription) {
           user.subscription = {
             ...user.subscription,

@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useMemo } from "react";
 import { useNavigate, useParams, useLocation } from "react-router-dom";
 import { useAppSelector } from "../../../core/store/hooks";
 import { toast } from "react-toastify";
@@ -19,6 +19,13 @@ import { chatService } from "../services/chatService";
 import SchoolPickerModal from "../components/SchoolPickerModal";
 import { sessionService } from "../services/sessionService";
 import { useConversations } from "../hooks/useConversations";
+
+const DEFAULT_QUICK_SUGGESTIONS = [
+  { text: "Write a to-do list for a personal project", icon: "👤" },
+  { text: "Generate an email to reply to a job offer", icon: "✉️" },
+  { text: "Summarize this article in one paragraph", icon: "💬" },
+  { text: "How does AI work in a technical capacity", icon: "⚙️" },
+];
 
 const ChatPage = () => {
   const navigate = useNavigate();
@@ -48,7 +55,7 @@ const ChatPage = () => {
   const [currentMessages, setCurrentMessages] = useState<NewMessage[]>([]);
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
   const [isStreaming, setIsStreaming] = useState(false);
-  const [model, setModel] = useState("EduBot 1");
+  const [model, setModel] = useState("Government School");
   const [tools, setTools] = useState<ConversationTools>({
     web: false,
     code: false,
@@ -80,12 +87,9 @@ const ChatPage = () => {
   };
 
   const plan = getUserPlan();
-  const quotaLimit = plan === "Free" ? 25 : null;
   const [quotaUsed, setQuotaUsed] = useState<number>(
     parseInt(localStorage.getItem("quota_used") || "0", 10)
   );
-  const quotaRemaining =
-    quotaLimit != null ? Math.max(quotaLimit - quotaUsed, 0) : null;
   const [showUpgrade, setShowUpgrade] = useState(false);
   const [commandPaletteOpen, setCommandPaletteOpen] = useState(false);
   const [showNetworkError, setShowNetworkError] = useState(false);
@@ -98,6 +102,18 @@ const ChatPage = () => {
   const [pendingSchoolName, setPendingSchoolName] = useState<string | null>(
     null
   );
+  const [publicSettings, setPublicSettings] = useState<Record<
+    string,
+    string
+  > | null>(null);
+  const [externalSessionId, setExternalSessionId] = useState<string | null>(
+    () => {
+      if (typeof window !== "undefined") {
+        return localStorage.getItem("external_session_id");
+      }
+      return null;
+    }
+  );
 
   // Guest session ID (stored in localStorage)
   const [guestSessionId, setGuestSessionId] = useState<string | null>(() => {
@@ -107,6 +123,32 @@ const ChatPage = () => {
     }
     return null;
   });
+
+  // Load public settings for UI-managed content (e.g., quick suggestions)
+  useEffect(() => {
+    (async () => {
+      try {
+        const res = await chatService.getPublicSettings();
+        setPublicSettings(res?.settings ?? null);
+      } catch {
+        // ignore
+      }
+    })();
+  }, []);
+
+  const quickSuggestions = useMemo(() => {
+    if (publicSettings?.chat_quick_suggestions) {
+      try {
+        const parsed = JSON.parse(publicSettings.chat_quick_suggestions);
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          return parsed.filter((item) => item && typeof item.text === "string");
+        }
+      } catch {
+        // ignore parse error
+      }
+    }
+    return DEFAULT_QUICK_SUGGESTIONS;
+  }, [publicSettings]);
 
   // Guest school name (stored in localStorage, linked to guestSessionId)
   const [guestSchoolName, setGuestSchoolName] = useState<string | null>(() => {
@@ -550,7 +592,7 @@ const ChatPage = () => {
     const apiData = {
       userInput: content,
       conversationId: finalConversationId, // Send conversationId to backend
-      // sessionId removed - backend handles via cookie middleware
+      sessionId: externalSessionId || undefined,
       role: role, // Send role to backend
       schoolName: currentConversation?.schoolName || finalSchoolName, // School name from conversation
       grade: session.grade,
@@ -577,6 +619,12 @@ const ChatPage = () => {
       };
 
       setCurrentMessages((prev) => [...prev, assistantMessage]);
+
+      // Capture and persist external session id (for subsequent chats)
+      if (response.sessionId && response.sessionId !== externalSessionId) {
+        setExternalSessionId(response.sessionId);
+        localStorage.setItem("external_session_id", response.sessionId);
+      }
 
       // For guest: Backend handles guest ID via cookie for rate limiting
       // But we still use conversationId (guestSessionId) for frontend state tracking
@@ -1056,114 +1104,40 @@ const ChatPage = () => {
                   GET STARTED WITH AN EXAMPLE BELOW
                 </h3>
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
-                  {[
-                    {
-                      text: "Write a to-do list for a personal project",
-                      icon: (
-                        <svg
-                          className="w-4 h-4"
-                          fill="none"
-                          stroke="currentColor"
-                          viewBox="0 0 24 24"
-                        >
-                          <path
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            strokeWidth={2}
-                            d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"
-                          />
-                        </svg>
-                      ),
-                    },
-                    {
-                      text: "Generate an email to reply to a job offer",
-                      icon: (
-                        <svg
-                          className="w-4 h-4"
-                          fill="none"
-                          stroke="currentColor"
-                          viewBox="0 0 24 24"
-                        >
-                          <path
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            strokeWidth={2}
-                            d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"
-                          />
-                        </svg>
-                      ),
-                    },
-                    {
-                      text: "Summarize this article in one paragraph",
-                      icon: (
-                        <svg
-                          className="w-4 h-4"
-                          fill="none"
-                          stroke="currentColor"
-                          viewBox="0 0 24 24"
-                        >
-                          <path
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            strokeWidth={2}
-                            d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"
-                          />
-                        </svg>
-                      ),
-                    },
-                    {
-                      text: "How does AI work in a technical capacity",
-                      icon: (
-                        <svg
-                          className="w-4 h-4"
-                          fill="none"
-                          stroke="currentColor"
-                          viewBox="0 0 24 24"
-                        >
-                          <path
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            strokeWidth={2}
-                            d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4"
-                          />
-                        </svg>
-                      ),
-                    },
-                  ].map((suggestion, i) => (
-                    <button
-                      key={i}
-                      onClick={() => handleSendMessage(suggestion.text)}
-                      className="group relative p-4 rounded-xl bg-card border border-border hover:bg-accent hover:border-primary/50 transition-all text-left cursor-pointer"
-                    >
-                      <p className="text-sm text-foreground mb-3 pr-8">
-                        {suggestion.text}
-                      </p>
-                      <div className="absolute bottom-3 left-4 text-muted-foreground group-hover:text-primary transition-colors">
-                        {suggestion.icon}
-                      </div>
-                    </button>
-                  ))}
+                  {quickSuggestions.map(
+                    (
+                      suggestion: { text: string; icon?: string },
+                      i: number
+                    ) => (
+                      <button
+                        key={`${suggestion.text}-${i}`}
+                        onClick={() => handleSendMessage(suggestion.text)}
+                        className="group relative p-4 rounded-xl bg-card border border-border hover:bg-accent hover:border-primary/50 transition-all text-left cursor-pointer"
+                      >
+                        <p className="text-sm text-foreground mb-3 pr-8">
+                          {suggestion.text}
+                        </p>
+                        <div className="absolute bottom-3 left-4 text-muted-foreground group-hover:text-primary transition-colors">
+                          <span className="text-sm">
+                            {suggestion.icon || "💡"}
+                          </span>
+                        </div>
+                      </button>
+                    )
+                  )}
                 </div>
               </div>
             )}
-            {/* Quota indicator (only for authenticated users) */}
-            {isAuthenticated && (
-              <div className="px-6 py-2 pb-4 md:pb-2 text-xs text-muted-foreground text-center">
-                {plan === "Free" ? (
-                  <span>
-                    {quotaRemaining} / 25 messages left.{" "}
-                    <button
-                      className="underline text-primary hover:text-primary/80"
-                      onClick={() => setShowUpgrade(true)}
-                    >
-                      Upgrade
-                    </button>
-                  </span>
-                ) : (
-                  <span>Go Plan: Unlimited messages</span>
-                )}
-              </div>
-            )}
+            {/* Footer notice */}
+            <div className="px-6 py-2 pb-4 md:pb-2 text-xs text-muted-foreground text-center">
+              Edu+ can make mistakes. Check important info. See{" "}
+              <button
+                className="underline text-primary hover:text-primary/80"
+                onClick={() => navigate("/cookies")}
+              >
+                Cookie Preferences
+              </button>
+            </div>
           </div>
           <UpgradeModal
             open={showUpgrade}

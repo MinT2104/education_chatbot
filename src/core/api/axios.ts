@@ -97,7 +97,9 @@ apiClient.interceptors.response.use(
         if (refreshTokenValue) {
           const refreshResponse = await axios.post(
             `${
-              import.meta.env.VITE_API_URL || import.meta.env.VITE_BACKEND_URL || "/api"
+              import.meta.env.VITE_API_URL ||
+              import.meta.env.VITE_BACKEND_URL ||
+              "/api"
             }/auth/refresh`,
             {},
             { withCredentials: true }
@@ -129,7 +131,7 @@ apiClient.interceptors.response.use(
         // Redirect to login if refresh fails
         const path = window.location.pathname;
         const requiresAuth =
-          path.startsWith("/home") || path.startsWith("/admin");
+          path.startsWith("/home") || path.startsWith("/console");
         if (requiresAuth) {
           if (typeof window !== "undefined") {
             const { removeCookie } = await import("../utils/cookie");
@@ -149,7 +151,7 @@ apiClient.interceptors.response.use(
     // Handle 403 Forbidden
     if (error.response?.status === 403) {
       const path = window.location.pathname;
-      if (!path.startsWith("/admin")) {
+      if (!path.startsWith("/console")) {
         window.location.href = "/home";
       }
     }

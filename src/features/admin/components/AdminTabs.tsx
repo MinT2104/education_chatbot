@@ -5,6 +5,11 @@ import {
   FileText,
   Users,
   CreditCard,
+  List,
+  DollarSign,
+  PanelsTopLeft,
+  MessageSquare,
+  ScrollText,
 } from "lucide-react";
 
 interface AdminTabsProps {
@@ -53,6 +58,46 @@ export const AdminTabs = ({ onTabChange }: AdminTabsProps) => {
       >
         <School className="w-4 h-4" />
         Schools
+      </TabsTrigger>
+      <TabsTrigger
+        value="logs"
+        className="flex items-center gap-2"
+        onClick={() => onTabChange("logs")}
+      >
+        <List className="w-4 h-4" />
+        Logs
+      </TabsTrigger>
+      <TabsTrigger
+        value="pricing"
+        className="flex items-center gap-2"
+        onClick={() => onTabChange("pricing")}
+      >
+        <DollarSign className="w-4 h-4" />
+        Pricing
+      </TabsTrigger>
+      <TabsTrigger
+        value="prompts"
+        className="flex items-center gap-2"
+        onClick={() => onTabChange("prompts")}
+      >
+        <MessageSquare className="w-4 h-4" />
+        Prompts
+      </TabsTrigger>
+      <TabsTrigger
+        value="pages"
+        className="flex items-center gap-2"
+        onClick={() => onTabChange("pages")}
+      >
+        <ScrollText className="w-4 h-4" />
+        Policies
+      </TabsTrigger>
+      <TabsTrigger
+        value="spaces"
+        className="flex items-center gap-2"
+        onClick={() => onTabChange("spaces")}
+      >
+        <PanelsTopLeft className="w-4 h-4" />
+        Spaces
       </TabsTrigger>
       {/* <TabsTrigger
         value="content"

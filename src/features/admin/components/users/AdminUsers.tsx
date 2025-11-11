@@ -300,6 +300,46 @@ export const AdminUsers = () => {
           </div>
         </CardHeader>
         <CardContent>
+          {/* Bulk/Admin actions for selected user */}
+          {selectedUser && (
+            <div className="flex items-center justify-end gap-3 mb-4">
+              <Button
+                variant="destructive"
+                size="sm"
+                disabled={
+                  !selectedUser.subscription ||
+                  selectedUser.subscription.status !== "active"
+                }
+                onClick={async () => {
+                  try {
+                    await adminService.cancelUserSubscription(selectedUser.id);
+                    toast.success("Subscription cancelled");
+                    loadUsers(true);
+                  } catch (e: any) {
+                    toast.error(e?.response?.data?.message || "Cancel failed");
+                  }
+                }}
+              >
+                Cancel Subscription
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={async () => {
+                  try {
+                    const res = await adminService.refundUserSubscription(
+                      selectedUser.id
+                    );
+                    toast.info(res?.message || "Refund requested");
+                  } catch (e: any) {
+                    toast.error(e?.response?.data?.message || "Refund failed");
+                  }
+                }}
+              >
+                Refund Last Payment
+              </Button>
+            </div>
+          )}
           <div className="rounded-md border">
             <Table>
               <TableHeader>

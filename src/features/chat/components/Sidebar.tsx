@@ -53,6 +53,7 @@ import {
   TooltipTrigger,
   TooltipContent,
 } from "@/components/ui/tooltip";
+import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 
 interface SidebarProps {
   conversations?: Conversation[]; // Optional - will use from Redux if not provided
@@ -628,9 +629,21 @@ const Sidebar = ({
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <button className="w-full rounded-xl bg-gray-50 dark:bg-gray-800/50 px-4 py-3 flex items-center gap-3 hover:bg-gray-100 dark:hover:bg-gray-700/50 transition-colors">
-                <div className="flex h-10 w-10 items-center justify-center rounded-full bg-blue-500 text-white text-sm font-medium shadow-sm">
-                  {userName.charAt(0).toUpperCase()}
-                </div>
+                <Avatar className="h-10 w-10">
+                  <AvatarImage
+                    src={(user as any)?.avatar_url || ""}
+                    alt={userName}
+                    referrerPolicy="no-referrer"
+                    crossOrigin="anonymous"
+                    onError={(e) => {
+                      const img = e.currentTarget as HTMLImageElement;
+                      img.src = "";
+                    }}
+                  />
+                  <AvatarFallback className="bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-200">
+                    {userName.charAt(0).toUpperCase()}
+                  </AvatarFallback>
+                </Avatar>
                 <div className="flex-1 min-w-0 text-left">
                   <div className="text-sm font-medium text-gray-900 dark:text-white truncate">
                     {userName}
@@ -649,9 +662,15 @@ const Sidebar = ({
             >
               {/* User Account Section */}
               <div className="flex items-center gap-3 px-4 py-3 border-b border-slate-200/70 dark:border-white/10">
-                <div className="flex h-10 w-10 items-center justify-center rounded-full bg-gray-200 dark:bg-gray-700">
-                  <User className="h-5 w-5 text-gray-600 dark:text-gray-300" />
-                </div>
+                <Avatar className="h-10 w-10">
+                  <AvatarImage
+                    src={(user as any)?.avatar_url || ""}
+                    alt={userName}
+                  />
+                  <AvatarFallback className="bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-200">
+                    {userName.charAt(0).toUpperCase()}
+                  </AvatarFallback>
+                </Avatar>
                 <div className="flex-1 min-w-0">
                   <div className="text-sm text-gray-600 dark:text-gray-300 truncate">
                     {user?.email || "user@example.com"}
