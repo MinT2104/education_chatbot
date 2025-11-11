@@ -29,8 +29,8 @@ jobs:
             corepack enable
             corepack prepare pnpm@10.14.0 --activate
 
-            pnpm install --frozen-lockfile
-            pnpm build
+            pnpm install --no-frozen-lockfile
+            pnpm run build
 
             if pm2 list | grep -q "education_react"; then
               pm2 restart education_react
