@@ -106,14 +106,10 @@ const ChatPage = () => {
     string,
     string
   > | null>(null);
-  const [externalSessionId, setExternalSessionId] = useState<string | null>(
-    () => {
-      if (typeof window !== "undefined") {
-        return localStorage.getItem("external_session_id");
-      }
-      return null;
-    }
-  );
+  // Note: sessionId is now handled entirely by backend
+  // - For authenticated users: sessionId is stored in conversation in database
+  // - For guest users: Backend manages sessionId internally, frontend doesn't need to track it
+  // We removed localStorage sessionId tracking to avoid confusion with conversationId
 
   // Guest session ID (stored in localStorage)
   const [guestSessionId, setGuestSessionId] = useState<string | null>(() => {
@@ -177,12 +173,24 @@ const ChatPage = () => {
     return () => clearInterval(interval);
   }, [userId]);
 
-  // Update messages when conversation changes (from Redux)
+  // Track previous conversation ID to detect conversation switches
+  const prevConversationIdRef = useRef<string | null>(null);
+
+  // Update messages when conversation ID changes (user switches conversations)
+  // This prevents overwriting currentMessages when Redux state updates for the same conversation
   useEffect(() => {
+    const currentConversationId = selectedConversation?.id || null;
+    const conversationChanged =
+      prevConversationIdRef.current !== currentConversationId;
+
     if (selectedConversation) {
-      setCurrentMessages(selectedConversation.messages);
-      setTools(selectedConversation.tools || {});
-      setMemoryEnabled(selectedConversation.memory?.enabled || false);
+      // Only update messages if conversation ID changed (user switched conversations)
+      // This prevents overwriting currentMessages when Redux updates for the same conversation
+      // When conversation first loads, prevConversationIdRef will be null/different, so it will update
+      if (conversationChanged) {
+        setCurrentMessages(selectedConversation.messages);
+        prevConversationIdRef.current = currentConversationId;
+      }
 
       // Update URL if conversation has messages and URL doesn't match
       if (
@@ -194,14 +202,30 @@ const ChatPage = () => {
     } else if (isAuthenticated) {
       // Only clear messages for authenticated users
       // Guest messages are managed separately
-      setCurrentMessages([]);
+      if (conversationChanged) {
+        setCurrentMessages([]);
+        prevConversationIdRef.current = null;
+      }
 
       // Navigate to /app if no conversation selected and URL has ID
       if (conversationIdFromUrl) {
         navigate("/app", { replace: true });
       }
     }
-  }, [selectedConversation, isAuthenticated, conversationIdFromUrl, navigate]);
+  }, [
+    selectedConversation?.id,
+    isAuthenticated,
+    conversationIdFromUrl,
+    navigate,
+  ]);
+
+  // Update tools and memory when conversation changes (separate from messages to avoid overwriting)
+  useEffect(() => {
+    if (selectedConversation) {
+      setTools(selectedConversation.tools || {});
+      setMemoryEnabled(selectedConversation.memory?.enabled || false);
+    }
+  }, [selectedConversation?.tools, selectedConversation?.memory]);
 
   // Track previous authentication state to detect logout
   const prevIsAuthenticatedRef = useRef(isAuthenticated);
@@ -587,12 +611,18 @@ const ChatPage = () => {
       (!isAuthenticated ? guestSessionId : selectedConversationId) ||
       undefined;
 
-    // For guest users: Backend now handles guest ID via cookie (ci)
-    // No need to send sessionId from frontend anymore
+    // Get sessionId from current conversation (for authenticated users only)
+    // NOTE: Backend will automatically load session_id from conversation in database if conversationId is provided
+    // For guest users: Backend manages sessionId internally, we don't send it from frontend
+    // Backend will send null to External API for first-time guest chats, External API will create new session_id
+    const sessionIdForRequest = isAuthenticated
+      ? currentConversation?.sessionId || undefined
+      : undefined; // Guest users: Don't send sessionId, let backend handle it
+
     const apiData = {
       userInput: content,
-      conversationId: finalConversationId, // Send conversationId to backend
-      sessionId: externalSessionId || undefined,
+      conversationId: finalConversationId, // Send conversationId - backend will load session_id from database
+      sessionId: sessionIdForRequest, // Optional: send if available, but backend will use conversation.session_id from DB
       role: role, // Send role to backend
       schoolName: currentConversation?.schoolName || finalSchoolName, // School name from conversation
       grade: session.grade,
@@ -620,18 +650,13 @@ const ChatPage = () => {
 
       setCurrentMessages((prev) => [...prev, assistantMessage]);
 
-      // Capture and persist external session id (for subsequent chats)
-      if (response.sessionId && response.sessionId !== externalSessionId) {
-        setExternalSessionId(response.sessionId);
-        localStorage.setItem("external_session_id", response.sessionId);
-      }
-
       // For guest: Backend handles guest ID via cookie for rate limiting
       // But we still use conversationId (guestSessionId) for frontend state tracking
       if (!isAuthenticated) {
         // Guest messages are stored in local state only (no backend conversation)
         // conversationId is used for frontend state tracking
         // Backend cookie (ci) is used for rate limiting
+        // Backend manages sessionId internally, we don't need to track it in frontend
         // Update conversationId from response if backend returned one
         if (
           response.chatHistoryId &&
@@ -640,18 +665,28 @@ const ChatPage = () => {
           setGuestSessionId(response.chatHistoryId);
           localStorage.setItem("guest_session_id", response.chatHistoryId);
         }
+        // NOTE: We don't save sessionId to localStorage for guest users
+        // Backend will manage sessionId internally and send it to External API
       } else if (selectedConversationId) {
         // For authenticated users: update local state and sync with backend
         addMessageToConversation(selectedConversationId, assistantMessage);
 
-        // Refetch conversations to sync with backend after a short delay
-        // This ensures we have the latest messages from backend (including user message)
-        // We use a small delay to avoid race conditions with backend save
-        setTimeout(() => {
-          refetchConversations().catch((error) => {
-            console.error("Failed to refetch conversations:", error);
+        // Update sessionId in conversation if received from backend
+        // Backend saves sessionId to conversation, so we update local state to match
+        if (
+          response.sessionId &&
+          response.sessionId !== currentConversation?.sessionId
+        ) {
+          updateLocal(selectedConversationId, {
+            sessionId: response.sessionId,
           });
-        }, 500);
+        }
+
+        // NOTE: We don't refetch conversations here to avoid overwriting currentMessages
+        // Backend saves messages automatically, and we've already updated local state
+        // Refetching would cause race conditions where backend might not have saved yet,
+        // or the refetch would overwrite our optimistic updates with stale data
+        // Conversations will be synced when user switches conversations or reloads page
       }
     } catch (error: any) {
       console.error("Failed to get chat response:", error);
@@ -735,10 +770,18 @@ const ChatPage = () => {
     const finalSchoolName =
       currentConversation?.schoolName || guestSchoolName || undefined;
 
+    // Get sessionId from current conversation (for authenticated users only)
+    // NOTE: Backend will automatically load session_id from conversation in database if conversationId is provided
+    // For guest users: Backend manages sessionId internally, we don't send it from frontend
+    const sessionIdForRequest = isAuthenticated
+      ? currentConversation?.sessionId || undefined
+      : undefined; // Guest users: Don't send sessionId, let backend handle it
+
     // Prepare API call with the same user input
     const apiData = {
       userInput: userMessage.content || "",
       conversationId: finalConversationId,
+      sessionId: sessionIdForRequest, // Backend will prioritize conversation.session_id over this
       role: role,
       schoolName: finalSchoolName,
       grade: session.grade,
@@ -769,6 +812,8 @@ const ChatPage = () => {
         prev.map((msg) => (msg.id === messageId ? regeneratedMessage : msg))
       );
 
+      // For guest users: Backend manages sessionId internally, we don't need to track it
+
       // Update conversation if authenticated
       if (selectedConversationId && currentConversation) {
         const updatedMessages = currentConversation.messages.map((msg) =>
@@ -777,15 +822,19 @@ const ChatPage = () => {
         updateLocal(selectedConversationId, { messages: updatedMessages });
         addMessageToConversation(selectedConversationId, regeneratedMessage);
 
-        // Refetch conversations to sync with backend
-        setTimeout(() => {
-          refetchConversations().catch((error) => {
-            console.error(
-              "Failed to refetch conversations after regenerate:",
-              error
-            );
+        // Update sessionId in conversation if received from backend
+        if (
+          response.sessionId &&
+          response.sessionId !== currentConversation?.sessionId
+        ) {
+          updateLocal(selectedConversationId, {
+            sessionId: response.sessionId,
           });
-        }, 500);
+        }
+
+        // NOTE: We don't refetch conversations here to avoid overwriting currentMessages
+        // Backend saves messages automatically, and we've already updated local state
+        // Refetching would cause race conditions and overwrite our optimistic updates
       }
 
       toast.success("Response regenerated");

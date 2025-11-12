@@ -97,6 +97,7 @@ export interface Conversation {
   folderId?: string;
   schoolName?: string;
   subject?: string;
+  sessionId?: string; // External API session ID for this conversation
 }
 
 export interface ConversationFolder {

@@ -272,7 +272,7 @@ export const adminService = {
       has_prev: boolean;
     };
   }> {
-    const response = await axios.get("http://66.116.199.129:8000/list", {
+    const response = await axios.get(process.env.VITE_PYTHON_URL + "/list", {
       params,
     });
     return response.data;
@@ -296,7 +296,7 @@ export const adminService = {
     formData.append("subject", data.subject);
 
     const response = await axios.post(
-      "http://66.116.199.129:8000/upload",
+      process.env.VITE_PYTHON_URL + "/upload",
       formData,
       {
         headers: {
@@ -314,7 +314,7 @@ export const adminService = {
     documentId: string
   ): Promise<{ success: boolean; message?: string; [key: string]: any }> {
     const response = await axios.delete(
-      `http://66.116.199.129:8000/delete/${documentId}`
+      process.env.VITE_PYTHON_URL + `/delete/${documentId}`
     );
     return response.data;
   },

@@ -13,6 +13,7 @@ interface BackendConversation {
   folder_id: string | null;
   school_name: string | null;
   subject: string | null;
+  session_id: string | null; // External API session ID
   created_at: string;
   updated_at: string;
 }
@@ -31,6 +32,7 @@ const mapBackendToFrontend = (backend: BackendConversation): Conversation => {
     folderId: backend.folder_id || undefined,
     schoolName: backend.school_name || undefined,
     subject: backend.subject || undefined,
+    sessionId: backend.session_id || undefined, // Map session_id from backend
   };
 };
 
