@@ -60,19 +60,68 @@ const Composer = ({
 
   useEffect(() => {
     if (textareaRef.current) {
-      textareaRef.current.style.height = "auto";
-      if (compact && !input.trim()) {
-        // When compact and empty, keep it small but not too small
-        textareaRef.current.style.height = "56px";
+      // Check if mobile (screen width < 640px = sm breakpoint)
+      const isMobile = window.innerWidth < 640;
+
+      if (isMobile) {
+        // On mobile: always keep single line height, no wrap
+        const singleLineHeight = compact ? "44px" : "52px";
+        textareaRef.current.style.height = singleLineHeight;
+        textareaRef.current.style.overflowY = "hidden";
+        textareaRef.current.style.overflowX = "auto";
+        textareaRef.current.style.whiteSpace = "nowrap";
       } else {
-        // Otherwise, auto-resize based on content
-        textareaRef.current.style.height = `${Math.min(
-          textareaRef.current.scrollHeight,
-          200
-        )}px`;
+        // On desktop: auto-resize based on content, allow wrap
+        textareaRef.current.style.height = "auto";
+        textareaRef.current.style.overflowY = "auto";
+        textareaRef.current.style.overflowX = "visible";
+        textareaRef.current.style.whiteSpace = "normal";
+
+        if (compact && !input.trim()) {
+          // When compact and empty, keep it small but not too small
+          textareaRef.current.style.height = "56px";
+        } else {
+          // Otherwise, auto-resize based on content
+          textareaRef.current.style.height = `${Math.min(
+            textareaRef.current.scrollHeight,
+            200
+          )}px`;
+        }
       }
     }
   }, [input, compact]);
+
+  // Handle window resize to adjust mobile/desktop behavior
+  useEffect(() => {
+    const handleResize = () => {
+      if (textareaRef.current) {
+        const isMobile = window.innerWidth < 640;
+        if (isMobile) {
+          // On mobile: single line, no wrap
+          const singleLineHeight = compact ? "44px" : "52px";
+          textareaRef.current.style.height = singleLineHeight;
+          textareaRef.current.style.overflowY = "hidden";
+          textareaRef.current.style.overflowX = "auto";
+          textareaRef.current.style.whiteSpace = "nowrap";
+        } else {
+          // On desktop: auto-resize, allow wrap
+          textareaRef.current.style.height = "auto";
+          textareaRef.current.style.overflowY = "auto";
+          textareaRef.current.style.overflowX = "visible";
+          textareaRef.current.style.whiteSpace = "normal";
+          if (textareaRef.current.value.trim()) {
+            textareaRef.current.style.height = `${Math.min(
+              textareaRef.current.scrollHeight,
+              200
+            )}px`;
+          }
+        }
+      }
+    };
+
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
+  }, [compact]);
 
   useEffect(() => {
     const handleSuggestion = (e: CustomEvent) => {
@@ -98,7 +147,22 @@ const Composer = ({
       onSend(trimmedInput);
       setInput("");
       if (textareaRef.current) {
-        textareaRef.current.style.height = "auto";
+        // Check if mobile to set appropriate height and style
+        const isMobile = window.innerWidth < 640;
+        if (isMobile) {
+          // On mobile: reset to single line
+          const singleLineHeight = compact ? "44px" : "52px";
+          textareaRef.current.style.height = singleLineHeight;
+          textareaRef.current.style.overflowY = "hidden";
+          textareaRef.current.style.overflowX = "auto";
+          textareaRef.current.style.whiteSpace = "nowrap";
+        } else {
+          // On desktop: reset height
+          textareaRef.current.style.height = "auto";
+          textareaRef.current.style.overflowY = "auto";
+          textareaRef.current.style.overflowX = "visible";
+          textareaRef.current.style.whiteSpace = "normal";
+        }
       }
     }
   };
@@ -296,11 +360,12 @@ const Composer = ({
                 disabled={disabled || isStreaming}
                 rows={1}
                 className={`w-full ${
-                  compact ? "px-3 py-3 pr-48" : "px-4 py-5 pr-52"
-                } bg-muted/50 border border-border rounded-2xl resize-none focus:outline-none focus:ring-0 focus:border-border disabled:opacity-50 disabled:cursor-not-allowed max-h-[320px] overflow-y-auto transition-all`}
+                  compact
+                    ? "px-3 py-3 pr-48 sm:pr-48"
+                    : "px-4 py-5 pr-52 sm:pr-52"
+                } bg-muted/50 border border-border rounded-2xl resize-none focus:outline-none focus:ring-0 focus:border-border disabled:opacity-50 disabled:cursor-not-allowed transition-all max-h-[52px] sm:max-h-[320px] leading-[24px] sm:leading-normal`}
                 style={{
-                  minHeight: compact ? "56px" : "112px",
-                  height: compact && !input.trim() ? "56px" : "auto",
+                  minHeight: compact ? "44px" : "52px",
                 }}
               />
               {/* Left dock: camera, attach, and school chip pinned to bottom-left - hidden when compact */}
@@ -358,7 +423,7 @@ const Composer = ({
 
               {/* Inline controls - center when compact, bottom-right when normal */}
               {compact ? (
-                <div className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center gap-2">
+                <div className="absolute right-0 md:right-2  top-1/2 -translate-y-1/2 flex items-center gap-2 bg-white dark:bg-black">
                   {/* Role toggle button with sliding background */}
                   <button
                     type="button"
@@ -448,7 +513,7 @@ const Composer = ({
                   )}
                 </div>
               ) : (
-                <div className="absolute right-2 bottom-2 flex items-center gap-2">
+                <div className="absolute right-0 md:right-2 bottom-1 md:bottom-2 flex items-center gap-2 bg-white dark:bg-black">
                   {/* Role toggle button with sliding background */}
                   <button
                     type="button"

@@ -82,10 +82,12 @@ const ChatArea = ({
       >
         <div
           className={`flex flex-col items-center justify-start pt-3 sm:pt-4 md:pt-6 ${
-            isAuthenticated ? "pb-3 sm:pb-4" : "pb-4 sm:pb-5 md:pb-6"
+            isAuthenticated ? "pb-3 sm:pb-4" : "pb-2 sm:pb-5 md:pb-6"
           } ${
             isAuthenticated ? "px-3 sm:px-4" : "px-2 sm:px-3 md:px-4"
-          } text-center min-h-full w-full`}
+          } text-center min-h-full w-full ${
+            !isAuthenticated ? "justify-between" : ""
+          }`}
           style={
             heroScale < 1
               ? {
@@ -97,36 +99,37 @@ const ChatArea = ({
           }
         >
           {/* removed decorative icon above header */}
-
-          <img
-            src={cuteIcon}
-            alt="Cute assistant"
-            className="w-28 h-28 sm:w-36 sm:h-36 md:w-40 md:h-40 lg:w-48 lg:h-48 mb-0.5 sm:mb-1 mx-auto rounded-full flex-shrink-0"
-          />
-          <div
-            className={`-mt-1.5 sm:-mt-2 md:-mt-4 lg:-mt-5 ${
-              isAuthenticated
-                ? "mb-4 sm:mb-6 md:mb-8"
-                : "mb-1.5 sm:mb-2 md:mb-4"
-            } leading-tight relative z-10 px-2 sm:px-3 md:px-4 w-full`}
-          >
-            <p className="text-xl sm:text-2xl md:text-3xl lg:text-4xl font-bold text-foreground">
-              {(() => {
-                const hour = new Date().getHours();
-                const partOfDay =
-                  hour < 12 ? "Morning" : hour < 18 ? "Afternoon" : "Evening";
-                const name =
-                  userName && userName !== "Guest" ? userName : "there";
-                return `Good ${partOfDay}, ${name}`;
-              })()}
-            </p>
-            <p className="text-xl sm:text-2xl md:text-3xl lg:text-4xl font-bold text-foreground">
-              What's on <span className="gradient-text">your mind?</span>
-            </p>
+          <div className="flex flex-col items-center">
+            <img
+              src={cuteIcon}
+              alt="Cute assistant"
+              className="w-28 h-28 sm:w-36 sm:h-36 md:w-40 md:h-40 lg:w-48 lg:h-48 mb-0.5 sm:mb-1 mx-auto rounded-full flex-shrink-0"
+            />
+            <div
+              className={`-mt-1.5 sm:-mt-2 md:-mt-4 lg:-mt-5 ${
+                isAuthenticated
+                  ? "mb-4 sm:mb-6 md:mb-8"
+                  : "mb-2 sm:mb-3 md:mb-4"
+              } leading-tight relative z-10 px-2 sm:px-3 md:px-4 w-full`}
+            >
+              <p className="text-xl sm:text-2xl md:text-3xl lg:text-4xl font-bold text-foreground">
+                {(() => {
+                  const hour = new Date().getHours();
+                  const partOfDay =
+                    hour < 12 ? "Morning" : hour < 18 ? "Afternoon" : "Evening";
+                  const name =
+                    userName && userName !== "Guest" ? userName : "there";
+                  return `Good ${partOfDay}, ${name}`;
+                })()}
+              </p>
+              <p className="text-xl sm:text-2xl md:text-3xl lg:text-4xl font-bold text-foreground">
+                What's on <span className="gradient-text">your mind?</span>
+              </p>
+            </div>
           </div>
 
           {!isAuthenticated && (
-            <div className="w-full mt-1.5 sm:mt-2 md:mt-3 px-1 sm:px-2 md:px-4">
+            <div className="w-full mt-auto pt-2 sm:pt-4 md:pt-6 px-1 sm:px-2 md:px-4">
               <SpaceStarter />
             </div>
           )}

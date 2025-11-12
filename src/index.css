@@ -1,4 +1,4 @@
-@import './index-accessibility.css';
+@import "./index-accessibility.css";
 
 @tailwind base;
 @tailwind components;
@@ -55,24 +55,26 @@ body {
   min-height: 100vh;
 }
 
-/* Scrollbar styling */
-::-webkit-scrollbar {
-  width: 8px;
-  height: 8px;
+/* Hide scrollbar globally but keep scroll functionality */
+html,
+body {
+  -ms-overflow-style: none; /* IE and Edge */
+  scrollbar-width: none; /* Firefox */
 }
 
-::-webkit-scrollbar-track {
-  background: var(--surface-muted);
+html::-webkit-scrollbar,
+body::-webkit-scrollbar {
+  display: none; /* Chrome, Safari and Opera */
 }
 
-::-webkit-scrollbar-thumb {
-  background: var(--muted-foreground);
-  opacity: 0.3;
-  border-radius: 4px;
+/* Hide scrollbar but keep functionality - utility class */
+.scrollbar-hide {
+  -ms-overflow-style: none; /* IE and Edge */
+  scrollbar-width: none; /* Firefox */
 }
 
-::-webkit-scrollbar-thumb:hover {
-  opacity: 0.5;
+.scrollbar-hide::-webkit-scrollbar {
+  display: none; /* Chrome, Safari and Opera */
 }
 
 /* Academic glow effect */

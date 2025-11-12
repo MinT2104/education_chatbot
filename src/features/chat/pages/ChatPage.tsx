@@ -1160,7 +1160,8 @@ const ChatPage = () => {
                 <h3 className="text-xs font-medium text-muted-foreground mb-3 tracking-wide">
                   GET STARTED WITH AN EXAMPLE BELOW
                 </h3>
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+                {/* Mobile: horizontal scroll, Desktop: grid */}
+                <div className="flex sm:grid sm:grid-cols-2 lg:grid-cols-4 gap-3 overflow-x-auto sm:overflow-x-visible pb-2 sm:pb-0 -mx-6 px-6 sm:mx-0 sm:px-0 scrollbar-hide">
                   {quickSuggestions.map(
                     (
                       suggestion: { text: string; icon?: string },
@@ -1169,15 +1170,13 @@ const ChatPage = () => {
                       <button
                         key={`${suggestion.text}-${i}`}
                         onClick={() => handleSendMessage(suggestion.text)}
-                        className="group relative p-4 rounded-xl bg-card border border-border hover:bg-accent hover:border-primary/50 transition-all text-left cursor-pointer"
+                        className="group relative p-4 rounded-xl bg-card border border-border hover:bg-accent hover:border-primary/50 transition-all text-left cursor-pointer flex-shrink-0 min-w-[280px] sm:min-w-0 sm:w-auto"
                       >
                         <p className="text-sm text-foreground mb-3 pr-8">
                           {suggestion.text}
                         </p>
                         <div className="absolute bottom-3 left-4 text-muted-foreground group-hover:text-primary transition-colors">
-                          <span className="text-sm">
-                            {suggestion.icon || "💡"}
-                          </span>
+                          <span className="text-sm">{suggestion.icon}</span>
                         </div>
                       </button>
                     )
@@ -1186,14 +1185,18 @@ const ChatPage = () => {
               </div>
             )}
             {/* Footer notice */}
-            <div className="px-6 py-2 pb-4 md:pb-2 text-xs text-muted-foreground text-center">
-              Edu+ can make mistakes. Check important info. See{" "}
-              <button
-                className="underline text-primary hover:text-primary/80"
-                onClick={() => navigate("/cookies")}
-              >
-                Cookie Preferences
-              </button>
+            <div className="mx-auto max-w-[900px] px-6 pt-4 pb-0 md:pb-4">
+              <p className="text-xs text-muted-foreground text-center leading-relaxed">
+                <span className="block sm:inline">
+                  Edu+ can make mistakes. Check important info.
+                </span>{" "}
+                <button
+                  className="underline text-primary hover:text-primary/80 transition-colors focus:outline-none focus:ring-2 focus:ring-primary/20 rounded px-1"
+                  onClick={() => navigate("/cookies")}
+                >
+                  Cookie Preferences
+                </button>
+              </p>
             </div>
           </div>
           <UpgradeModal

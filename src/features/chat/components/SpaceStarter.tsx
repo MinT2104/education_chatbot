@@ -104,7 +104,7 @@ const SpaceStarter: React.FC = () => {
 
   return (
     <div
-      className="relative w-full max-w-5xl mx-auto rounded-2xl overflow-visible dark:bg-card/70"
+      className="relative w-full max-w-5xl mx-auto rounded-2xl overflow-visible dark:bg-card/70 scrollbar-none"
       style={containerStyle}
     >
       {/* Pastel radial mist overlays */}
@@ -120,7 +120,7 @@ const SpaceStarter: React.FC = () => {
         {/* Pink right (pull inward for blend) */}
         <div className="absolute bottom-8 -right-6 sm:-right-12 w-[320px] h-[180px] sm:w-[480px] sm:h-[270px] md:w-[640px] md:h-[360px] rounded-full bg-[radial-gradient(closest-side,rgba(244,114,182,0.28),transparent_70%)] dark:bg-[radial-gradient(closest-side,rgba(244,114,182,0.24),transparent_70%)] blur-3xl"></div>
       </div>
-      <div className="relative p-2 sm:p-3">
+      <div className="relative p-2 sm:p-4 md:p-3">
         {/* <div className="flex items-center justify-between mb-1.5 sm:mb-2">
           <h2 className="text-sm sm:text-base font-semibold text-foreground">
             Start with a Space
@@ -130,11 +130,12 @@ const SpaceStarter: React.FC = () => {
           </button>
         </div> */}
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-1.5 sm:gap-2">
+        {/* Mobile: horizontal scroll, Desktop: grid */}
+        <div className="flex sm:grid sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-2 lg:gap-2.5 overflow-x-auto sm:overflow-x-visible pb-2 sm:pb-0 -mx-3 sm:mx-0 px-3 sm:px-0 scrollbar-hide">
           {spaces.map((space, idx) => (
             <button
               key={idx}
-              className="group rounded-lg bg-card/60 dark:bg-card/40 hover:bg-card/75 dark:hover:bg-card/55 transition-colors p-2 sm:p-2.5 md:p-3 flex gap-1.5 sm:gap-2 shadow-[0_1px_2px_rgba(0,0,0,.06)] dark:shadow-[0_1px_2px_rgba(0,0,0,.2)] text-left min-h-20 sm:min-h-24 focus:outline-none focus:ring-2 focus:ring-primary"
+              className="group rounded-xl bg-card/70 dark:bg-card/50 hover:bg-card/90 dark:hover:bg-card/65 transition-all p-4 sm:p-3 md:p-3.5 flex gap-3 sm:gap-2 md:gap-2.5 shadow-sm dark:shadow-md  hover:border-border/80 dark:hover:border-border/60 text-left min-h-[100px] sm:min-h-24 md:min-h-28 focus:outline-none focus:ring-2 focus:ring-primary/50 active:scale-[0.98] flex-shrink-0 min-w-[280px] sm:min-w-0 sm:w-auto"
               onClick={() => {
                 const detail = space.content || space.title;
                 window.dispatchEvent(
@@ -143,14 +144,14 @@ const SpaceStarter: React.FC = () => {
               }}
               type="button"
             >
-              <div className="text-xl sm:text-2xl shrink-0 leading-none self-start">
+              <div className="text-2xl sm:text-2xl md:text-3xl shrink-0 leading-none self-start mt-0.5">
                 {space.icon}
               </div>
-              <div className="min-w-0 flex-1">
-                <div className="text-xs sm:text-sm md:text-base font-semibold text-foreground mb-0.5">
+              <div className="min-w-0 flex-1 flex flex-col justify-center">
+                <div className="text-sm sm:text-sm md:text-base font-semibold text-foreground mb-1 sm:mb-0.5 md:mb-1 leading-tight">
                   {space.title}
                 </div>
-                <div className="text-xs sm:text-xs md:text-sm text-foreground/80 leading-relaxed">
+                <div className="text-xs sm:text-xs md:text-sm text-foreground/70 dark:text-foreground/60 leading-relaxed line-clamp-2">
                   {space.description}
                 </div>
               </div>

@@ -1,5 +1,6 @@
 import { Conversation, ConversationTools } from "../types";
 import { useMemo, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { useAppSelector, useAppDispatch } from "../../../core/store/hooks";
 import { Button } from "@/components/ui/button";
 import {
@@ -40,6 +41,7 @@ const TopBar = ({
   onModelChange,
   onSettings,
 }: TopBarProps) => {
+  const navigate = useNavigate();
   const [shareOpen, setShareOpen] = useState(false);
   const [authModal, setAuthModal] = useState<"login" | "signup" | null>(null);
   const isAuthenticated = useAppSelector((s) => s.auth.isAuthenticated);
@@ -66,20 +68,10 @@ const TopBar = ({
   };
   return (
     <div className="h-16 min-h-16 bg-background/50 backdrop-blur-sm sticky top-0 z-10">
-      <div className="h-full px-4 flex items-center justify-between">
+      <div className="h-full px-4 flex items-center justify-end gap-3 md:justify-between">
         {/* Left: Model dropdown */}
         {/* Left: Model Selector */}
         <div className="flex items-center gap-3">
-          <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-purple-500 to-indigo-600 flex items-center justify-center shadow-md">
-            <svg
-              className="w-4 h-4 text-white"
-              fill="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path d="M12 2L2 7v10c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V7l-10-5z" />
-            </svg>
-          </div>
-
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button
@@ -105,7 +97,7 @@ const TopBar = ({
 
             <DropdownMenuContent
               align="start"
-              className="w-56 shadow-xl rounded-lg border border-border/50 p-1 bg-popover backdrop-blur-sm"
+              className="w-72 shadow-xl rounded-lg border border-border/50 p-1 bg-popover backdrop-blur-sm"
             >
               <DropdownMenuItem
                 key="Government School"
@@ -117,25 +109,52 @@ const TopBar = ({
                     : "hover:bg-muted/70"
                 )}
               >
-                <span className="font-medium">Government School</span>
-                <span className="text-xs text-muted-foreground">
-                  Fast, multimodal, balanced accuracy
-                </span>
+                <div className="flex items-center justify-between w-full">
+                  <div className="flex flex-col items-start">
+                    <span className="font-medium">
+                      Government Schools (Public)
+                    </span>
+                    <span className="text-xs text-muted-foreground">
+                      Unlimited Free
+                    </span>
+                  </div>
+                </div>
               </DropdownMenuItem>
               <DropdownMenuItem
                 key="Private School"
-                onClick={() => onModelChange?.("Private School")}
+                onSelect={(e) => {
+                  e.preventDefault();
+                }}
                 className={cn(
-                  "flex flex-col items-start py-2.5 px-3.5 cursor-pointer rounded-md transition-colors",
+                  "py-2.5 px-3.5 rounded-md transition-colors",
                   model === "Private School"
                     ? "bg-accent text-accent-foreground"
                     : "hover:bg-muted/70"
                 )}
+                asChild
               >
-                <span className="font-medium">Private School</span>
-                <span className="text-xs text-muted-foreground">
-                  Fast, multimodal, balanced accuracy
-                </span>
+                <div className="flex items-center justify-between gap-2 w-full cursor-default">
+                  <div
+                    className="flex flex-col items-start flex-1 cursor-pointer"
+                    onClick={() => onModelChange?.("Private School")}
+                  >
+                    <span className="font-medium">Private Schools</span>
+                    <span className="text-xs text-muted-foreground">
+                      25 Free Chats
+                    </span>
+                  </div>
+                  <Button
+                    onClick={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      navigate("/upgrade");
+                    }}
+                    className="h-7 px-3 text-xs bg-primary text-primary-foreground hover:bg-primary/90 shrink-0"
+                    size="sm"
+                  >
+                    Upgrade
+                  </Button>
+                </div>
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
@@ -147,7 +166,7 @@ const TopBar = ({
             <>
               <button
                 onClick={() => setShareOpen(true)}
-                className="p-2 rounded-lg hover:bg-muted transition-colors"
+                className="p-2 md:block hidden rounded-lg hover:bg-muted transition-colors"
                 aria-label="Share"
               >
                 <svg
@@ -205,7 +224,7 @@ const TopBar = ({
               {onSettings && (
                 <button
                   onClick={onSettings}
-                  className="p-2 rounded-lg hover:bg-muted transition-colors"
+                  className="p-2 md:block hidden rounded-lg hover:bg-muted transition-colors"
                   aria-label="Settings"
                 >
                   <svg
