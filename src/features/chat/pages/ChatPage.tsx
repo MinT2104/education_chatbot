@@ -1092,6 +1092,7 @@ const ChatPage = () => {
               }
               userName={userName}
               plan={plan.toLowerCase() as "free" | "go"}
+              onChangeSchool={() => setShowSchoolPicker(true)}
             />
           </div>
         )}

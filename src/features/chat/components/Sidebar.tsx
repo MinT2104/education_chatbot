@@ -47,6 +47,7 @@ import {
   Sparkles,
   ChevronRight,
   DoorOpen,
+  School,
 } from "lucide-react";
 import {
   TooltipProvider,
@@ -70,6 +71,7 @@ interface SidebarProps {
   onToggleCollapse?: () => void;
   userName?: string;
   plan?: "free" | "go"; // Keep for backward compatibility, but will use from store
+  onChangeSchool?: () => void;
 }
 
 const NewChatIcon = ({ className }: { className?: string }) => (
@@ -98,6 +100,7 @@ const Sidebar = ({
   onToggleCollapse,
   userName: propUserName,
   plan: propPlan,
+  onChangeSchool,
 }: SidebarProps) => {
   const [hoveredId, setHoveredId] = useState<string | null>(null);
   const [openMenuId, setOpenMenuId] = useState<string | null>(null);
@@ -455,6 +458,15 @@ const Sidebar = ({
             </svg>
             <span>Library</span>
           </button>
+          {onChangeSchool && (
+            <button
+              onClick={onChangeSchool}
+              className="w-full h-9 rounded-lg flex items-center gap-3 px-3 text-sm font-normal text-slate-700 transition-colors hover:bg-slate-900/5 dark:text-slate-200 dark:hover:bg-white/5"
+            >
+              <School className="w-5 h-5" />
+              <span>Change school</span>
+            </button>
+          )}
         </div>
 
         <div className="flex items-center justify-between px-3 mt-6 mb-2">
