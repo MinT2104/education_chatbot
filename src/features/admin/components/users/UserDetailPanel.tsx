@@ -58,55 +58,55 @@ export const UserDetailPanel = ({ user }: UserDetailPanelProps) => {
   return (
     <Card className="h-full">
       <CardHeader>
-        <CardTitle className="flex items-center gap-2">
-          <UserCircle className="w-5 h-5" />
-          {user.name}
+        <CardTitle className="flex items-center gap-2 text-base sm:text-lg">
+          <UserCircle className="w-4 h-4 sm:w-5 sm:h-5" />
+          <span className="truncate">{user.name}</span>
         </CardTitle>
-        <CardDescription>Profile, usage, and recent activity</CardDescription>
+        <CardDescription className="text-xs sm:text-sm">Profile, usage, and recent activity</CardDescription>
       </CardHeader>
-      <CardContent className="space-y-6">
-        <div className="space-y-3 text-sm">
-          <div className="flex justify-between">
-            <span>Email</span>
-            <span className="font-medium">{user.email}</span>
+      <CardContent className="space-y-4 sm:space-y-6">
+        <div className="space-y-2 sm:space-y-3 text-xs sm:text-sm">
+          <div className="flex flex-col sm:flex-row sm:justify-between gap-1 sm:gap-0">
+            <span className="text-muted-foreground">Email</span>
+            <span className="font-medium truncate text-left sm:text-right">{user.email}</span>
           </div>
-          <div className="flex justify-between">
-            <span>Location</span>
-            <span className="font-medium">{user.location || "—"}</span>
+          <div className="flex flex-col sm:flex-row sm:justify-between gap-1 sm:gap-0">
+            <span className="text-muted-foreground">Location</span>
+            <span className="font-medium truncate text-left sm:text-right">{user.location || "—"}</span>
           </div>
-          <div className="flex justify-between items-center">
-            <span>Status</span>
-            <div className="flex gap-2 items-center">
+          <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-2 sm:gap-0">
+            <span className="text-muted-foreground">Status</span>
+            <div className="flex gap-2 items-center flex-wrap">
               <Badge
                 variant={user.status === "active" ? "default" : "secondary"}
-                className={user.status === "active" ? "bg-green-500" : ""}
+                className={`text-xs ${user.status === "active" ? "bg-green-500" : ""}`}
               >
                 {user.status}
               </Badge>
               {user.subscription && (
-                <Badge variant="outline" className="flex items-center gap-1">
+                <Badge variant="outline" className="flex items-center gap-1 text-xs">
                   <ShieldCheck className="w-3 h-3" />
                   {user.subscription.status}
                 </Badge>
               )}
             </div>
           </div>
-          <div className="flex justify-between">
-            <span>Plan</span>
-            <span className="font-medium">
+          <div className="flex flex-col sm:flex-row sm:justify-between gap-1 sm:gap-0">
+            <span className="text-muted-foreground">Plan</span>
+            <span className="font-medium text-left sm:text-right">
               {user.plan.charAt(0).toUpperCase() + user.plan.slice(1)}
             </span>
           </div>
           {user.subscription && (
             <>
-              <div className="flex justify-between">
-                <span>Subscription Status</span>
-                <span className="font-medium">{user.subscription.status}</span>
+              <div className="flex flex-col sm:flex-row sm:justify-between gap-1 sm:gap-0">
+                <span className="text-muted-foreground">Subscription Status</span>
+                <span className="font-medium text-left sm:text-right">{user.subscription.status}</span>
               </div>
               {user.subscription.nextBillingDate && (
-                <div className="flex justify-between">
-                  <span>Next Billing</span>
-                  <span className="font-medium">
+                <div className="flex flex-col sm:flex-row sm:justify-between gap-1 sm:gap-0">
+                  <span className="text-muted-foreground">Next Billing</span>
+                  <span className="font-medium text-left sm:text-right">
                     {new Date(
                       user.subscription.nextBillingDate
                     ).toLocaleDateString()}
@@ -114,9 +114,9 @@ export const UserDetailPanel = ({ user }: UserDetailPanelProps) => {
                 </div>
               )}
               {user.subscription.startDate && (
-                <div className="flex justify-between">
-                  <span>Start Date</span>
-                  <span className="font-medium">
+                <div className="flex flex-col sm:flex-row sm:justify-between gap-1 sm:gap-0">
+                  <span className="text-muted-foreground">Start Date</span>
+                  <span className="font-medium text-left sm:text-right">
                     {new Date(user.subscription.startDate).toLocaleDateString()}
                   </span>
                 </div>
@@ -127,7 +127,7 @@ export const UserDetailPanel = ({ user }: UserDetailPanelProps) => {
 
         <div className="space-y-2">
           <div className="flex items-center justify-between">
-            <h4 className="text-sm font-medium">Recent Activity</h4>
+            <h4 className="text-xs sm:text-sm font-medium">Recent Activity</h4>
             {!loading && (
               <span className="text-xs text-muted-foreground">
                 {logs.length} items
@@ -135,23 +135,23 @@ export const UserDetailPanel = ({ user }: UserDetailPanelProps) => {
             )}
           </div>
           <div className="rounded-lg border border-border">
-            <div className="max-h-64 overflow-y-auto divide-y divide-border">
+            <div className="max-h-48 sm:max-h-64 overflow-y-auto divide-y divide-border">
               {loading ? (
-                <div className="p-4 text-sm text-muted-foreground">Loading...</div>
+                <div className="p-3 sm:p-4 text-xs sm:text-sm text-muted-foreground">Loading...</div>
               ) : logs.length === 0 ? (
-                <div className="p-4 text-sm text-muted-foreground">No activity yet</div>
+                <div className="p-3 sm:p-4 text-xs sm:text-sm text-muted-foreground">No activity yet</div>
               ) : (
                 logs.map((log, idx) => (
-                  <div key={idx} className="p-3 text-xs flex items-center justify-between gap-3">
+                  <div key={idx} className="p-2 sm:p-3 text-xs flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 sm:gap-3">
                     <div className="flex-1 min-w-0">
-                      <div className="font-medium">{log.type}</div>
+                      <div className="font-medium truncate">{log.type}</div>
                       {log.metadata && (
-                        <div className="text-muted-foreground truncate">
-                          {JSON.stringify(log.metadata)}
+                        <div className="text-muted-foreground truncate text-[10px] sm:text-xs">
+                          {JSON.stringify(log.metadata).substring(0, 80)}...
                         </div>
                       )}
                     </div>
-                    <div className="text-right text-muted-foreground min-w-[140px]">
+                    <div className="text-right text-muted-foreground text-[10px] sm:text-xs whitespace-nowrap">
                       {new Date(log.created_at).toLocaleString()}
                     </div>
                   </div>

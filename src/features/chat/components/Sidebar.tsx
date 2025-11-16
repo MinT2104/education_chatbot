@@ -723,6 +723,20 @@ const Sidebar = ({
                   <span className="flex-1 text-sm text-gray-700 dark:text-gray-200">
                     Upgrade plan
                   </span>
+                  {(() => {
+                    // Get usage from user.currentLimit or localStorage
+                    const usage = user?.currentLimit ?? parseInt(localStorage.getItem("quota_used") || "0", 10);
+                    const limit = user?.planLimit ?? 25;
+                    // Show usage for Free plan users
+                    if (plan === "Free") {
+                      return (
+                        <span className="text-xs text-gray-500 dark:text-gray-400">
+                          {usage}/{limit}
+                        </span>
+                      );
+                    }
+                    return null;
+                  })()}
                 </DropdownMenuItem>
                 <DropdownMenuItem
                   onClick={() => navigate("/settings")}

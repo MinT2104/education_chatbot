@@ -240,14 +240,14 @@ export const AdminUsers = () => {
   }
 
   return (
-    <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
+    <div className="grid grid-cols-1 xl:grid-cols-3 gap-4 sm:gap-6">
       <Card className="xl:col-span-2">
         <CardHeader>
           <div className="flex flex-col gap-3">
-            <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
               <div>
-                <CardTitle>User Management</CardTitle>
-                <CardDescription>
+                <CardTitle className="text-lg sm:text-xl">User Management</CardTitle>
+                <CardDescription className="text-xs sm:text-sm">
                   View, audit, and manage every account (
                   {filteredAndSortedUsers.length} users)
                 </CardDescription>
@@ -257,27 +257,28 @@ export const AdminUsers = () => {
                 size="sm"
                 onClick={() => loadUsers(true)}
                 disabled={refreshing}
+                className="w-full sm:w-auto"
               >
                 <RefreshCw
-                  className={`h-4 w-4 mr-2 ${refreshing ? "animate-spin" : ""}`}
+                  className={`h-4 w-4 sm:mr-2 ${refreshing ? "animate-spin" : ""}`}
                 />
-                Refresh
+                <span className="hidden sm:inline">Refresh</span>
               </Button>
             </div>
 
             {/* Search and Filters */}
-            <div className="flex flex-col md:flex-row gap-3">
+            <div className="flex flex-col sm:flex-row gap-2 sm:gap-3">
               <div className="relative flex-1">
                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
                 <Input
-                  placeholder="Search by name, email, plan or location..."
+                  placeholder="Search by name, email, plan..."
                   value={userSearch}
                   onChange={(e) => setUserSearch(e.target.value)}
-                  className="pl-10"
+                  className="pl-10 text-sm"
                 />
               </div>
               <Select value={planFilter} onValueChange={setPlanFilter}>
-                <SelectTrigger className="w-full md:w-[140px]">
+                <SelectTrigger className="w-full sm:w-[140px]">
                   <SelectValue placeholder="Plan" />
                 </SelectTrigger>
                 <SelectContent>
@@ -287,7 +288,7 @@ export const AdminUsers = () => {
                 </SelectContent>
               </Select>
               <Select value={statusFilter} onValueChange={setStatusFilter}>
-                <SelectTrigger className="w-full md:w-[140px]">
+                <SelectTrigger className="w-full sm:w-[140px]">
                   <SelectValue placeholder="Status" />
                 </SelectTrigger>
                 <SelectContent>
@@ -302,7 +303,7 @@ export const AdminUsers = () => {
         <CardContent>
           {/* Bulk/Admin actions for selected user */}
           {selectedUser && (
-            <div className="flex items-center justify-end gap-3 mb-4">
+            <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-end gap-2 sm:gap-3 mb-4">
               <Button
                 variant="destructive"
                 size="sm"
@@ -319,6 +320,7 @@ export const AdminUsers = () => {
                     toast.error(e?.response?.data?.message || "Cancel failed");
                   }
                 }}
+                className="w-full sm:w-auto text-xs sm:text-sm"
               >
                 Cancel Subscription
               </Button>
@@ -335,119 +337,127 @@ export const AdminUsers = () => {
                     toast.error(e?.response?.data?.message || "Refund failed");
                   }
                 }}
+                className="w-full sm:w-auto text-xs sm:text-sm"
               >
                 Refund Last Payment
               </Button>
             </div>
           )}
-          <div className="rounded-md border">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>
-                    <SortButton field="name">Name</SortButton>
-                  </TableHead>
-                  <TableHead>
-                    <SortButton field="email">Email</SortButton>
-                  </TableHead>
-                  <TableHead>Role</TableHead>
-                  <TableHead>Location</TableHead>
-                  <TableHead>
-                    <SortButton field="plan">Plan</SortButton>
-                  </TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead>
-                    <SortButton field="lastActive">Last Active</SortButton>
-                  </TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {paginatedUsers.length === 0 ? (
+          <div className="rounded-md border overflow-x-auto -mx-1 sm:mx-0">
+            <div className="min-w-[800px] sm:min-w-0">
+              <Table>
+                <TableHeader>
                   <TableRow>
-                    <TableCell
-                      colSpan={7}
-                      className="text-center py-8 text-muted-foreground"
-                    >
-                      No users found
-                    </TableCell>
+                    <TableHead className="min-w-[120px]">
+                      <SortButton field="name">Name</SortButton>
+                    </TableHead>
+                    <TableHead className="min-w-[150px]">
+                      <SortButton field="email">Email</SortButton>
+                    </TableHead>
+                    <TableHead className="min-w-[80px]">Role</TableHead>
+                    <TableHead className="min-w-[100px] hidden md:table-cell">Location</TableHead>
+                    <TableHead className="min-w-[100px]">
+                      <SortButton field="plan">Plan</SortButton>
+                    </TableHead>
+                    <TableHead className="min-w-[80px]">Status</TableHead>
+                    <TableHead className="min-w-[100px] hidden lg:table-cell">
+                      <SortButton field="lastActive">Last Active</SortButton>
+                    </TableHead>
                   </TableRow>
-                ) : (
-                  paginatedUsers.map((user) => (
-                    <TableRow
-                      key={user.id}
-                      className={`cursor-pointer transition-colors hover:bg-muted/50 ${
-                        selectedUser?.id === user.id ? "bg-muted/70" : ""
-                      }`}
-                      onClick={() => setSelectedUser(user)}
-                    >
-                      <TableCell className="font-medium">
-                        <div className="flex items-center gap-2">
-                          <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center text-xs font-semibold">
-                            {user.name?.charAt(0).toUpperCase() || "?"}
-                          </div>
-                          {user.name || "—"}
-                        </div>
-                      </TableCell>
-                      <TableCell className="text-sm">{user.email}</TableCell>
-                      <TableCell>
-                        <Badge
-                          variant={
-                            user.role === "admin"
-                              ? "destructive"
-                              : user.role === "teacher"
-                              ? "default"
-                              : "secondary"
-                          }
-                        >
-                          {user.role}
-                        </Badge>
-                      </TableCell>
-                      <TableCell className="text-sm">
-                        {user.location || "—"}
-                      </TableCell>
-                      <TableCell>
-                        <Badge variant="outline">
-                          {user.plan.charAt(0).toUpperCase() +
-                            user.plan.slice(1)}
-                        </Badge>
-                        {user.subscription && (
-                          <Badge
-                            variant="outline"
-                            className="ml-1 text-xs"
-                            title={`Subscription: ${user.subscription.status}`}
-                          >
-                            {user.subscription.status === "active" ? "✓" : ""}
-                          </Badge>
-                        )}
-                      </TableCell>
-                      <TableCell>
-                        <Badge
-                          variant={
-                            user.status === "active" ? "default" : "secondary"
-                          }
-                          className={
-                            user.status === "active" ? "bg-green-500" : ""
-                          }
-                        >
-                          {user.status}
-                        </Badge>
-                      </TableCell>
-                      <TableCell className="text-sm">
-                        {user.lastActive
-                          ? new Date(user.lastActive).toLocaleDateString()
-                          : "—"}
+                </TableHeader>
+                <TableBody>
+                  {paginatedUsers.length === 0 ? (
+                    <TableRow>
+                      <TableCell
+                        colSpan={7}
+                        className="text-center py-8 text-muted-foreground"
+                      >
+                        No users found
                       </TableCell>
                     </TableRow>
-                  ))
-                )}
-              </TableBody>
-            </Table>
+                  ) : (
+                    paginatedUsers.map((user) => (
+                      <TableRow
+                        key={user.id}
+                        className={`cursor-pointer transition-colors hover:bg-muted/50 ${
+                          selectedUser?.id === user.id ? "bg-muted/70" : ""
+                        }`}
+                        onClick={() => setSelectedUser(user)}
+                      >
+                        <TableCell className="font-medium">
+                          <div className="flex items-center gap-2">
+                            <div className="w-6 h-6 sm:w-8 sm:h-8 rounded-full bg-primary/10 flex items-center justify-center text-xs font-semibold flex-shrink-0">
+                              {user.name?.charAt(0).toUpperCase() || "?"}
+                            </div>
+                            <span className="truncate">{user.name || "—"}</span>
+                          </div>
+                        </TableCell>
+                        <TableCell className="text-xs sm:text-sm">
+                          <span className="truncate block">{user.email}</span>
+                        </TableCell>
+                        <TableCell>
+                          <Badge
+                            variant={
+                              user.role === "admin"
+                                ? "destructive"
+                                : user.role === "teacher"
+                                ? "default"
+                                : "secondary"
+                            }
+                            className="text-xs"
+                          >
+                            {user.role}
+                          </Badge>
+                        </TableCell>
+                        <TableCell className="text-xs sm:text-sm hidden md:table-cell">
+                          <span className="truncate block">{user.location || "—"}</span>
+                        </TableCell>
+                        <TableCell>
+                          <div className="flex flex-wrap gap-1">
+                            <Badge variant="outline" className="text-xs">
+                              {user.plan.charAt(0).toUpperCase() +
+                                user.plan.slice(1)}
+                            </Badge>
+                            {user.subscription && (
+                              <Badge
+                                variant="outline"
+                                className="text-xs"
+                                title={`Subscription: ${user.subscription.status}`}
+                              >
+                                {user.subscription.status === "active" ? "✓" : ""}
+                              </Badge>
+                            )}
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          <Badge
+                            variant={
+                              user.status === "active" ? "default" : "secondary"
+                            }
+                            className={`text-xs ${
+                              user.status === "active" ? "bg-green-500" : ""
+                            }`}
+                          >
+                            {user.status}
+                          </Badge>
+                        </TableCell>
+                        <TableCell className="text-xs sm:text-sm hidden lg:table-cell">
+                          {user.lastActive
+                            ? new Date(user.lastActive).toLocaleDateString()
+                            : "—"}
+                        </TableCell>
+                      </TableRow>
+                    ))
+                  )}
+                </TableBody>
+              </Table>
+            </div>
           </div>
 
           {/* Pagination */}
           {totalPages > 1 && (
-            <div className="flex items-center justify-between mt-4">
-              <div className="text-sm text-muted-foreground">
+            <div className="flex flex-col sm:flex-row items-center justify-between gap-3 mt-4">
+              <div className="text-xs sm:text-sm text-muted-foreground text-center sm:text-left">
                 Showing {startIndex + 1} to{" "}
                 {Math.min(endIndex, filteredAndSortedUsers.length)} of{" "}
                 {filteredAndSortedUsers.length} users
@@ -458,11 +468,12 @@ export const AdminUsers = () => {
                   size="sm"
                   onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
                   disabled={currentPage === 1}
+                  className="h-8 px-2 sm:px-3"
                 >
-                  <ChevronLeft className="h-4 w-4" />
-                  Previous
+                  <ChevronLeft className="h-3 w-3 sm:h-4 sm:w-4" />
+                  <span className="hidden sm:inline ml-1">Previous</span>
                 </Button>
-                <div className="text-sm">
+                <div className="text-xs sm:text-sm px-2">
                   Page {currentPage} of {totalPages}
                 </div>
                 <Button
@@ -472,9 +483,10 @@ export const AdminUsers = () => {
                     setCurrentPage((p) => Math.min(totalPages, p + 1))
                   }
                   disabled={currentPage === totalPages}
+                  className="h-8 px-2 sm:px-3"
                 >
-                  Next
-                  <ChevronRight className="h-4 w-4" />
+                  <span className="hidden sm:inline mr-1">Next</span>
+                  <ChevronRight className="h-3 w-3 sm:h-4 sm:w-4" />
                 </Button>
               </div>
             </div>

@@ -16,6 +16,7 @@ import { AdminPricing } from "../components/pricing/AdminPricing";
 import { AdminSpaces } from "../components/spaces/AdminSpaces";
 import { AdminPrompts } from "../components/prompts/AdminPrompts";
 import { AdminStaticPages } from "../components/pages/AdminStaticPages";
+import { AdminSubjects } from "../components/subjects/AdminSubjects";
 
 const AdminPage = () => {
   const [activeTab, setActiveTab] = useState("dashboard");
@@ -131,11 +132,11 @@ const AdminPage = () => {
     <div className="min-h-screen bg-background">
       <AdminHeader />
 
-      <main className="container mx-auto px-6 py-8">
+      <main className="container mx-auto px-3 sm:px-4 md:px-6 py-4 sm:py-6 md:py-8 max-w-[1920px]">
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
           <AdminTabs onTabChange={setActiveTab} />
 
-          <TabsContent value="dashboard" className="space-y-6">
+          <TabsContent value="dashboard" className="space-y-4 sm:space-y-6">
             <AdminDashboard
               documents={documents}
               users={users}
@@ -144,15 +145,15 @@ const AdminPage = () => {
             />
           </TabsContent>
 
-          <TabsContent value="users" className="space-y-6">
+          <TabsContent value="users" className="space-y-4 sm:space-y-6">
             <AdminUsers />
           </TabsContent>
 
-          <TabsContent value="orders" className="space-y-6">
+          <TabsContent value="orders" className="space-y-4 sm:space-y-6">
             <AdminOrders />
           </TabsContent>
 
-          <TabsContent value="documents" className="space-y-6">
+          <TabsContent value="documents" className="space-y-4 sm:space-y-6">
             <AdminDocuments
               documents={documents}
               schools={schools}
@@ -161,31 +162,35 @@ const AdminPage = () => {
             />
           </TabsContent>
 
-          <TabsContent value="schools" className="space-y-6">
+          <TabsContent value="schools" className="space-y-4 sm:space-y-6">
             <AdminSchools />
           </TabsContent>
 
-          <TabsContent value="logs" className="space-y-6">
+          <TabsContent value="subjects" className="space-y-4 sm:space-y-6">
+            <AdminSubjects />
+          </TabsContent>
+
+          <TabsContent value="logs" className="space-y-4 sm:space-y-6">
             <AdminLogs />
           </TabsContent>
 
-          <TabsContent value="pricing" className="space-y-6">
+          <TabsContent value="pricing" className="space-y-4 sm:space-y-6">
             <AdminPricing />
           </TabsContent>
 
-          <TabsContent value="prompts" className="space-y-6">
+          <TabsContent value="prompts" className="space-y-4 sm:space-y-6">
             <AdminPrompts />
           </TabsContent>
 
-          <TabsContent value="pages" className="space-y-6">
+          <TabsContent value="pages" className="space-y-4 sm:space-y-6">
             <AdminStaticPages />
           </TabsContent>
 
-          <TabsContent value="spaces" className="space-y-6">
+          <TabsContent value="spaces" className="space-y-4 sm:space-y-6">
             <AdminSpaces />
           </TabsContent>
 
-          <TabsContent value="content" className="space-y-6">
+          <TabsContent value="content" className="space-y-4 sm:space-y-6">
             <AdminContent
               homeContent={homeContent}
               onContentChange={setHomeContent}

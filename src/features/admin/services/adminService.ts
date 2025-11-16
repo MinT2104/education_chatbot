@@ -321,6 +321,112 @@ export const adminService = {
     );
     return response.data;
   },
+
+  /**
+   * Get all active subjects (public endpoint)
+   * No authentication required
+   */
+  async getSubjects(params?: {
+    page?: number;
+    limit?: number;
+  }): Promise<Subject[]> {
+    const response = await apiClient.get("/subject/public", {
+      params: {
+        page: params?.page || 1,
+        limit: params?.limit || 1000,
+      },
+    });
+    // API returns array directly
+    return Array.isArray(response.data) ? response.data : [];
+  },
+
+  /**
+   * Get all subjects (admin endpoint with pagination and filters)
+   * Requires authentication
+   */
+  async getAllSubjectsAdmin(params?: {
+    page?: number;
+    limit?: number;
+    query?: Record<string, any>;
+  }): Promise<{
+    rows: Subject[];
+    total: number;
+    page: number;
+    pageSize: number;
+    totalPages: number;
+    currentPage: number;
+  }> {
+    const queryParams: any = {
+      page: params?.page || 1,
+      limit: params?.limit || 1000,
+    };
+
+    if (params?.query && Object.keys(params.query).length > 0) {
+      queryParams.query = JSON.stringify(params.query);
+    }
+
+    const response = await apiClient.get("/subject", {
+      params: queryParams,
+    });
+    return response.data;
+  },
+
+  /**
+   * Get subject by ID
+   * Requires authentication
+   */
+  async getSubjectById(id: string): Promise<Subject> {
+    const response = await apiClient.get(`/subject/${id}`);
+    return response.data;
+  },
+
+  /**
+   * Create a new subject
+   * Requires authentication (Admin only)
+   */
+  async createSubject(data: {
+    name: string;
+    code?: string | null;
+    description?: string | null;
+    gradeLevel?: string | null;
+    isActive?: boolean;
+  }): Promise<Subject> {
+    const response = await apiClient.post("/subject", {
+      name: data.name,
+      code: data.code || null,
+      description: data.description || null,
+      gradeLevel: data.gradeLevel || null,
+      isActive: data.isActive !== undefined ? data.isActive : true,
+    });
+    return response.data;
+  },
+
+  /**
+   * Update subject
+   * Requires authentication (Admin only)
+   */
+  async updateSubject(
+    id: string,
+    data: {
+      name?: string;
+      code?: string | null;
+      description?: string | null;
+      gradeLevel?: string | null;
+      isActive?: boolean;
+    }
+  ): Promise<Subject> {
+    const response = await apiClient.put(`/subject/${id}`, data);
+    return response.data;
+  },
+
+  /**
+   * Delete subject
+   * Requires authentication (Admin only)
+   */
+  async deleteSubject(id: string): Promise<{ success: boolean }> {
+    await apiClient.delete(`/subject/${id}`);
+    return { success: true };
+  },
 };
 
 // Re-export School type for backward compatibility
@@ -337,4 +443,15 @@ export interface StaticPageSummary {
   slug: string;
   title: string;
   content: string;
+}
+
+export interface Subject {
+  id: string;
+  name: string;
+  code: string | null;
+  description: string | null;
+  gradeLevel: string | null;
+  isActive: boolean;
+  createdAt: string;
+  updatedAt: string;
 }

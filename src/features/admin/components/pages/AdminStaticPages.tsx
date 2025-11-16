@@ -83,10 +83,10 @@ export const AdminStaticPages = () => {
     return (
       <Card>
         <CardHeader>
-          <CardTitle>Policy Pages</CardTitle>
+          <CardTitle className="text-lg sm:text-xl">Policy Pages</CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="text-sm text-muted-foreground">Loading pages...</div>
+          <div className="text-xs sm:text-sm text-muted-foreground">Loading pages...</div>
         </CardContent>
       </Card>
     );
@@ -96,10 +96,10 @@ export const AdminStaticPages = () => {
     return (
       <Card>
         <CardHeader>
-          <CardTitle>Policy Pages</CardTitle>
+          <CardTitle className="text-lg sm:text-xl">Policy Pages</CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="text-sm text-muted-foreground">
+          <div className="text-xs sm:text-sm text-muted-foreground">
             No pages found. Please seed the database and try again.
           </div>
         </CardContent>
@@ -110,43 +110,90 @@ export const AdminStaticPages = () => {
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Policy Pages</CardTitle>
+        <CardTitle className="text-lg sm:text-xl">Policy Pages</CardTitle>
       </CardHeader>
       <CardContent>
         <Tabs defaultValue={pages[0]?.slug} className="w-full">
-          <TabsList className="flex flex-wrap gap-2 mb-4">
-            {pages.map((page) => (
-              <TabsTrigger key={page.id} value={page.slug}>
-                {labelMap[page.slug] || page.title}
-              </TabsTrigger>
-            ))}
-          </TabsList>
+          <div className="overflow-x-auto -mx-1 sm:mx-0 mb-4">
+            <TabsList className="flex flex-nowrap sm:flex-wrap gap-1.5 sm:gap-2 min-w-max sm:min-w-0">
+              {pages.map((page) => (
+                <TabsTrigger 
+                  key={page.id} 
+                  value={page.slug}
+                  className="text-xs sm:text-sm whitespace-nowrap"
+                >
+                  {labelMap[page.slug] || page.title}
+                </TabsTrigger>
+              ))}
+            </TabsList>
+          </div>
           {pages.map((page) => (
-            <TabsContent key={page.id} value={page.slug} className="space-y-4">
+            <TabsContent key={page.id} value={page.slug} className="space-y-3 sm:space-y-4 mt-4 sm:mt-6">
               <div className="space-y-2">
-                <label className="text-sm font-medium text-muted-foreground">
+                <label className="text-xs sm:text-sm font-medium text-muted-foreground">
                   Title
                 </label>
                 <Input
                   value={page.title}
                   onChange={(e) => updateLocal(page.id, "title", e.target.value)}
+                  className="text-sm"
                 />
               </div>
               <div className="space-y-2">
-                <label className="text-sm font-medium text-muted-foreground">
+                <label className="text-xs sm:text-sm font-medium text-muted-foreground">
                   Content
                 </label>
-                <ReactQuill
-                  theme="snow"
-                  modules={quillModules}
-                  value={page.content}
-                  onChange={(value) => updateLocal(page.id, "content", value)}
-                  className="bg-background"
-                />
+                <div className="bg-background rounded-md border overflow-hidden">
+                  <style>{`
+                    .ql-container {
+                      font-size: 14px;
+                      min-height: 200px;
+                    }
+                    .ql-toolbar {
+                      padding: 8px;
+                      border-bottom: 1px solid hsl(var(--border));
+                    }
+                    .ql-toolbar .ql-formats {
+                      margin-right: 8px;
+                    }
+                    .ql-toolbar button,
+                    .ql-toolbar .ql-picker-label {
+                      padding: 4px;
+                    }
+                    @media (max-width: 640px) {
+                      .ql-toolbar {
+                        padding: 4px;
+                        flex-wrap: wrap;
+                      }
+                      .ql-toolbar .ql-formats {
+                        margin-right: 4px;
+                        margin-bottom: 4px;
+                      }
+                      .ql-toolbar button,
+                      .ql-toolbar .ql-picker-label {
+                        padding: 2px;
+                        width: 24px;
+                        height: 24px;
+                      }
+                      .ql-container {
+                        font-size: 12px;
+                        min-height: 150px;
+                      }
+                    }
+                  `}</style>
+                  <ReactQuill
+                    theme="snow"
+                    modules={quillModules}
+                    value={page.content}
+                    onChange={(value) => updateLocal(page.id, "content", value)}
+                    className="bg-background"
+                  />
+                </div>
               </div>
               <Button
                 onClick={() => handleSave(page)}
                 disabled={savingId === page.id}
+                className="w-full sm:w-auto text-xs sm:text-sm"
               >
                 {savingId === page.id ? "Saving..." : "Save Changes"}
               </Button>

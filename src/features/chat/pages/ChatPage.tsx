@@ -115,8 +115,18 @@ const ChatPage = () => {
   // Guest school name (stored in localStorage, linked to guestSessionId)
   const [guestSchoolName, setGuestSchoolName] = useState<string | null>(() => {
     // Load guest school name from localStorage on mount
+    // Also check session for school name (in case it was saved there)
     if (typeof window !== "undefined") {
-      return localStorage.getItem("guest_school_name");
+      const fromStorage = localStorage.getItem("guest_school_name");
+      if (fromStorage) return fromStorage;
+      
+      // Fallback to session if available
+      const session = sessionService.getSession();
+      if (session.schoolName) {
+        // Sync to localStorage for consistency
+        localStorage.setItem("guest_school_name", session.schoolName);
+        return session.schoolName;
+      }
     }
     return null;
   });
@@ -358,7 +368,7 @@ const ChatPage = () => {
 
   const handleSchoolSelect = (
     school: { name: string },
-    _remember: boolean // Keep for backward compatibility but not used (school is per conversation now)
+    remember: boolean // Keep for backward compatibility but not used (school is per conversation now)
   ) => {
     const schoolName = school.name;
 
@@ -391,6 +401,15 @@ const ChatPage = () => {
       setGuestSchoolName(schoolName);
       localStorage.setItem("guest_school_name", schoolName);
     }
+
+    // IMPORTANT: Save school name to session so it persists across requests
+    // This ensures the backend receives school name in every chat request
+    const currentSession = sessionService.getSession();
+    sessionService.saveSession({
+      ...currentSession,
+      schoolName: schoolName,
+      rememberSchool: remember,
+    });
 
     setShowSchoolPicker(false);
 
@@ -462,6 +481,17 @@ const ChatPage = () => {
         localStorage.setItem("guest_school_name", finalSchoolName);
       }
 
+      // IMPORTANT: Save school name to session so it persists across requests
+      if (finalSchoolName) {
+        const currentSession = sessionService.getSession();
+        if (currentSession.schoolName !== finalSchoolName) {
+          sessionService.saveSession({
+            ...currentSession,
+            schoolName: finalSchoolName,
+          });
+        }
+      }
+
       // Only add message to state AFTER we have schoolName
       setCurrentMessages((prev) => [...prev, userMessage]);
       setPendingSchoolName(null); // Clear pending school name (but keep guestSchoolName)
@@ -476,6 +506,17 @@ const ChatPage = () => {
         setPendingMessage(content);
         setShowSchoolPicker(true);
         return;
+      }
+
+      // IMPORTANT: Save school name to session so it persists across requests
+      if (finalSchoolName) {
+        const currentSession = sessionService.getSession();
+        if (currentSession.schoolName !== finalSchoolName) {
+          sessionService.saveSession({
+            ...currentSession,
+            schoolName: finalSchoolName,
+          });
+        }
       }
 
       // Create new conversation with school name (sync with backend)
@@ -666,12 +707,20 @@ const ChatPage = () => {
       sessionIdForRequest = guestSessionIdFromResponse || undefined;
     }
 
+    // IMPORTANT: Use school name from session if available, fallback to conversation or finalSchoolName
+    // This ensures school name is always sent in the request, even if conversation doesn't have it
+    const schoolNameForRequest = 
+      session.schoolName || 
+      currentConversation?.schoolName || 
+      finalSchoolName || 
+      undefined;
+
     const apiData = {
       userInput: content,
       conversationId: finalConversationId, // Send conversationId - backend will load session_id from database
       sessionId: sessionIdForRequest, // Optional: send if available, but backend will use conversation.session_id from DB
       role: role, // Send role to backend
-      schoolName: currentConversation?.schoolName || finalSchoolName, // School name from conversation
+      schoolName: schoolNameForRequest, // School name from session (prioritized), conversation, or finalSchoolName
       grade: session.grade,
       subject: session.subject,
       topic: session.topic,
@@ -815,8 +864,14 @@ const ChatPage = () => {
     const session = sessionService.getSession();
     const finalConversationId =
       (!isAuthenticated ? guestSessionId : selectedConversationId) || undefined;
+    
+    // IMPORTANT: Use school name from session if available, fallback to conversation or guestSchoolName
+    // This ensures school name is always sent in the request
     const finalSchoolName =
-      currentConversation?.schoolName || guestSchoolName || undefined;
+      session.schoolName ||
+      currentConversation?.schoolName || 
+      guestSchoolName || 
+      undefined;
 
     // Get sessionId from current conversation (for authenticated users)
     // For guest users: Get sessionId from state (memory only, lost on refresh)

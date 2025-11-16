@@ -204,10 +204,10 @@ export const AdminSchools = () => {
     <>
       <Card>
         <CardHeader>
-          <div className="flex justify-between items-center">
+          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
             <div>
-              <CardTitle>School Management</CardTitle>
-              <CardDescription>
+              <CardTitle className="text-lg sm:text-xl">School Management</CardTitle>
+              <CardDescription className="text-xs sm:text-sm">
                 Manage schools and their information ({schools.length} schools)
               </CardDescription>
             </div>
@@ -221,12 +221,12 @@ export const AdminSchools = () => {
               }}
             >
               <DialogTrigger asChild>
-                <Button className="flex items-center gap-2">
+                <Button className="flex items-center gap-2 w-full sm:w-auto text-xs sm:text-sm">
                   <Plus className="w-4 h-4" />
                   Add School
                 </Button>
               </DialogTrigger>
-              <DialogContent>
+              <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
                 <DialogHeader>
                   <DialogTitle>Add New School</DialogTitle>
                   <DialogDescription>
@@ -382,84 +382,86 @@ export const AdminSchools = () => {
               />
             </div>
           </div>
-          <div className="rounded-md border">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>School Name</TableHead>
-                  <TableHead>Location</TableHead>
-                  <TableHead>Languages</TableHead>
-                  <TableHead>Students</TableHead>
-                  <TableHead>Teachers</TableHead>
-                  <TableHead>Created</TableHead>
-                  <TableHead className="text-right">Actions</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {filteredSchools.length === 0 ? (
+          <div className="rounded-md border overflow-x-auto -mx-1 sm:mx-0">
+            <div className="min-w-[800px] sm:min-w-0">
+              <Table>
+                <TableHeader>
                   <TableRow>
-                    <TableCell
-                      colSpan={6}
-                      className="text-center py-8 text-muted-foreground"
-                    >
-                      No schools found
-                    </TableCell>
+                    <TableHead className="min-w-[150px]">School Name</TableHead>
+                    <TableHead className="min-w-[150px] hidden md:table-cell">Location</TableHead>
+                    <TableHead className="min-w-[100px] hidden lg:table-cell">Languages</TableHead>
+                    <TableHead className="min-w-[80px]">Students</TableHead>
+                    <TableHead className="min-w-[80px] hidden md:table-cell">Teachers</TableHead>
+                    <TableHead className="min-w-[100px] hidden lg:table-cell">Created</TableHead>
+                    <TableHead className="text-right min-w-[100px]">Actions</TableHead>
                   </TableRow>
-                ) : (
-                  filteredSchools.map((school) => (
-                    <TableRow key={school.id}>
-                      <TableCell className="font-medium">
-                        {school.name}
+                </TableHeader>
+                <TableBody>
+                  {filteredSchools.length === 0 ? (
+                    <TableRow>
+                      <TableCell
+                        colSpan={7}
+                        className="text-center py-8 text-muted-foreground"
+                      >
+                        No schools found
                       </TableCell>
-                      <TableCell>
-                        <div className="text-sm">
-                          <div>
-                            {[school.country, (school as any).state, (school as any).city]
-                              .filter(Boolean)
-                              .join(", ") || "—"}
+                    </TableRow>
+                  ) : (
+                    filteredSchools.map((school) => (
+                      <TableRow key={school.id}>
+                        <TableCell className="font-medium text-xs sm:text-sm">
+                          <span className="truncate block">{school.name}</span>
+                        </TableCell>
+                        <TableCell className="hidden md:table-cell">
+                          <div className="text-xs sm:text-sm">
+                            <div className="truncate">
+                              {[school.country, (school as any).state, (school as any).city]
+                                .filter(Boolean)
+                                .join(", ") || "—"}
+                            </div>
+                            <div className="text-muted-foreground text-xs truncate">
+                              {school.address || "—"}
+                            </div>
                           </div>
-                          <div className="text-muted-foreground text-xs">
-                            {school.address || "—"}
-                          </div>
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        <div className="text-xs">
+                        </TableCell>
+                        <TableCell className="text-xs hidden lg:table-cell">
                           {Array.isArray((school as any).languages) && (school as any).languages.length > 0
                             ? (school as any).languages.map((l: string) => l.charAt(0).toUpperCase() + l.slice(1)).join(", ")
                             : "—"}
-                        </div>
-                      </TableCell>
-                      <TableCell>{school.totalStudents || 0}</TableCell>
-                      <TableCell>{school.totalTeachers || 0}</TableCell>
-                      <TableCell>
-                        {school.createdAt ? formatDate(school.createdAt) : "—"}
-                      </TableCell>
-                      <TableCell className="text-right">
-                        <div className="flex justify-end gap-2">
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            onClick={() => handleEditSchool(school)}
-                            disabled={processing}
-                          >
-                            <Edit className="w-4 h-4" />
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            onClick={() => handleDeleteSchool(school)}
-                            disabled={processing}
-                          >
-                            <Trash2 className="w-4 h-4 text-destructive" />
-                          </Button>
-                        </div>
-                      </TableCell>
-                    </TableRow>
-                  ))
-                )}
-              </TableBody>
-            </Table>
+                        </TableCell>
+                        <TableCell className="text-xs sm:text-sm">{school.totalStudents || 0}</TableCell>
+                        <TableCell className="text-xs sm:text-sm hidden md:table-cell">{school.totalTeachers || 0}</TableCell>
+                        <TableCell className="text-xs sm:text-sm hidden lg:table-cell">
+                          {school.createdAt ? formatDate(school.createdAt) : "—"}
+                        </TableCell>
+                        <TableCell className="text-right">
+                          <div className="flex justify-end gap-1 sm:gap-2">
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              onClick={() => handleEditSchool(school)}
+                              disabled={processing}
+                              className="h-8 w-8"
+                            >
+                              <Edit className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              onClick={() => handleDeleteSchool(school)}
+                              disabled={processing}
+                              className="h-8 w-8"
+                            >
+                              <Trash2 className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-destructive" />
+                            </Button>
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    ))
+                  )}
+                </TableBody>
+              </Table>
+            </div>
           </div>
         </CardContent>
       </Card>
@@ -475,7 +477,7 @@ export const AdminSchools = () => {
           }
         }}
       >
-        <DialogContent>
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Edit School</DialogTitle>
             <DialogDescription>Update school information</DialogDescription>

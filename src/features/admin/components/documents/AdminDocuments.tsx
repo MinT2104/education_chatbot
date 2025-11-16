@@ -1,4 +1,4 @@
-import { useMemo, useState, useRef } from "react";
+import { useMemo, useState, useRef, useEffect } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -40,8 +40,8 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Search, Upload, Edit, Trash2, FileText, Loader2 } from "lucide-react";
 import { Document, School } from "../../types";
-import { standards, subjects } from "../../data/mockData";
-import { adminService } from "../../services/adminService";
+import { standards } from "../../data/mockData";
+import { adminService, Subject } from "../../services/adminService";
 
 interface AdminDocumentsProps {
   documents: Document[];
@@ -75,6 +75,11 @@ export const AdminDocuments = ({
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  // Subjects API states
+  const [subjects, setSubjects] = useState<Subject[]>([]);
+  const [subjectsLoading, setSubjectsLoading] = useState(false);
+  const [subjectsError, setSubjectsError] = useState<string | null>(null);
+
   const filteredDocuments = useMemo(
     () =>
       documents.filter((doc) =>
@@ -85,6 +90,31 @@ export const AdminDocuments = ({
       ),
     [documents, documentSearch]
   );
+
+  // Load subjects when dialog opens
+  const loadSubjects = async () => {
+    setSubjectsLoading(true);
+    setSubjectsError(null);
+    try {
+      const data = await adminService.getSubjects({ limit: 1000 });
+      setSubjects(data);
+    } catch (error: any) {
+      console.error("Failed to load subjects:", error);
+      setSubjectsError(
+        error.response?.data?.message || error.message || "Failed to load subjects"
+      );
+      setSubjects([]);
+    } finally {
+      setSubjectsLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    if (isUploadDocOpen && subjects.length === 0 && !subjectsLoading) {
+      loadSubjects();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isUploadDocOpen]);
 
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -235,21 +265,21 @@ export const AdminDocuments = ({
   return (
     <Card>
       <CardHeader>
-        <div className="flex justify-between items-center">
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
           <div>
-            <CardTitle>Document Management</CardTitle>
-            <CardDescription>
+            <CardTitle className="text-lg sm:text-xl">Document Management</CardTitle>
+            <CardDescription className="text-xs sm:text-sm">
               Upload and manage master training files
             </CardDescription>
           </div>
           <Dialog open={isUploadDocOpen} onOpenChange={handleDialogClose}>
             <DialogTrigger asChild>
-              <Button className="flex items-center gap-2">
+              <Button className="flex items-center gap-2 w-full sm:w-auto text-xs sm:text-sm">
                 <Upload className="w-4 h-4" />
                 Upload Document
               </Button>
             </DialogTrigger>
-            <DialogContent className="max-w-2xl">
+            <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
               <DialogHeader>
                 <DialogTitle>Upload Master Training File</DialogTitle>
                 <DialogDescription>
@@ -278,15 +308,15 @@ export const AdminDocuments = ({
                     disabled={uploadLoading}
                   />
                 </div>
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div className="space-y-2">
-                    <Label htmlFor="doc-school">School *</Label>
+                    <Label htmlFor="doc-school" className="text-sm">School *</Label>
                     <Select
                       value={selectedSchool}
                       onValueChange={setSelectedSchool}
                       disabled={uploadLoading}
                     >
-                      <SelectTrigger id="doc-school">
+                      <SelectTrigger id="doc-school" className="text-sm">
                         <SelectValue placeholder="Select school" />
                       </SelectTrigger>
                       <SelectContent>
@@ -299,13 +329,13 @@ export const AdminDocuments = ({
                     </Select>
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="doc-standard">Grade/Standard *</Label>
+                    <Label htmlFor="doc-standard" className="text-sm">Grade/Standard *</Label>
                     <Select
                       value={selectedStandard}
                       onValueChange={setSelectedStandard}
                       disabled={uploadLoading}
                     >
-                      <SelectTrigger id="doc-standard">
+                      <SelectTrigger id="doc-standard" className="text-sm">
                         <SelectValue placeholder="Select grade" />
                       </SelectTrigger>
                       <SelectContent>
@@ -323,19 +353,47 @@ export const AdminDocuments = ({
                   <Select
                     value={selectedSubject}
                     onValueChange={setSelectedSubject}
-                    disabled={uploadLoading}
+                    disabled={uploadLoading || subjectsLoading}
                   >
                     <SelectTrigger id="doc-subject">
-                      <SelectValue placeholder="Select subject" />
+                      <SelectValue 
+                        placeholder={
+                          subjectsLoading 
+                            ? "Loading subjects..." 
+                            : subjectsError 
+                            ? "Error loading subjects" 
+                            : "Select subject"
+                        } 
+                      />
                     </SelectTrigger>
                     <SelectContent>
-                      {subjects.map((subject) => (
-                        <SelectItem key={subject} value={subject}>
-                          {subject}
-                        </SelectItem>
-                      ))}
+                      {subjectsLoading ? (
+                        <div className="flex items-center justify-center py-4">
+                          <Loader2 className="w-4 h-4 animate-spin mr-2" />
+                          <span className="text-sm text-muted-foreground">Loading subjects...</span>
+                        </div>
+                      ) : subjectsError ? (
+                        <div className="flex items-center justify-center py-4">
+                          <span className="text-sm text-destructive">{subjectsError}</span>
+                        </div>
+                      ) : subjects.length === 0 ? (
+                        <div className="flex items-center justify-center py-4">
+                          <span className="text-sm text-muted-foreground">No subjects available</span>
+                        </div>
+                      ) : (
+                        subjects.map((subject) => (
+                          <SelectItem key={subject.id} value={subject.name}>
+                            {subject.name}
+                          </SelectItem>
+                        ))
+                      )}
                     </SelectContent>
                   </Select>
+                  {subjectsError && (
+                    <p className="text-xs text-destructive mt-1">
+                      {subjectsError}
+                    </p>
+                  )}
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="doc-file">File Upload *</Label>
@@ -411,24 +469,25 @@ export const AdminDocuments = ({
               placeholder="Search documents..."
               value={documentSearch}
               onChange={(e) => setDocumentSearch(e.target.value)}
-              className="pl-10"
+              className="pl-10 text-sm"
             />
           </div>
         </div>
-        <div className="rounded-md border">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Document Name</TableHead>
-                <TableHead>School</TableHead>
-                <TableHead>Grade</TableHead>
-                <TableHead>Subject</TableHead>
-                <TableHead>Size</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead>Uploaded</TableHead>
-                <TableHead className="text-right">Actions</TableHead>
-              </TableRow>
-            </TableHeader>
+        <div className="rounded-md border overflow-x-auto -mx-1 sm:mx-0">
+          <div className="min-w-[900px] sm:min-w-0">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead className="min-w-[150px]">Document Name</TableHead>
+                  <TableHead className="min-w-[120px] hidden md:table-cell">School</TableHead>
+                  <TableHead className="min-w-[80px]">Grade</TableHead>
+                  <TableHead className="min-w-[100px] hidden lg:table-cell">Subject</TableHead>
+                  <TableHead className="min-w-[80px] hidden md:table-cell">Size</TableHead>
+                  <TableHead className="min-w-[80px]">Status</TableHead>
+                  <TableHead className="min-w-[100px] hidden lg:table-cell">Uploaded</TableHead>
+                  <TableHead className="text-right min-w-[100px]">Actions</TableHead>
+                </TableRow>
+              </TableHeader>
             <TableBody>
               {loading ? (
                 <TableRow>
@@ -453,38 +512,45 @@ export const AdminDocuments = ({
                   <TableRow key={doc.id}>
                     <TableCell className="font-medium">
                       <div className="flex items-center gap-2">
-                        <FileText className="w-4 h-4 text-muted-foreground" />
-                        {doc.name}
+                        <FileText className="w-4 h-4 text-muted-foreground flex-shrink-0" />
+                        <span className="truncate text-xs sm:text-sm">{doc.name}</span>
                       </div>
                     </TableCell>
-                    <TableCell>{doc.schoolName}</TableCell>
-                    <TableCell>{doc.standard}</TableCell>
-                    <TableCell>
-                      <Badge variant="outline">{doc.subject}</Badge>
+                    <TableCell className="text-xs sm:text-sm hidden md:table-cell">
+                      <span className="truncate block">{doc.schoolName}</span>
                     </TableCell>
-                    <TableCell>{doc.fileSize.toFixed(1)} MB</TableCell>
+                    <TableCell className="text-xs sm:text-sm">{doc.standard}</TableCell>
+                    <TableCell className="hidden lg:table-cell">
+                      <Badge variant="outline" className="text-xs">{doc.subject}</Badge>
+                    </TableCell>
+                    <TableCell className="text-xs sm:text-sm hidden md:table-cell">
+                      {doc.fileSize.toFixed(1)} MB
+                    </TableCell>
                     <TableCell>
                       {doc.indexed ? (
-                        <Badge variant="default" className="bg-green-500">
+                        <Badge variant="default" className="bg-green-500 text-xs">
                           Indexed
                         </Badge>
                       ) : (
-                        <Badge variant="secondary">Pending</Badge>
+                        <Badge variant="secondary" className="text-xs">Pending</Badge>
                       )}
                     </TableCell>
-                    <TableCell>{doc.uploadedAt}</TableCell>
+                    <TableCell className="text-xs sm:text-sm hidden lg:table-cell">
+                      {doc.uploadedAt}
+                    </TableCell>
                     <TableCell className="text-right">
-                      <div className="flex justify-end gap-2">
-                        <Button variant="ghost" size="icon">
-                          <Edit className="w-4 h-4" />
+                      <div className="flex justify-end gap-1 sm:gap-2">
+                        <Button variant="ghost" size="icon" className="h-8 w-8">
+                          <Edit className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
                         </Button>
                         <Button
                           variant="ghost"
                           size="icon"
                           onClick={() => handleDeleteClick(doc)}
                           disabled={deleteLoading}
+                          className="h-8 w-8"
                         >
-                          <Trash2 className="w-4 h-4 text-destructive" />
+                          <Trash2 className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-destructive" />
                         </Button>
                       </div>
                     </TableCell>
@@ -493,6 +559,7 @@ export const AdminDocuments = ({
               )}
             </TableBody>
           </Table>
+          </div>
         </div>
       </CardContent>
 

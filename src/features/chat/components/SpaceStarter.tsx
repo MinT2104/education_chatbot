@@ -66,21 +66,21 @@ const SpaceStarter: React.FC = () => {
     }
 
     if (innerWidth >= 1200) {
-      const widthAdjusted = innerWidth / 1480;
-      const heightAdjusted = innerHeight / 940;
+      const widthAdjusted = innerWidth / 1600;
+      const heightAdjusted = innerHeight / 1024;
       const ratio = Math.min(widthAdjusted, heightAdjusted);
-      return Math.min(0.9, Math.max(0.84, ratio));
+      return Math.min(0.9, Math.max(0.8, ratio));
     }
 
     if (innerWidth >= 992) {
-      const widthAdjusted = innerWidth / 1180;
-      const heightAdjusted = innerHeight / 840;
-      return Math.min(1, Math.max(0.88, Math.min(widthAdjusted, heightAdjusted)));
+      const widthAdjusted = innerWidth / 1220;
+      const heightAdjusted = innerHeight / 900;
+      return Math.min(1, Math.max(0.86, Math.min(widthAdjusted, heightAdjusted)));
     }
 
     const heightRatio = innerHeight / 900;
     const widthRatio = innerWidth / 1100;
-    return Math.min(1, Math.max(0.82, Math.min(heightRatio, widthRatio)));
+    return Math.min(1, Math.max(0.8, Math.min(heightRatio, widthRatio)));
   };
   const [scale, setScale] = useState(computeScale);
   const [isMobile, setIsMobile] = useState(
@@ -145,37 +145,37 @@ const SpaceStarter: React.FC = () => {
     : "max-w-[1080px]";
 
   const gridLayoutClass = isMobile
-    ? "grid-cols-2 gap-2"
+    ? "grid-cols-2 gap-1.5"
     : isCompactDesktop
     ? "grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2.5 sm:gap-3 lg:gap-3.5"
     : "grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-3.5 lg:gap-4";
 
   const cardPaddingClass = isMobile
-    ? "p-3 min-h-[88px]"
+    ? "p-2 min-h-[80px]"
     : isCompactDesktop
     ? "p-4 sm:p-4.5 md:p-5 min-h-[96px]"
     : "p-5 sm:p-5.5 md:p-6 min-h-[118px]";
 
   const cardGapClass = isMobile
-    ? "gap-3"
+    ? "gap-2"
     : isCompactDesktop
     ? "gap-3 sm:gap-3.5"
     : "gap-3 sm:gap-3.5";
 
   const iconSizeClass = isMobile
-    ? "text-[1.75rem] sm:text-[1.9rem]"
+    ? "text-[1.5rem] sm:text-[1.75rem]"
     : isCompactDesktop
     ? "text-[1.9rem] sm:text-[2.15rem] md:text-[2.35rem]"
     : "text-[2.1rem] sm:text-[2.35rem] md:text-[2.6rem]";
 
   const titleSizeClass = isMobile
-    ? "text-[0.95rem] sm:text-[1rem] md:text-[1.05rem]"
+    ? "text-[0.85rem] sm:text-[0.95rem] md:text-[1rem]"
     : isCompactDesktop
     ? "text-[1rem] sm:text-[1.1rem] md:text-[1.2rem]"
     : "text-[1.05rem] sm:text-[1.15rem] md:text-[1.25rem]";
 
   const descriptionSizeClass = isMobile
-    ? "text-xs sm:text-[0.85rem] md:text-[0.92rem]"
+    ? "text-[0.7rem] sm:text-xs md:text-[0.85rem]"
     : isCompactDesktop
     ? "text-sm sm:text-[0.95rem] md:text-[1.02rem]"
     : "text-sm sm:text-[1rem] md:text-[1.05rem]";
@@ -198,7 +198,7 @@ const SpaceStarter: React.FC = () => {
         {/* Pink right (pull inward for blend) */}
         <div className="absolute bottom-8 -right-6 sm:-right-12 w-[320px] h-[180px] sm:w-[480px] sm:h-[270px] md:w-[640px] md:h-[360px] rounded-full bg-[radial-gradient(closest-side,rgba(244,114,182,0.28),transparent_70%)] dark:bg-[radial-gradient(closest-side,rgba(244,114,182,0.24),transparent_70%)] blur-3xl"></div>
       </div>
-      <div className="relative p-3 sm:p-5 md:p-6">
+      <div className="relative p-2 sm:p-4 md:p-5 lg:p-6">
         {/* <div className="flex items-center justify-between mb-1.5 sm:mb-2">
           <h2 className="text-sm sm:text-base font-semibold text-foreground">
             Start with a Space
@@ -229,7 +229,7 @@ const SpaceStarter: React.FC = () => {
               </div>
               <div className="min-w-0 flex-1 flex flex-col justify-center">
                 <div
-                  className={`${titleSizeClass} font-semibold text-foreground mb-1.5 sm:mb-1.5 md:mb-2 leading-tight`}
+                  className={`${titleSizeClass} font-semibold text-foreground mb-1 sm:mb-1.5 md:mb-2 leading-tight`}
                 >
                   {space.title}
                 </div>

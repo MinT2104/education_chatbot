@@ -56,20 +56,21 @@ export const AdminLogs = () => {
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Activity Logs</CardTitle>
-        <CardDescription>All users’ activities with filters</CardDescription>
+        <CardTitle className="text-lg sm:text-xl">Activity Logs</CardTitle>
+        <CardDescription className="text-xs sm:text-sm">All users' activities with filters</CardDescription>
       </CardHeader>
       <CardContent>
-        <div className="flex flex-col md:flex-row gap-3 mb-4">
+        <div className="flex flex-col sm:flex-row gap-2 sm:gap-3 mb-4">
           <div className="relative flex-1">
             <Input
               placeholder="Search in type, metadata or user id..."
               value={query}
               onChange={(e) => setQuery(e.target.value)}
+              className="text-sm"
             />
           </div>
           <Select value={type} onValueChange={setType}>
-            <SelectTrigger className="w-full md:w-[200px]">
+            <SelectTrigger className="w-full sm:w-[200px] text-sm">
               <SelectValue placeholder="Type" />
             </SelectTrigger>
             <SelectContent>
@@ -92,49 +93,93 @@ export const AdminLogs = () => {
               </SelectItem>
             </SelectContent>
           </Select>
-          <Button variant="outline" onClick={load} disabled={loading}>
+          <Button variant="outline" onClick={load} disabled={loading} className="w-full sm:w-auto text-xs sm:text-sm">
             Refresh
           </Button>
         </div>
 
-        <div className="rounded-lg border border-border">
-          <div className="px-3 py-2 text-xs font-medium grid grid-cols-12 gap-3 border-b border-border text-muted-foreground">
-            <div className="col-span-3">User</div>
-            <div className="col-span-2">Type</div>
-            <div className="col-span-5">Metadata</div>
-            <div className="col-span-2 text-right">Time</div>
-          </div>
-          <div className="max-h-[60vh] overflow-y-auto divide-y divide-border">
-            {loading ? (
-              <div className="p-4 text-sm text-muted-foreground">
-                Loading...
+        <div className="rounded-lg border border-border overflow-x-auto -mx-1 sm:mx-0">
+          <div className="min-w-[900px] sm:min-w-0">
+            {/* Desktop view */}
+            <div className="hidden md:block">
+              <div className="px-3 py-2 text-xs font-medium grid grid-cols-12 gap-3 border-b border-border text-muted-foreground">
+                <div className="col-span-3">User</div>
+                <div className="col-span-2">Type</div>
+                <div className="col-span-5">Metadata</div>
+                <div className="col-span-2 text-right">Time</div>
               </div>
-            ) : logs.length === 0 ? (
-              <div className="p-4 text-sm text-muted-foreground">No logs</div>
-            ) : (
-              logs.map((log, idx) => (
-                <div key={idx} className="p-3 text-xs grid grid-cols-12 gap-3">
-                  <div className="col-span-3 font-medium break-words">
-                    <div className="truncate">
-                      {log.users?.name || "Unknown"}{" "}
-                      <span className="text-muted-foreground">
-                        ({log.user_id})
-                      </span>
+              <div className="max-h-[60vh] overflow-y-auto divide-y divide-border">
+                {loading ? (
+                  <div className="p-4 text-sm text-muted-foreground">
+                    Loading...
+                  </div>
+                ) : logs.length === 0 ? (
+                  <div className="p-4 text-sm text-muted-foreground">No logs</div>
+                ) : (
+                  logs.map((log, idx) => (
+                    <div key={idx} className="p-3 text-xs grid grid-cols-12 gap-3">
+                      <div className="col-span-3 font-medium break-words">
+                        <div className="truncate">
+                          {log.users?.name || "Unknown"}{" "}
+                          <span className="text-muted-foreground">
+                            ({log.user_id?.substring(0, 8)}...)
+                          </span>
+                        </div>
+                        <div className="text-muted-foreground truncate">
+                          {log.users?.email || "—"}
+                        </div>
+                      </div>
+                      <div className="col-span-2">{log.type}</div>
+                      <div className="col-span-5 text-muted-foreground break-words">
+                        <span className="truncate block">{JSON.stringify(log.metadata || {}).substring(0, 100)}</span>
+                      </div>
+                      <div className="col-span-2 text-right text-muted-foreground">
+                        {new Date(log.created_at).toLocaleString()}
+                      </div>
                     </div>
-                    <div className="text-muted-foreground truncate">
-                      {log.users?.email || "—"}
+                  ))
+                )}
+              </div>
+            </div>
+            
+            {/* Mobile view */}
+            <div className="md:hidden">
+              <div className="max-h-[60vh] overflow-y-auto divide-y divide-border">
+                {loading ? (
+                  <div className="p-4 text-sm text-muted-foreground">
+                    Loading...
+                  </div>
+                ) : logs.length === 0 ? (
+                  <div className="p-4 text-sm text-muted-foreground">No logs</div>
+                ) : (
+                  logs.map((log, idx) => (
+                    <div key={idx} className="p-3 space-y-2">
+                      <div className="flex items-start justify-between gap-2">
+                        <div className="flex-1 min-w-0">
+                          <div className="font-medium text-xs truncate">
+                            {log.users?.name || "Unknown"}
+                          </div>
+                          <div className="text-muted-foreground text-xs truncate">
+                            {log.users?.email || log.user_id?.substring(0, 16) || "—"}
+                          </div>
+                        </div>
+                        <div className="text-xs text-muted-foreground whitespace-nowrap">
+                          {new Date(log.created_at).toLocaleDateString()}
+                        </div>
+                      </div>
+                      <div className="text-xs">
+                        <span className="font-medium">Type: </span>
+                        <span className="text-muted-foreground">{log.type}</span>
+                      </div>
+                      <div className="text-xs text-muted-foreground break-words">
+                        <span className="font-medium">Metadata: </span>
+                        <span className="truncate block">{JSON.stringify(log.metadata || {}).substring(0, 150)}</span>
+                      </div>
                     </div>
-                  </div>
-                  <div className="col-span-2">{log.type}</div>
-                  <div className="col-span-5 text-muted-foreground break-words">
-                    {JSON.stringify(log.metadata || {})}
-                  </div>
-                  <div className="col-span-2 text-right text-muted-foreground">
-                    {new Date(log.created_at).toLocaleString()}
-                  </div>
-                </div>
-              ))
-            )}
+                  ))
+                )}
+              </div>
+            </div>
           </div>
         </div>
       </CardContent>
