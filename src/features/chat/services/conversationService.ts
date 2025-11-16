@@ -103,4 +103,24 @@ export const conversationService = {
   async deleteConversation(id: string): Promise<void> {
     await apiClient.delete(`/conversation/${id}`);
   },
+
+  // Get a conversation publicly (for shared links) - doesn't require authentication
+  async getPublicConversation(id: string): Promise<Conversation> {
+    // Try public endpoint first, fallback to regular endpoint
+    try {
+      const response = await apiClient.get<BackendConversation>(
+        `/conversation/public/${id}`
+      );
+      return mapBackendToFrontend(response.data);
+    } catch (err: any) {
+      // If public endpoint doesn't exist, try regular endpoint (backend might allow public access)
+      if (err.response?.status === 404) {
+        const response = await apiClient.get<BackendConversation>(
+          `/conversation/${id}`
+        );
+        return mapBackendToFrontend(response.data);
+      }
+      throw err;
+    }
+  },
 };

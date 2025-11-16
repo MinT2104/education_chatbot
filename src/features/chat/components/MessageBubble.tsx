@@ -28,6 +28,11 @@ interface MessageBubbleProps {
       reason?: string;
     }
   ) => void;
+  // Shared view options
+  hideUser?: boolean;
+  hideAttachments?: boolean;
+  hideMetadata?: boolean;
+  isSharedView?: boolean;
 }
 
 const MessageBubble = ({
@@ -39,6 +44,10 @@ const MessageBubble = ({
   onEdit,
   onSelectVariant,
   onFeedback,
+  hideUser = false,
+  hideAttachments = false,
+  hideMetadata = false,
+  isSharedView = false,
 }: MessageBubbleProps) => {
   const [copied, setCopied] = useState(false);
   const [shareModalOpen, setShareModalOpen] = useState(false);
@@ -138,7 +147,7 @@ const MessageBubble = ({
       }`}
     >
       {/* Avatar for assistant */}
-      {!isUser && (
+      {!isUser && !hideUser && (
         <div className="w-6 h-6 sm:w-7 sm:h-7 rounded-full overflow-hidden flex items-center justify-center shrink-0 bg-primary/10 border border-border/60">
           <img
             src={assistantAvatar}
@@ -354,6 +363,33 @@ const MessageBubble = ({
             </div>
           )}
 
+          {/* Attachments */}
+          {!hideAttachments && message.attachments && message.attachments.length > 0 && (
+            <div className="mt-4 space-y-2">
+              {message.attachments.map((attachment) => (
+                <div key={attachment.id} className="flex items-center gap-2">
+                  {attachment.type === "image" && (
+                    <img
+                      src={attachment.url}
+                      alt={attachment.name}
+                      className="max-w-full h-auto rounded-lg"
+                    />
+                  )}
+                  {attachment.type !== "image" && (
+                    <a
+                      href={attachment.url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-sm text-primary hover:underline"
+                    >
+                      {attachment.name}
+                    </a>
+                  )}
+                </div>
+              ))}
+            </div>
+          )}
+
           {/* Citations */}
           {!isUser && message.citations && message.citations.length > 0 && (
             <div className="mt-4 space-y-2">
@@ -376,10 +412,18 @@ const MessageBubble = ({
               </div>
             </div>
           )}
+
+          {/* Timestamp */}
+          {!hideMetadata && message.timestamp && (
+            <div className="mt-2 text-xs text-muted-foreground">
+              {new Date(message.timestamp).toLocaleString()}
+            </div>
+          )}
         </div>
 
-        {/* Actions Bar */}
-        <div className="flex items-center gap-1 mt-2 px-4 invisible group-hover:visible transition-opacity">
+        {/* Actions Bar - Hide in shared view */}
+        {!isSharedView && (
+          <div className="flex items-center gap-1 mt-2 px-4 invisible group-hover:visible transition-opacity">
           {/* Copy */}
           <button
             onClick={() => handleCopy()}
@@ -559,22 +603,68 @@ const MessageBubble = ({
             </button>
           )}
         </div>
+        )}
+
+        {/* Actions Bar for shared view - only copy */}
+        {isSharedView && (
+          <div className="flex items-center gap-1 mt-2 px-4">
+            <button
+              onClick={() => handleCopy()}
+              className="p-1.5 rounded hover:bg-muted transition-colors"
+              title="Copy"
+            >
+              {copied ? (
+                <svg
+                  className="w-4 h-4 text-green-500"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M5 13l4 4L19 7"
+                  />
+                </svg>
+              ) : (
+                <svg
+                  className="w-4 h-4 text-muted-foreground"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"
+                  />
+                </svg>
+              )}
+            </button>
+          </div>
+        )}
       </div>
 
-      {/* Modals */}
-      <ShareModal
-        open={shareModalOpen}
-        onClose={() => setShareModalOpen(false)}
-        messageId={message.id}
-        conversationId={conversationId}
-      />
+      {/* Modals - Hide in shared view */}
+      {!isSharedView && (
+        <>
+          <ShareModal
+            open={shareModalOpen}
+            onClose={() => setShareModalOpen(false)}
+            messageId={message.id}
+            conversationId={conversationId}
+          />
 
-      <FeedbackDialog
-        open={feedbackDialogOpen}
-        onClose={() => setFeedbackDialogOpen(false)}
-        feedbackType={feedbackType}
-        onSubmit={handleFeedbackSubmit}
-      />
+          <FeedbackDialog
+            open={feedbackDialogOpen}
+            onClose={() => setFeedbackDialogOpen(false)}
+            feedbackType={feedbackType}
+            onSubmit={handleFeedbackSubmit}
+          />
+        </>
+      )}
     </div>
   );
 };

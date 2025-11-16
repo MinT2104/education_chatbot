@@ -131,6 +131,23 @@ const ChatPage = () => {
     return null;
   });
 
+  // Sync school name from session on mount for both guest and authenticated users
+  useEffect(() => {
+    const session = sessionService.getSession();
+    if (session.schoolName) {
+      // For guest users, sync to guestSchoolName state
+      if (!isAuthenticated) {
+        if (session.schoolName !== guestSchoolName) {
+          setGuestSchoolName(session.schoolName);
+          localStorage.setItem("guest_school_name", session.schoolName);
+        }
+      }
+      // For authenticated users, if there's a selected conversation without schoolName,
+      // we don't update it (school is per conversation), but we ensure session is synced
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isAuthenticated]); // Only run on mount and when auth state changes
+
   // Ensure guest session persists across refresh/navigation
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -404,12 +421,18 @@ const ChatPage = () => {
 
     // IMPORTANT: Save school name to session so it persists across requests
     // This ensures the backend receives school name in every chat request
+    // Also save remember preference
     const currentSession = sessionService.getSession();
     sessionService.saveSession({
       ...currentSession,
       schoolName: schoolName,
       rememberSchool: remember,
     });
+    
+    // Also update the remember preference separately
+    if (remember) {
+      sessionService.setRememberSchool(true);
+    }
 
     setShowSchoolPicker(false);
 
@@ -448,6 +471,9 @@ const ChatPage = () => {
     let conversationIdForChat: string | undefined;
     let finalSchoolName: string | undefined;
 
+    // Get session to check for saved school name
+    const session = sessionService.getSession();
+
     // For guest users: Backend handles guest ID via cookie now
     // But we still need conversationId for frontend state tracking
     if (!isAuthenticated) {
@@ -464,8 +490,9 @@ const ChatPage = () => {
         conversationIdForChat = guestSessionId;
       }
 
-      // Use pendingSchoolName, guestSchoolName (from localStorage), or passed schoolName
-      finalSchoolName = pendingSchoolName || guestSchoolName || schoolName;
+      // Use pendingSchoolName, session.schoolName, guestSchoolName (from localStorage), or passed schoolName
+      // Check session first as it's the most reliable source
+      finalSchoolName = pendingSchoolName || session.schoolName || guestSchoolName || schoolName;
 
       // If no school name, show school picker and store pending message
       // DON'T add message to state yet - wait until school is selected
@@ -498,8 +525,9 @@ const ChatPage = () => {
     }
     // For authenticated users: create or use existing conversation
     else if (!selectedConversationId) {
-      // Use pendingSchoolName if available, otherwise use passed schoolName
-      finalSchoolName = pendingSchoolName || schoolName;
+      // Use pendingSchoolName, session.schoolName, or passed schoolName
+      // Check session first as it's the most reliable source
+      finalSchoolName = pendingSchoolName || session.schoolName || schoolName;
 
       // If no school name, show school picker and store pending message
       if (!finalSchoolName) {
@@ -685,7 +713,8 @@ const ChatPage = () => {
     }
 
     // Prepare API call data with role and context
-    const session = sessionService.getSession();
+    // Note: session was already retrieved above, but get it again to ensure we have latest
+    const currentSession = sessionService.getSession();
     // Use conversationIdForChat if we just created a new conversation, otherwise use selectedConversationId
     // For guest, use guestSessionId; for authenticated users, use conversationId
     const finalConversationId =
@@ -710,7 +739,7 @@ const ChatPage = () => {
     // IMPORTANT: Use school name from session if available, fallback to conversation or finalSchoolName
     // This ensures school name is always sent in the request, even if conversation doesn't have it
     const schoolNameForRequest = 
-      session.schoolName || 
+      currentSession.schoolName || 
       currentConversation?.schoolName || 
       finalSchoolName || 
       undefined;
@@ -721,9 +750,9 @@ const ChatPage = () => {
       sessionId: sessionIdForRequest, // Optional: send if available, but backend will use conversation.session_id from DB
       role: role, // Send role to backend
       schoolName: schoolNameForRequest, // School name from session (prioritized), conversation, or finalSchoolName
-      grade: session.grade,
-      subject: session.subject,
-      topic: session.topic,
+      grade: currentSession.grade,
+      subject: currentSession.subject,
+      topic: currentSession.topic,
       previousChat: currentMessages.map((m) => ({
         user: m.role === "user" ? m.content : "",
         gemini: m.role === "assistant" ? m.contentMd : "",
@@ -870,7 +899,7 @@ const ChatPage = () => {
     const finalSchoolName =
       session.schoolName ||
       currentConversation?.schoolName || 
-      guestSchoolName || 
+      (!isAuthenticated ? guestSchoolName : undefined) || 
       undefined;
 
     // Get sessionId from current conversation (for authenticated users)

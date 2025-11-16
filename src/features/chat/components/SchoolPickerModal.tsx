@@ -38,6 +38,11 @@ const SchoolPickerModal = ({
     if (open && schools.length === 0) {
       loadSchools();
     }
+    // Reset search and remember choice when modal opens
+    if (open) {
+      setQ("");
+      setRememberChoice(false);
+    }
   }, [open]);
 
   const loadSchools = async () => {
@@ -62,9 +67,8 @@ const SchoolPickerModal = ({
 
   const handleSelect = (school: { id: string; name: string }) => {
     onSelect({ name: school.name }, rememberChoice);
-    if (!rememberChoice) {
-      onClose();
-    }
+    // Always close the modal after selection
+    onClose();
   };
 
   if (!open) return null;

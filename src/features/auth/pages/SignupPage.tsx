@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Link } from "react-router-dom";
 import { useAppDispatch } from "../../../core/store/hooks";
 import { signup, login } from "../store/authSlice";
 import { toast } from "react-toastify";
@@ -9,6 +9,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { Checkbox } from "@/components/ui/checkbox";
 
 interface SignupInlineProps {
   inline?: boolean;
@@ -32,6 +33,7 @@ const SignupPage = ({
     email: "",
     password: "",
     confirmPassword: "",
+    acceptedTerms: false,
   });
 
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -57,6 +59,10 @@ const SignupPage = ({
 
     if (formData.password !== formData.confirmPassword) {
       newErrors.confirmPassword = "Passwords do not match";
+    }
+
+    if (!formData.acceptedTerms) {
+      newErrors.acceptedTerms = "You must accept the terms and privacy policy";
     }
 
     setErrors(newErrors);
@@ -271,6 +277,50 @@ const SignupPage = ({
                 </p>
               )}
             </div>
+
+            <div className="flex items-start space-x-2">
+              <Checkbox
+                id="terms"
+                checked={formData.acceptedTerms}
+                onCheckedChange={(checked) =>
+                  setFormData({
+                    ...formData,
+                    acceptedTerms: checked === true,
+                  })
+                }
+                className={errors.acceptedTerms ? "border-red-500" : ""}
+              />
+              <label
+                htmlFor="terms"
+                className="text-sm text-gray-700 dark:text-gray-300 leading-relaxed cursor-pointer"
+              >
+                I agree to the{" "}
+                <Link
+                  to="/terms"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-primary-600 dark:text-primary-400 hover:underline"
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  Terms of Service
+                </Link>{" "}
+                and{" "}
+                <Link
+                  to="/privacy"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-primary-600 dark:text-primary-400 hover:underline"
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  Privacy Policy
+                </Link>
+              </label>
+            </div>
+            {errors.acceptedTerms && (
+              <p className="text-sm text-red-600 dark:text-red-400">
+                {errors.acceptedTerms}
+              </p>
+            )}
 
             <button
               type="submit"

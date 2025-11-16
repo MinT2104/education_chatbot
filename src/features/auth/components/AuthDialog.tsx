@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Link } from "react-router-dom";
 import { useAppDispatch, useAppSelector } from "../../../core/store/hooks";
 import { login, signup } from "../store/authSlice";
 import { toast } from "react-toastify";
@@ -10,6 +10,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { Checkbox } from "@/components/ui/checkbox";
 
 interface AuthDialogProps {
   inline?: boolean;
@@ -57,6 +58,7 @@ const AuthDialog = ({
     email: "",
     password: "",
     confirmPassword: "",
+    acceptedTerms: false,
   });
 
   const [signupErrors, setSignupErrors] = useState<Record<string, string>>({});
@@ -92,6 +94,10 @@ const AuthDialog = ({
       newErrors.confirmPassword = "Please confirm your password";
     } else if (signupData.password !== signupData.confirmPassword) {
       newErrors.confirmPassword = "Passwords do not match";
+    }
+
+    if (!signupData.acceptedTerms) {
+      newErrors.acceptedTerms = "You must accept the terms and privacy policy";
     }
 
     setSignupErrors(newErrors);
@@ -648,6 +654,50 @@ const AuthDialog = ({
                   </p>
                 )}
               </div>
+
+              <div className="flex items-start space-x-2">
+                <Checkbox
+                  id="terms"
+                  checked={signupData.acceptedTerms}
+                  onCheckedChange={(checked) =>
+                    setSignupData({
+                      ...signupData,
+                      acceptedTerms: checked === true,
+                    })
+                  }
+                  className={signupErrors.acceptedTerms ? "border-red-500" : ""}
+                />
+                <label
+                  htmlFor="terms"
+                  className="text-sm text-gray-700 dark:text-gray-300 leading-relaxed cursor-pointer"
+                >
+                  I agree to the{" "}
+                  <Link
+                    to="/terms"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-primary-600 dark:text-primary-400 hover:underline"
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                    Terms of Service
+                  </Link>{" "}
+                  and{" "}
+                  <Link
+                    to="/privacy"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-primary-600 dark:text-primary-400 hover:underline"
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                    Privacy Policy
+                  </Link>
+                </label>
+              </div>
+              {signupErrors.acceptedTerms && (
+                <p className="text-sm text-red-600 dark:text-red-400">
+                  {signupErrors.acceptedTerms}
+                </p>
+              )}
 
               <button
                 type="submit"

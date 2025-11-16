@@ -16,6 +16,9 @@ const AdminPage = lazy(() => import("../../features/admin/pages/AdminPage"));
 const PaymentPage = lazy(
   () => import("../../features/payment/pages/PaymentPage")
 );
+const PricingPage = lazy(
+  () => import("../../features/payment/pages/PricingPage")
+);
 const PaymentSuccessPage = lazy(
   () => import("../../features/payment/pages/PaymentSuccessPage")
 );
@@ -35,6 +38,9 @@ const LibraryPage = lazy(
 );
 const GoogleCallbackPage = lazy(
   () => import("../../features/auth/pages/GoogleCallbackPage")
+);
+const SharePage = lazy(
+  () => import("../../features/chat/pages/SharePage")
 );
 
 export interface AppRoute {
@@ -66,6 +72,10 @@ export const routes: AppRoute[] = [
     path: "/upgrade",
     component: PaymentPage,
     protected: true,
+  },
+  {
+    path: "/pricing",
+    component: PricingPage,
   },
   {
     path: "/subscription",
@@ -154,5 +164,9 @@ export const routes: AppRoute[] = [
   {
     path: "/auth/google/callback",
     component: GoogleCallbackPage,
+  },
+  {
+    path: "/share",
+    component: SharePage,
   },
 ];

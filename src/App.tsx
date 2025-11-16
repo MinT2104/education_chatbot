@@ -8,6 +8,7 @@ import { setDarkMode } from "./features/ui/store/uiSlice";
 import { settingsService } from "./features/auth/services/settingsService";
 import { routes } from "./core/router";
 import LoadingScreen from "./components/LoadingScreen";
+import CookieConsentBanner from "./components/CookieConsentBanner";
 import "./App.css";
 
 function AppContent() {
@@ -141,6 +142,7 @@ function AppContent() {
         pauseOnHover
         theme="auto"
       />
+      <CookieConsentBanner />
     </div>
   );
 }
