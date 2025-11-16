@@ -38,7 +38,7 @@ const AccountMenu = ({ userName, plan }: AccountMenuProps) => {
     <div className="relative">
       <button
         onClick={() => setOpen((v) => !v)}
-        className="flex items-center gap-2 px-2 py-1.5 rounded-xl bg-surface soft-elevation hover:bg-primary-500/8 focus:outline-none focus:shadow-[0_0_0_6px_rgba(124,77,255,.12)]"
+        className="flex items-center gap-2 px-2 py-1.5 rounded-xl bg-surface soft-elevation hover:bg-primary-500/8 focus:outline-none focus:shadow-[0_0_0_6px_rgba(0,0,0,.12)]"
         aria-haspopup="menu"
         aria-expanded={open}
       >

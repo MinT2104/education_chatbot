@@ -464,7 +464,7 @@ const Sidebar = ({
               className="w-full h-9 rounded-lg flex items-center gap-3 px-3 text-sm font-normal text-slate-700 transition-colors hover:bg-slate-900/5 dark:text-slate-200 dark:hover:bg-white/5"
             >
               <School className="w-5 h-5" />
-              <span>Change school</span>
+              <span>My school</span>
             </button>
           )}
         </div>

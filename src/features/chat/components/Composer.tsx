@@ -446,7 +446,7 @@ const Composer = ({
                       type="button"
                       onClick={onChangeSchool}
                       className="px-2 py-1 rounded-md bg-background border border-border text-[11px] leading-none text-muted-foreground max-w-[140px] sm:max-w-[180px] truncate hover:bg-muted transition-colors"
-                      title="Change school"
+                      title="My school"
                     >
                       {schoolName}
                     </button>

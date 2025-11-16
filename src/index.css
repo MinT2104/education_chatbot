@@ -79,12 +79,12 @@ body::-webkit-scrollbar {
 
 /* Academic glow effect */
 .academic-glow {
-  box-shadow: 0 0 24px rgba(124, 77, 255, 0.25);
+  box-shadow: 0 0 24px rgba(0, 0, 0, 0.25);
   transition: box-shadow 0.3s ease;
 }
 
 .academic-glow:hover {
-  box-shadow: 0 0 32px rgba(124, 77, 255, 0.4);
+  box-shadow: 0 0 32px rgba(0, 0, 0, 0.4);
 }
 
 /* Gradient text: pink -> purple -> blue */
@@ -194,7 +194,7 @@ body::-webkit-scrollbar {
 
 /* Inner stroke */
 .inner-stroke {
-  box-shadow: inset 0 0 0 1px rgba(124, 77, 255, 0.1);
+  box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.1);
 }
 
 .dark .inner-stroke {
@@ -224,7 +224,7 @@ body::-webkit-scrollbar {
 
 /* Glow effect on hover */
 .glow-hover:hover {
-  box-shadow: 0 0 0 6px rgba(124, 77, 255, 0.12), 0 1px 2px rgba(0, 0, 0, 0.06);
+  box-shadow: 0 0 0 6px rgba(0, 0, 0, 0.12), 0 1px 2px rgba(0, 0, 0, 0.06);
 }
 
 /* Soft bubble */
@@ -277,13 +277,13 @@ code {
   fill: currentColor;
 }
 
-.Toastify__progress-bar--light {
-  background: #7c4dff;
-}
+  .Toastify__progress-bar--light {
+    background: #000000;
+  }
 
-.Toastify__progress-bar--dark {
-  background: #7c4dff;
-}
+  .Toastify__progress-bar--dark {
+    background: #000000;
+  }
 
 @layer base {
   :root {
@@ -293,7 +293,7 @@ code {
     --card-foreground: 0 0% 3.9%;
     --popover: 0 0% 100%;
     --popover-foreground: 0 0% 3.9%;
-    --primary: 262.1 83.3% 57.8%;
+    --primary: 0 0% 0%;
     --primary-foreground: 210 40% 98%;
     --secondary: 210 40% 96.1%;
     --secondary-foreground: 222.2 47.4% 11.2%;
@@ -305,7 +305,7 @@ code {
     --destructive-foreground: 210 40% 98%;
     --border: 0 0% 89.8% / 0.25;
     --input: 0 0% 89.8% / 0.25;
-    --ring: 262.1 83.3% 57.8%;
+    --ring: 0 0% 0%;
     --chart-1: 262.1 83.3% 57.8%;
     --chart-2: 173 80% 40%;
     --chart-3: 197 37% 24%;
@@ -328,7 +328,7 @@ code {
     --card-foreground: 210 40% 98%;
     --popover: 222.2 84% 4.9%;
     --popover-foreground: 210 40% 98%;
-    --primary: 263.4 70% 50.4%;
+    --primary: 0 0% 0%;
     --primary-foreground: 210 40% 98%;
     --secondary: 217.2 32.6% 17.5%;
     --secondary-foreground: 210 40% 98%;
@@ -340,7 +340,7 @@ code {
     --destructive-foreground: 210 40% 98%;
     --border: 0 0% 14.9% / 0.15;
     --input: 0 0% 14.9% / 0.15;
-    --ring: 263.4 70% 50.4%;
+    --ring: 0 0% 0%;
     --chart-1: 263.4 70% 50.4%;
     --chart-2: 173 80% 40%;
     --chart-3: 197 37% 24%;

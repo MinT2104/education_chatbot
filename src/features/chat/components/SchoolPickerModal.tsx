@@ -92,7 +92,7 @@ const SchoolPickerModal = ({
           value={q}
           onChange={(e) => setQ(e.target.value)}
           placeholder="Search by name..."
-          className="mt-3 w-full px-4 py-2 rounded-xl bg-surface-muted focus:outline-none focus:shadow-[0_0_0_3px_rgba(124,77,255,.12),inset_0_0_0_1px_rgba(124,77,255,.20)]"
+          className="mt-3 w-full px-4 py-2 rounded-xl bg-surface-muted focus:outline-none focus:shadow-[0_0_0_3px_rgba(0,0,0,.12),inset_0_0_0_1px_rgba(0,0,0,.20)]"
           disabled={loading}
         />
         <div className="mt-4 max-h-80 overflow-y-auto space-y-2">
