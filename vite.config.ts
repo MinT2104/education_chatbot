@@ -22,6 +22,9 @@ export default defineConfig({
         target: "http://localhost:8080",
         changeOrigin: true,
         secure: false,
+        // Increase timeout for AI chat requests (default is 30s)
+        proxyTimeout: 120000, // 120 seconds = 2 minutes
+        timeout: 120000, // 120 seconds = 2 minutes
       },
     },
   },

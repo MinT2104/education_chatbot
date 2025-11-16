@@ -50,7 +50,7 @@ const SharePage = () => {
         } else if (messageId) {
           // Try to fetch from chat history
           try {
-            const chatHistory = await chatService.getChatDetail(messageId);
+            await chatService.getChatDetail(messageId);
             // Convert chat history format to messages format if needed
             // This depends on your chat history structure
             setError("Single message sharing from chat history not yet supported");

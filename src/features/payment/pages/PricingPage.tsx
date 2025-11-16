@@ -3,7 +3,6 @@ import { useNavigate } from "react-router-dom";
 import { useAppSelector } from "../../../core/store/hooks";
 import { adminService } from "../../admin/services/adminService";
 
-type Plan = "Free" | "Go";
 type SchoolCategory = "government" | "private";
 
 const Feature = ({ children }: { children: string }) => (

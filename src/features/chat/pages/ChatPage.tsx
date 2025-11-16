@@ -832,6 +832,48 @@ const ChatPage = () => {
         return;
       }
 
+      // Handle timeout errors specifically
+      if (
+        error?.code === "ECONNABORTED" ||
+        error?.code === "ETIMEDOUT" ||
+        error?.message?.includes("timeout")
+      ) {
+        const timeoutMessage =
+          "Request timeout: The AI is taking longer than expected to respond. Please try again with a shorter question or try again later.";
+
+        const errorMessageObj: NewMessage = {
+          id: `error_${Date.now()}`,
+          role: "assistant",
+          content: timeoutMessage,
+          contentMd: timeoutMessage,
+          timestamp: Date.now(),
+          isError: true,
+        };
+
+        setCurrentMessages((prev) => [...prev, errorMessageObj]);
+        toast.error(timeoutMessage);
+        return;
+      }
+
+      // Handle 502 Bad Gateway errors (proxy timeout)
+      if (error?.response?.status === 502) {
+        const gatewayMessage =
+          "Gateway timeout: The server took too long to respond. This usually happens when the AI is processing a complex request. Please try again.";
+
+        const errorMessageObj: NewMessage = {
+          id: `error_${Date.now()}`,
+          role: "assistant",
+          content: gatewayMessage,
+          contentMd: gatewayMessage,
+          timestamp: Date.now(),
+          isError: true,
+        };
+
+        setCurrentMessages((prev) => [...prev, errorMessageObj]);
+        toast.error(gatewayMessage);
+        return;
+      }
+
       const errorMessage =
         error?.response?.data?.message ||
         error?.message ||
