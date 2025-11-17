@@ -3,10 +3,13 @@ import { useNavigate, useSearchParams } from "react-router-dom";
 import { paymentService } from "../services/paymentService";
 import { toast } from "react-toastify";
 import { Loader2, CheckCircle } from "lucide-react";
+import { useAppDispatch } from "../../../core/store/hooks";
+import { getMe } from "../../auth/store/authSlice";
 
 const PaymentSuccessPage = () => {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
+  const dispatch = useAppDispatch();
   const [loading, setLoading] = useState(true);
   const [success, setSuccess] = useState(false);
 
@@ -21,7 +24,7 @@ const PaymentSuccessPage = () => {
 
     // Verify subscription status
     verifySubscription(subscriptionId);
-  }, [searchParams, navigate]);
+  }, [searchParams, navigate, dispatch]);
 
   const verifySubscription = async (subscriptionId: string) => {
     try {
@@ -34,6 +37,7 @@ const PaymentSuccessPage = () => {
       if (subscription.subscription?.status === "active") {
         setSuccess(true);
         toast.success("Subscription activated successfully!");
+        await dispatch(getMe());
 
         // Redirect to app after 3 seconds
         setTimeout(() => {

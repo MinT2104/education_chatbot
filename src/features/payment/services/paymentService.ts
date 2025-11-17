@@ -22,6 +22,55 @@ export interface CreateSubscriptionResponse {
   };
 }
 
+export interface RazorpayOrder {
+  id: string;
+  amount: number;
+  currency: string;
+}
+
+export interface RazorpayPlanInfo {
+  name?: string;
+  description?: string;
+}
+
+export interface RazorpayOrderResponse {
+  success: boolean;
+  razorpay_key: string;
+  plan: {
+    code: string;
+    amount: number;
+    currency: string;
+    description: string;
+  };
+  order: RazorpayOrder;
+  subscription?: {
+    id: string;
+    status: string;
+  };
+}
+
+export interface RazorpayVerifyPayload {
+  razorpay_payment_id: string;
+  razorpay_order_id: string;
+  razorpay_signature: string;
+}
+
+export interface RazorpayVerifyResponse {
+  success: boolean;
+  message: string;
+  plan?: string;
+  subscription?: {
+    id: string;
+    status: string;
+    next_billing_date?: string;
+  };
+}
+
+export interface PaymentError {
+  error: string;
+  message: string;
+}
+
 export interface SubscriptionHistoryItem {
   orderId: string;
   user: {
@@ -60,6 +109,24 @@ export const paymentService = {
    */
   async createSubscription(plan: "free" | "go"): Promise<CreateSubscriptionResponse> {
     const response = await apiClient.post("/payment/subscribe", { plan });
+    return response.data;
+  },
+
+  /**
+   * Create Razorpay order for a plan
+   */
+  async createRazorpayOrder(plan: "go"): Promise<RazorpayOrderResponse> {
+    const response = await apiClient.post("/payment/razorpay/order", { plan });
+    return response.data;
+  },
+
+  /**
+   * Verify Razorpay payment signature
+   */
+  async verifyRazorpayPayment(
+    payload: RazorpayVerifyPayload
+  ): Promise<RazorpayVerifyResponse> {
+    const response = await apiClient.post("/payment/razorpay/verify", payload);
     return response.data;
   },
 

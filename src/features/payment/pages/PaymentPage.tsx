@@ -1,13 +1,17 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { useAppSelector } from "../../../core/store/hooks";
+import { useAppDispatch, useAppSelector } from "../../../core/store/hooks";
 import {
   paymentService,
   SubscriptionResponse,
+  RazorpayVerifyPayload,
+  PaymentError,
 } from "../services/paymentService";
 import { toast } from "react-toastify";
 import { Loader2 } from "lucide-react";
 import { adminService } from "../../admin/services/adminService";
+import { getMe } from "../../auth/store/authSlice";
+import { AxiosError } from "axios";
 
 type Plan = "Free" | "Go";
 type SchoolCategory = "government" | "private";
@@ -33,13 +37,17 @@ const Feature = ({ children }: { children: string }) => (
 
 const PaymentPage = () => {
   const navigate = useNavigate();
+  const dispatch = useAppDispatch();
   const isAuthenticated = useAppSelector((s) => s.auth.isAuthenticated);
+  const currentUser = useAppSelector((s) => s.user.userData);
 
   const [subscription, setSubscription] = useState<SubscriptionResponse | null>(
     null
   );
   const [loading, setLoading] = useState(true);
-  const [processing, setProcessing] = useState(false);
+  const [planActionProcessing, setPlanActionProcessing] = useState(false);
+  const [paypalProcessing, setPaypalProcessing] = useState(false);
+  const [razorpayProcessing, setRazorpayProcessing] = useState(false);
   const [currentPlan, setCurrentPlan] = useState<Plan>("Free");
   const [category, setCategory] = useState<SchoolCategory>("government");
   const [appSettings, setAppSettings] = useState<Record<string, string>>({});
@@ -86,26 +94,205 @@ const PaymentPage = () => {
     })();
   }, []);
 
-  const handleUpgrade = async () => {
-    if (processing) return;
+  // Error handling helper
+  const handlePaymentError = (error: AxiosError<PaymentError> | Error) => {
+    const errorMessages: Record<string, string> = {
+      AUTHENTICATION_REQUIRED: "Please login to continue.",
+      UNSUPPORTED_PLAN: "This plan is not available.",
+      RAZORPAY_NOT_CONFIGURED:
+        "Payment system is temporarily unavailable. Please try again later.",
+      ORDER_CREATION_FAILED: "Failed to create order. Please try again.",
+      INVALID_SIGNATURE:
+        "Payment verification failed. Please contact support with your payment ID.",
+      SUBSCRIPTION_NOT_FOUND: "Subscription not found. Please try again.",
+      VERIFICATION_FAILED:
+        "Payment verification failed. Please contact support.",
+      MISSING_PAYMENT_DETAILS: "Missing payment details. Please try again.",
+    };
+
+    if (error instanceof Error && "response" in error) {
+      const axiosError = error as AxiosError<PaymentError>;
+      const errorData = axiosError.response?.data;
+      const errorCode = errorData?.error;
+      const message =
+        (errorCode && errorMessages[errorCode]) ||
+        errorData?.message ||
+        "An error occurred during payment";
+      
+      toast.error(message);
+      console.error("Payment error:", errorData);
+      return;
+    }
+
+    toast.error("Network error. Please check your connection and try again.");
+    console.error("Network error:", error);
+  };
+
+  const ensureRazorpayScriptLoaded = () => {
+    return new Promise<boolean>((resolve) => {
+      if (window.Razorpay) {
+        resolve(true);
+        return;
+      }
+
+      const script = document.createElement("script");
+      script.src = "https://checkout.razorpay.com/v1/checkout.js";
+      script.async = true;
+      script.onload = () => resolve(true);
+      script.onerror = () => resolve(false);
+      document.body.appendChild(script);
+    });
+  };
+
+  // Retry logic for order creation
+  const createOrderWithRetry = async (
+    maxRetries = 3
+  ): Promise<any | null> => {
+    for (let i = 0; i < maxRetries; i++) {
+      try {
+        const result = await paymentService.createRazorpayOrder("go");
+        
+        if (result && result.success) {
+          return result;
+        }
+      } catch (error: any) {
+        console.error(`Order creation attempt ${i + 1} failed:`, error);
+        
+        if (i < maxRetries - 1) {
+          // Wait before retry (exponential backoff)
+          await new Promise((resolve) =>
+            setTimeout(resolve, 1000 * (i + 1))
+          );
+        } else {
+          throw error;
+        }
+      }
+    }
+    
+    return null;
+  };
+
+  const handlePayPalCheckout = async () => {
+    if (paypalProcessing || razorpayProcessing) return;
 
     try {
-      setProcessing(true);
-      // Create PayPal subscription for Go plan
+      setPaypalProcessing(true);
       const response = await paymentService.createSubscription("go");
 
-      // Redirect to PayPal approval page
       if (response.approvalUrl) {
         window.location.href = response.approvalUrl;
       } else {
         throw new Error("No approval URL received");
       }
     } catch (error: any) {
-      console.error("Failed to create subscription:", error);
-      toast.error(
-        error.response?.data?.message || "Failed to create subscription"
-      );
-      setProcessing(false);
+      console.error("Failed to create PayPal subscription:", error);
+      handlePaymentError(error);
+      setPaypalProcessing(false);
+    }
+  };
+
+  const handleRazorpayCheckout = async () => {
+    if (razorpayProcessing || paypalProcessing) return;
+
+    try {
+      setRazorpayProcessing(true);
+      
+      // Step 1: Load Razorpay script
+      const scriptLoaded = await ensureRazorpayScriptLoaded();
+      if (!scriptLoaded || !window.Razorpay) {
+        throw new Error("Failed to load Razorpay checkout script");
+      }
+
+      // Step 2: Create order with retry logic
+      const orderData = await createOrderWithRetry();
+      
+      if (!orderData || !orderData.success) {
+        throw new Error("Failed to create order after multiple attempts");
+      }
+
+      // Step 3: Open Razorpay Checkout Modal
+      const rzp = new window.Razorpay({
+        key: orderData.razorpay_key,
+        order_id: orderData.order.id,
+        amount: orderData.order.amount,
+        currency: orderData.order.currency,
+        name: "Education Bot",
+        description: orderData.plan.description || "Education Bot Go Plan",
+        
+        // Step 4: Payment success handler
+        handler: async (response: RazorpayVerifyPayload) => {
+          try {
+            // Verify payment signature on backend
+            const verifyResult = await paymentService.verifyRazorpayPayment({
+              razorpay_order_id: response.razorpay_order_id,
+              razorpay_payment_id: response.razorpay_payment_id,
+              razorpay_signature: response.razorpay_signature,
+            });
+
+            if (verifyResult.success) {
+              // Success! User is now on "go" plan
+              toast.success("Payment successful! Your subscription is now active.");
+              
+              // Refresh user state and subscription
+              await Promise.all([
+                loadSubscription(),
+                dispatch(getMe())
+              ]);
+              
+              setCurrentPlan("Go");
+              
+              // Optional: Show success message or redirect
+              setTimeout(() => {
+                toast.info("Welcome to the Go Plan! 🎉");
+              }, 500);
+            } else {
+              // Verification failed
+              toast.error(
+                `Payment verification failed: ${verifyResult.message || 'Unknown error'}`
+              );
+              console.error("Verification error:", verifyResult);
+            }
+          } catch (error: any) {
+            console.error("Failed to verify Razorpay payment:", error);
+            handlePaymentError(error);
+            toast.error(
+              "Failed to verify payment. Please contact support with your payment ID: " +
+                response.razorpay_payment_id
+            );
+          } finally {
+            setRazorpayProcessing(false);
+          }
+        },
+        
+        // User info prefill
+        prefill: {
+          name: currentUser?.name || "",
+          email: currentUser?.email || "",
+          contact: currentUser?.phone || "",
+        },
+        
+        // Theme customization
+        theme: {
+          color: "#3399cc",
+        },
+        
+        // Modal close handler
+        modal: {
+          ondismiss: () => {
+            console.log("Payment cancelled by user");
+            toast.info("Payment cancelled. Your subscription was not activated.");
+            setRazorpayProcessing(false);
+          },
+        },
+      });
+
+      // Open the Razorpay modal
+      rzp.open();
+      
+    } catch (error: any) {
+      console.error("Payment flow error:", error);
+      handlePaymentError(error);
+      setRazorpayProcessing(false);
     }
   };
 
@@ -125,22 +312,20 @@ const PaymentPage = () => {
     }
 
     try {
-      setProcessing(true);
+      setPlanActionProcessing(true);
       // Cancel subscription (which will switch to Free plan)
       await paymentService.cancelSubscription();
       toast.success("Switched to Free plan");
       await loadSubscription();
       setCurrentPlan("Free");
-      // Refresh after a moment to update UI
-      setTimeout(() => {
-        window.location.reload();
-      }, 1000);
+      await dispatch(getMe());
     } catch (error: any) {
       console.error("Failed to switch to Free plan:", error);
       toast.error(
         error.response?.data?.message || "Failed to switch to Free plan"
       );
-      setProcessing(false);
+    } finally {
+      setPlanActionProcessing(false);
     }
   };
 
@@ -154,24 +339,23 @@ const PaymentPage = () => {
     }
 
     try {
-      setProcessing(true);
+      setPlanActionProcessing(true);
       await paymentService.cancelSubscription();
       toast.success("Subscription cancelled successfully");
       await loadSubscription();
       setCurrentPlan("Free");
-      // Refresh after a moment to update UI
-      setTimeout(() => {
-        window.location.reload();
-      }, 1000);
+      await dispatch(getMe());
     } catch (error: any) {
       console.error("Failed to cancel subscription:", error);
       toast.error(
         error.response?.data?.message || "Failed to cancel subscription"
       );
     } finally {
-      setProcessing(false);
+      setPlanActionProcessing(false);
     }
   };
+
+  const isCheckoutProcessing = paypalProcessing || razorpayProcessing;
 
   if (loading) {
     return (
@@ -257,7 +441,7 @@ const PaymentPage = () => {
             <div className="mt-5 flex-shrink-0">
               <button
                 onClick={currentPlan === "Go" ? handleSwitchToFree : undefined}
-                disabled={processing || currentPlan === "Free"}
+                disabled={planActionProcessing || currentPlan === "Free"}
                 className="w-full min-h-[44px] px-4 py-2.5 rounded-2xl bg-surface-muted text-text hover:bg-primary-500/10 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
               >
                 {currentPlan === "Free"
@@ -314,10 +498,10 @@ const PaymentPage = () => {
                   )}
                   <button
                     onClick={handleCancel}
-                    disabled={processing}
+                    disabled={planActionProcessing}
                     className="w-full min-h-[44px] px-4 py-2.5 rounded-2xl bg-surface-muted text-text hover:bg-red-500/10 hover:text-red-600 disabled:opacity-50 flex items-center justify-center"
                   >
-                    {processing ? (
+                    {planActionProcessing ? (
                       <span className="flex items-center justify-center gap-2">
                         <Loader2 className="h-4 w-4 animate-spin" />
                         Cancelling...
@@ -328,20 +512,36 @@ const PaymentPage = () => {
                   </button>
                 </>
               ) : (
-                <button
-                  onClick={handleUpgrade}
-                  disabled={processing}
-                  className="w-full min-h-[44px] px-4 py-2.5 rounded-2xl bg-primary-500 text-white hover:bg-primary-600 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
-                >
-                  {processing ? (
-                    <span className="flex items-center justify-center gap-2">
-                      <Loader2 className="h-4 w-4 animate-spin" />
-                      Processing...
-                    </span>
-                  ) : (
-                    "Upgrade to Go"
-                  )}
-                </button>
+                <div className="flex flex-col gap-3">
+                  <button
+                    onClick={handlePayPalCheckout}
+                    disabled={isCheckoutProcessing}
+                    className="w-full min-h-[44px] px-4 py-2.5 rounded-2xl bg-primary-500 text-white hover:bg-primary-600 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
+                  >
+                    {paypalProcessing ? (
+                      <span className="flex items-center justify-center gap-2">
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                        Redirecting to PayPal...
+                      </span>
+                    ) : (
+                      "Pay with PayPal"
+                    )}
+                  </button>
+                  <button
+                    onClick={handleRazorpayCheckout}
+                    disabled={isCheckoutProcessing}
+                    className="w-full min-h-[44px] px-4 py-2.5 rounded-2xl bg-indigo-500 text-white hover:bg-indigo-600 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
+                  >
+                    {razorpayProcessing ? (
+                      <span className="flex items-center justify-center gap-2">
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                        Opening Razorpay...
+                      </span>
+                    ) : (
+                      "Pay with Razorpay"
+                    )}
+                  </button>
+                </div>
               )}
             </div>
             <ul className="mt-6 space-y-3 flex-grow">
