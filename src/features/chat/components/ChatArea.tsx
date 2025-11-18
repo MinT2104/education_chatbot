@@ -1,9 +1,11 @@
 import { useEffect, useRef, useState } from "react";
 import cuteIcon from "../../../public/cute.png";
-import assistantAvatar from "../../../public/model_icon_dark.png";
+import assistantAvatarDark from "../../../public/model_icon_dark.png";
+import assistantAvatarLight from "../../../public/model_icon_light.png";
 import MessageBubble from "./MessageBubble";
 import SpaceStarter from "./SpaceStarter";
 import { NewMessage } from "../types";
+import { useAppSelector } from "../../../core/store/hooks";
 
 interface ChatAreaProps {
   messages: NewMessage[];
@@ -48,6 +50,8 @@ const ChatArea = ({
   const containerRef = useRef<HTMLDivElement>(null);
   const initialIsCompactHeight =
     typeof window !== "undefined" ? window.innerHeight <= 900 : false;
+  const isDark = useAppSelector((s) => s.ui.isDark);
+  const assistantAvatar = isDark ? assistantAvatarLight : assistantAvatarDark;
   const computeHeroScale = () => {
     if (typeof window === "undefined") return 1;
     const { innerWidth, innerHeight } = window;

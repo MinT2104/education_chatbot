@@ -70,8 +70,7 @@ export const routes: AppRoute[] = [
   },
   {
     path: "/upgrade",
-    component: PaymentPage,
-    protected: true,
+    component: PricingPage,
   },
   {
     path: "/pricing",

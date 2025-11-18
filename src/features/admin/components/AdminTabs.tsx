@@ -84,7 +84,8 @@ export const AdminTabs = ({ onTabChange }: AdminTabsProps) => {
           onClick={() => onTabChange("pricing")}
         >
           <DollarSign className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
-          <span className="hidden sm:inline">Pricing</span>
+          <span className="hidden sm:inline">Pricing & Plans</span>
+          <span className="sm:hidden">Pricing</span>
         </TabsTrigger>
         <TabsTrigger
           value="prompts"

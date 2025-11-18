@@ -1,5 +1,6 @@
 import { useState } from "react";
-import assistantAvatar from "../../../public/model_icon_dark.png";
+import assistantAvatarDark from "../../../public/model_icon_dark.png";
+import assistantAvatarLight from "../../../public/model_icon_light.png";
 import ReactMarkdown from "react-markdown";
 import { Prism as SyntaxHighlighter } from "react-syntax-highlighter";
 import { oneDark } from "react-syntax-highlighter/dist/esm/styles/prism";
@@ -8,6 +9,7 @@ import { NewMessage } from "../types";
 import ShareModal from "./ShareModal";
 import FeedbackDialog from "./FeedbackDialog";
 import { Button } from "@/components/ui/button";
+import { useAppSelector } from "../../../core/store/hooks";
 
 interface MessageBubbleProps {
   message: NewMessage;
@@ -58,6 +60,8 @@ const MessageBubble = ({
 
   const isUser = message.role === "user";
   const isError = message.isError === true;
+  const isDark = useAppSelector((s) => s.ui.isDark);
+  const assistantAvatar = isDark ? assistantAvatarLight : assistantAvatarDark;
 
   // Get current content (from selected variant or default)
   const getCurrentContent = () => {

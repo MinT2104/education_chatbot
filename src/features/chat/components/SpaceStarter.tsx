@@ -82,7 +82,8 @@ const SpaceStarter: React.FC = () => {
     const widthRatio = innerWidth / 1100;
     return Math.min(1, Math.max(0.8, Math.min(heightRatio, widthRatio)));
   };
-  const [scale, setScale] = useState(computeScale);
+  // Base scale computed from viewport; we amplify it to make the block larger on wide/short screens
+  const [baseScale, setBaseScale] = useState(computeScale);
   const [isMobile, setIsMobile] = useState(
     typeof window !== "undefined" ? window.innerWidth <= 640 : false
   );
@@ -94,7 +95,7 @@ const SpaceStarter: React.FC = () => {
 
   useEffect(() => {
     const handleResize = () => {
-      setScale((prev) => {
+      setBaseScale((prev) => {
         const next = computeScale();
         return Math.abs(next - prev) > 0.01 ? next : prev;
       });
@@ -123,15 +124,21 @@ const SpaceStarter: React.FC = () => {
       }
     })();
   }, []);
+  // Increase visual size (roughly 2x) but still cap at the natural 1:1 scale
+  const displayScale = useMemo(
+    () => Math.min(1, baseScale * 2),
+    [baseScale]
+  );
+
   const containerStyle = useMemo(() => {
-    if (scale >= 0.98) return undefined;
+    if (displayScale >= 0.98) return undefined;
     const style: React.CSSProperties & { zoom?: number } = {
-      transform: `scale(${scale})`,
+      transform: `scale(${displayScale})`,
       transformOrigin: "top center",
     };
-    style.zoom = scale;
+    style.zoom = displayScale;
     return style;
-  }, [scale]);
+  }, [displayScale]);
 
   const displayedSpaces = useMemo(
     () => (isMobile ? spaces.slice(0, 4) : spaces),
@@ -145,10 +152,10 @@ const SpaceStarter: React.FC = () => {
     : "max-w-[1080px]";
 
   const gridLayoutClass = isMobile
-    ? "grid-cols-2 gap-1.5"
+    ? "grid-cols-2 gap-2"
     : isCompactDesktop
-    ? "grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2.5 sm:gap-3 lg:gap-3.5"
-    : "grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-3.5 lg:gap-4";
+    ? "grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-3.5 lg:gap-4"
+    : "grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3.5 sm:gap-4 lg:gap-5";
 
   const cardPaddingClass = isMobile
     ? "p-2 min-h-[80px]"
@@ -165,20 +172,20 @@ const SpaceStarter: React.FC = () => {
   const iconSizeClass = isMobile
     ? "text-[1.5rem] sm:text-[1.75rem]"
     : isCompactDesktop
-    ? "text-[1.9rem] sm:text-[2.15rem] md:text-[2.35rem]"
-    : "text-[2.1rem] sm:text-[2.35rem] md:text-[2.6rem]";
+    ? "text-[2.05rem] sm:text-[2.3rem] md:text-[2.45rem]"
+    : "text-[2.3rem] sm:text-[2.55rem] md:text-[2.75rem]";
 
   const titleSizeClass = isMobile
     ? "text-[0.85rem] sm:text-[0.95rem] md:text-[1rem]"
     : isCompactDesktop
-    ? "text-[1rem] sm:text-[1.1rem] md:text-[1.2rem]"
-    : "text-[1.05rem] sm:text-[1.15rem] md:text-[1.25rem]";
+    ? "text-[1.08rem] sm:text-[1.2rem] md:text-[1.28rem]"
+    : "text-[1.15rem] sm:text-[1.25rem] md:text-[1.35rem]";
 
   const descriptionSizeClass = isMobile
     ? "text-[0.7rem] sm:text-xs md:text-[0.85rem]"
     : isCompactDesktop
-    ? "text-sm sm:text-[0.95rem] md:text-[1.02rem]"
-    : "text-sm sm:text-[1rem] md:text-[1.05rem]";
+    ? "text-sm sm:text-[1.02rem] md:text-[1.08rem]"
+    : "text-sm sm:text-[1.05rem] md:text-[1.12rem]";
 
   return (
     <div
@@ -213,7 +220,7 @@ const SpaceStarter: React.FC = () => {
           {displayedSpaces.map((space, idx) => (
             <button
               key={idx}
-              className={`group rounded-[18px] bg-card/70 dark:bg-card/50 hover:bg-card/90 dark:hover:bg-card/65 transition-all flex ${cardGapClass} shadow-sm dark:shadow-md text-left focus:outline-none focus:ring-2 focus:ring-primary/50 active:scale-[0.99] ${cardPaddingClass}`}
+              className={`group rounded-lg bg-card/70 dark:bg-card/50 hover:bg-card/90 dark:hover:bg-card/65 transition-all flex ${cardGapClass} shadow-sm dark:shadow-md text-left focus:outline-none focus:ring-2 focus:ring-primary/50 active:scale-[0.99] ${cardPaddingClass}`}
               onClick={() => {
                 const detail = space.content || space.title;
                 window.dispatchEvent(

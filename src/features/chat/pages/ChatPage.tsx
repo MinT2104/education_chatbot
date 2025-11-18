@@ -16,6 +16,7 @@ import { NewMessage, ConversationTools } from "../types";
 import UpgradeModal from "../components/UpgradeModal";
 import prompts from "../data/prompts.json";
 import { chatService } from "../services/chatService";
+import { adminService } from "../../admin/services/adminService";
 import SchoolPickerModal from "../components/SchoolPickerModal";
 import { sessionService } from "../services/sessionService";
 import { useConversations } from "../hooks/useConversations";
@@ -91,6 +92,11 @@ const ChatPage = () => {
   const [quotaUsed, setQuotaUsed] = useState<number>(
     parseInt(localStorage.getItem("quota_used") || "0", 10)
   );
+  // Admin-configured free limits per school type
+  const [freeLimits, setFreeLimits] = useState<{ government: number; private: number }>({
+    government: 25,
+    private: 25,
+  });
   const [showUpgrade, setShowUpgrade] = useState(false);
   const [commandPaletteOpen, setCommandPaletteOpen] = useState(false);
   const [showNetworkError, setShowNetworkError] = useState(false);
@@ -167,6 +173,28 @@ const ChatPage = () => {
     const settings = settingsService.getSettings(userId);
     setEnterToSend(settings.enterToSend);
   }, [userId]);
+
+  const getFreeLimitForModel = (modelName: string) =>
+    modelName.toLowerCase().includes("government")
+      ? freeLimits.government
+      : freeLimits.private;
+
+  // Load free limits from settings (admin-configured) with safe defaults
+  useEffect(() => {
+    (async () => {
+      try {
+        const res = await adminService.getAppSettings();
+        const gov = parseInt(res.settings?.free_limit_government || "25", 10);
+        const pri = parseInt(res.settings?.free_limit_private || "25", 10);
+        setFreeLimits({
+          government: isNaN(gov) ? 25 : gov,
+          private: isNaN(pri) ? 25 : pri,
+        });
+      } catch {
+        // keep defaults
+      }
+    })();
+  }, []);
 
   // Listen for settings changes (poll every 2 seconds for simplicity)
   useEffect(() => {
@@ -389,24 +417,32 @@ const ChatPage = () => {
   ) => {
     const schoolName = school.name;
 
-    // If user changes school, start a new session/conversation
+    // Check if user is trying to change school in an existing session with messages
     if (!isAuthenticated) {
       const prev = guestSchoolName;
-      if (prev && prev !== schoolName) {
-        // reset guest session and clear messages
-        setGuestSessionId(null);
-        localStorage.removeItem("guest_session_id");
-        setCurrentMessages([]);
-        selectConversation(null);
-        navigate("/app", { replace: true });
+      if (prev && prev !== schoolName && currentMessages.length > 0) {
+        // Show message instead of auto-switching when there are messages
+        toast.info(
+          "To start with a new school, please start a new session or select from 'My school' section.",
+          {
+            autoClose: 5000,
+          }
+        );
+        setShowSchoolPicker(false);
+        return;
       }
     } else {
       const prev = selectedConversation?.schoolName || null;
-      if (prev && prev !== schoolName) {
-        // start a new conversation for a new school
-        selectConversation(null);
-        setCurrentMessages([]);
-        navigate("/app", { replace: true });
+      if (prev && prev !== schoolName && currentMessages.length > 0) {
+        // Show message instead of auto-switching when there are messages
+        toast.info(
+          "To start with a new school, please start a new session or select from 'My school' section.",
+          {
+            autoClose: 5000,
+          }
+        );
+        setShowSchoolPicker(false);
+        return;
       }
     }
 
@@ -454,7 +490,10 @@ const ChatPage = () => {
 
   const handleSendMessage = async (content: string, schoolName?: string) => {
     if (!content.trim()) return;
-    if (plan === "Free" && quotaUsed >= 25) {
+    // Determine free limit based on model/school type (admin-configured)
+    const currentFreeLimit = getFreeLimitForModel(model);
+
+    if (plan === "Free" && quotaUsed >= currentFreeLimit) {
       setShowUpgrade(true);
       return;
     }
@@ -1218,6 +1257,10 @@ const ChatPage = () => {
               }
               userName={userName}
               plan={plan.toLowerCase() as "free" | "go"}
+              usageCount={plan === "Free" ? quotaUsed : undefined}
+              usageLimit={
+                plan === "Free" ? getFreeLimitForModel(model) : undefined
+              }
               onChangeSchool={() => setShowSchoolPicker(true)}
             />
           </div>
@@ -1267,6 +1310,7 @@ const ChatPage = () => {
               selectedConversationId || conversationIdFromUrl || undefined
             }
             model={model}
+            freeLimits={freeLimits}
             tools={tools}
             memoryEnabled={memoryEnabled}
             onModelChange={(nextModel) => {
@@ -1350,8 +1394,8 @@ const ChatPage = () => {
             open={showUpgrade}
             onClose={() => setShowUpgrade(false)}
             onUpgrade={() => {
-              // Navigate to upgrade page for real payment
-              navigate("/upgrade");
+              // Always direct to pricing page for upgrade flows
+              navigate("/pricing");
               setShowUpgrade(false);
             }}
           />

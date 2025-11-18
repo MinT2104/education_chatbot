@@ -17,6 +17,7 @@ import { AdminSpaces } from "../components/spaces/AdminSpaces";
 import { AdminPrompts } from "../components/prompts/AdminPrompts";
 import { AdminStaticPages } from "../components/pages/AdminStaticPages";
 import { AdminSubjects } from "../components/subjects/AdminSubjects";
+import { AdminPlanManagement } from "../components/plans/AdminPlanManagement";
 
 const AdminPage = () => {
   const [activeTab, setActiveTab] = useState("dashboard");
@@ -73,45 +74,49 @@ const AdminPage = () => {
       });
 
       // Map API response to Document type
-      const mappedDocuments: DocumentType[] = response.documents.map(
-        (doc: any) => {
-          // Find school by name to get schoolId
-          const school = schoolsData.find((s) => s.name === doc.school);
-          const schoolId = school?.id || "";
+      const documentsList = Array.isArray(response?.documents)
+        ? response.documents
+        : Array.isArray((response as any)?.data)
+        ? (response as any).data
+        : [];
 
-          // Format date from ISO string to readable format
-          const uploadedAt = doc.created_at
-            ? new Date(doc.created_at).toLocaleDateString("en-US", {
-                year: "numeric",
-                month: "short",
-                day: "numeric",
-              })
-            : "";
+      const mappedDocuments: DocumentType[] = documentsList.map((doc: any) => {
+        // Find school by name to get schoolId
+        const school = schoolsData.find((s) => s.name === doc.school);
+        const schoolId = school?.id || "";
 
-          // Convert size from bytes to MB
-          const fileSizeMB = doc.size ? doc.size / (1024 * 1024) : 0;
+        // Format date from ISO string to readable format
+        const uploadedAt = doc.created_at
+          ? new Date(doc.created_at).toLocaleDateString("en-US", {
+              year: "numeric",
+              month: "short",
+              day: "numeric",
+            })
+          : "";
 
-          // Extract file name from document_name or use a default
-          const fileName = doc.document_name
-            ? `${doc.document_name.replace(/\s+/g, "_")}.pdf`
-            : "document.pdf";
+        // Convert size from bytes to MB
+        const fileSizeMB = doc.size ? doc.size / (1024 * 1024) : 0;
 
-          return {
-            id: doc.id,
-            name: doc.document_name || "Untitled Document",
-            fileName: fileName,
-            fileSize: fileSizeMB,
-            fileType: "application/pdf", // Default to PDF
-            schoolId: schoolId,
-            schoolName: doc.school || "Unknown School",
-            standard: doc.grade || "",
-            subject: doc.subject || "",
-            uploadedBy: "admin", // Default value
-            uploadedAt: uploadedAt,
-            indexed: true, // Default to indexed
-          };
-        }
-      );
+        // Extract file name from document_name or use a default
+        const fileName = doc.document_name
+          ? `${doc.document_name.replace(/\s+/g, "_")}.pdf`
+          : "document.pdf";
+
+        return {
+          id: doc.id,
+          name: doc.document_name || "Untitled Document",
+          fileName: fileName,
+          fileSize: fileSizeMB,
+          fileType: "application/pdf", // Default to PDF
+          schoolId: schoolId,
+          schoolName: doc.school || "Unknown School",
+          standard: doc.grade || "",
+          subject: doc.subject || "",
+          uploadedBy: "admin", // Default value
+          uploadedAt: uploadedAt,
+          indexed: true, // Default to indexed
+        };
+      });
 
       setDocuments(mappedDocuments);
     } catch (error) {
@@ -176,6 +181,7 @@ const AdminPage = () => {
 
           <TabsContent value="pricing" className="space-y-4 sm:space-y-6">
             <AdminPricing />
+            <AdminPlanManagement />
           </TabsContent>
 
           <TabsContent value="prompts" className="space-y-4 sm:space-y-6">

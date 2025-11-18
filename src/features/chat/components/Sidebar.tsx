@@ -72,6 +72,8 @@ interface SidebarProps {
   userName?: string;
   plan?: "free" | "go"; // Keep for backward compatibility, but will use from store
   onChangeSchool?: () => void;
+  usageCount?: number;
+  usageLimit?: number;
 }
 
 const NewChatIcon = ({ className }: { className?: string }) => (
@@ -101,6 +103,8 @@ const Sidebar = ({
   userName: propUserName,
   plan: propPlan,
   onChangeSchool,
+  usageCount,
+  usageLimit,
 }: SidebarProps) => {
   const [hoveredId, setHoveredId] = useState<string | null>(null);
   const [openMenuId, setOpenMenuId] = useState<string | null>(null);
@@ -725,8 +729,12 @@ const Sidebar = ({
                   </span>
                   {(() => {
                     // Get usage from user.currentLimit or localStorage
-                    const usage = user?.currentLimit ?? parseInt(localStorage.getItem("quota_used") || "0", 10);
-                    const limit = user?.planLimit ?? 25;
+                    const usage =
+                      usageCount ??
+                      user?.currentLimit ??
+                      parseInt(localStorage.getItem("quota_used") || "0", 10);
+                    const limit =
+                      usageLimit ?? user?.planLimit ?? 25;
                     // Show usage for Free plan users
                     if (plan === "Free") {
                       return (

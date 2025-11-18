@@ -35,6 +35,7 @@ interface TopBarProps {
   onNewChat?: () => void;
   onExport?: () => void;
   onSettings?: () => void;
+  freeLimits?: { government: number; private: number };
 }
 
 const TopBar = ({
@@ -42,6 +43,7 @@ const TopBar = ({
   conversationId,
   onModelChange,
   onSettings,
+  freeLimits = { government: 25, private: 25 },
 }: TopBarProps) => {
   const navigate = useNavigate();
   const [shareOpen, setShareOpen] = useState(false);
@@ -125,7 +127,9 @@ const TopBar = ({
                       Easy Government Schools (Public)
                     </span>
                     <span className="text-xs text-muted-foreground">
-                      Unlimited Free
+                      {freeLimits.government
+                        ? `${freeLimits.government} Free Chats`
+                        : "Unlimited Free"}
                     </span>
                   </div>
                 </div>
@@ -150,14 +154,16 @@ const TopBar = ({
                   >
                     <span className="font-medium">Easy Private Schools</span>
                     <span className="text-xs text-muted-foreground">
-                      25 Free Chats
+                      {freeLimits.private
+                        ? `${freeLimits.private} Free Chats`
+                        : "Unlimited Free"}
                     </span>
                   </div>
                   <Button
                     onClick={(e) => {
                       e.preventDefault();
                       e.stopPropagation();
-                      navigate("/upgrade");
+                      navigate("/pricing");
                     }}
                     className="h-7 px-3 text-xs bg-primary text-primary-foreground hover:bg-primary/90 shrink-0"
                     size="sm"
