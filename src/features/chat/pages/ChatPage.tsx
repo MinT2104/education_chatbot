@@ -20,6 +20,7 @@ import { adminService } from "../../admin/services/adminService";
 import SchoolPickerModal from "../components/SchoolPickerModal";
 import { sessionService } from "../services/sessionService";
 import { useConversations } from "../hooks/useConversations";
+import AuthDialog from "../../auth/components/AuthDialog";
 
 const ChatPage = () => {
   const navigate = useNavigate();
@@ -92,16 +93,14 @@ const ChatPage = () => {
   const [quotaUsed, setQuotaUsed] = useState<number>(
     parseInt(localStorage.getItem("quota_used") || "0", 10)
   );
-  // Admin-configured free limits per school type
-  const [freeLimits, setFreeLimits] = useState<{ government: number; private: number }>({
-    government: 25,
-    private: 25,
-  });
+  // Quota limit from backend (updated from response)
+  const [quotaLimit, setQuotaLimit] = useState<number | null>(null);
   const [showUpgrade, setShowUpgrade] = useState(false);
   const [commandPaletteOpen, setCommandPaletteOpen] = useState(false);
   const [showNetworkError, setShowNetworkError] = useState(false);
   const [showRateLimit, setShowRateLimit] = useState(false);
   const [showExportModal, setShowExportModal] = useState(false);
+  const [authModal, setAuthModal] = useState<"login" | "signup" | null>(null);
   const [networkErrorMessage] = useState("");
   const [showSchoolPicker, setShowSchoolPicker] = useState(false);
   const [role, setRole] = useState<"student" | "teacher">("student");
@@ -174,27 +173,24 @@ const ChatPage = () => {
     setEnterToSend(settings.enterToSend);
   }, [userId]);
 
-  const getFreeLimitForModel = (modelName: string) =>
-    modelName.toLowerCase().includes("government")
-      ? freeLimits.government
-      : freeLimits.private;
-
-  // Load free limits from settings (admin-configured) with safe defaults
+  // Removed: freeLimits loading from settings - now using quotaLimit from backend response
+  
+  // Load guest quota limit from backend settings on mount (for display in modals)
   useEffect(() => {
-    (async () => {
-      try {
-        const res = await adminService.getAppSettings();
-        const gov = parseInt(res.settings?.free_limit_government || "25", 10);
-        const pri = parseInt(res.settings?.free_limit_private || "25", 10);
-        setFreeLimits({
-          government: isNaN(gov) ? 25 : gov,
-          private: isNaN(pri) ? 25 : pri,
-        });
-      } catch {
-        // keep defaults
-      }
-    })();
-  }, []);
+    if (!isAuthenticated) {
+      (async () => {
+        try {
+          const res = await adminService.getPublicGuestLimits();
+          const guestLimit = res.limits?.guest || 10;
+          setQuotaLimit(guestLimit);
+        } catch (error) {
+          console.error("Failed to load guest limits:", error);
+          // If fails, use default of 10
+          setQuotaLimit(10);
+        }
+      })();
+    }
+  }, [isAuthenticated]);
 
   // Listen for settings changes (poll every 2 seconds for simplicity)
   useEffect(() => {
@@ -498,10 +494,15 @@ const ChatPage = () => {
 
   const handleSendMessage = async (content: string, schoolName?: string) => {
     if (!content.trim()) return;
-    // Determine free limit based on model/school type (admin-configured)
-    const currentFreeLimit = getFreeLimitForModel(model);
 
-    if (plan === "Free" && quotaUsed >= currentFreeLimit) {
+    // Check quota limit (if we have it from previous backend response)
+    if (plan === "Free" && quotaLimit !== null && quotaUsed >= quotaLimit) {
+      // If user is not authenticated (guest), show rate limit modal to encourage login
+      if (!isAuthenticated) {
+        setShowRateLimit(true);
+        return;
+      }
+      // If authenticated but on Free plan, show upgrade modal
       setShowUpgrade(true);
       return;
     }
@@ -646,12 +647,7 @@ const ChatPage = () => {
       // Backend will save both user and assistant messages when chat API is called
     }
 
-    // Quota accounting (user message deducts 1)
-    if (plan === "Free") {
-      const nextUsed = quotaUsed + 1;
-      setQuotaUsed(nextUsed);
-      localStorage.setItem("quota_used", String(nextUsed));
-    }
+    // Quota will be updated from backend response (backend is source of truth)
 
     // Handle workflow steps
     if (workflowStep === 1) {
@@ -821,6 +817,19 @@ const ChatPage = () => {
       };
 
       setCurrentMessages((prev) => [...prev, assistantMessage]);
+
+      // Sync quota from backend response (backend is source of truth)
+      if (response.rateLimit && response.rateLimit.current !== undefined) {
+        setQuotaUsed(response.rateLimit.current);
+        localStorage.setItem("quota_used", String(response.rateLimit.current));
+        // Also update quota limit from backend
+        if (response.rateLimit.limit !== null && response.rateLimit.limit !== undefined) {
+          setQuotaLimit(response.rateLimit.limit);
+        }
+      } else if (response.guestQuota && response.guestQuota.used !== undefined) {
+        setQuotaUsed(response.guestQuota.used);
+        localStorage.setItem("quota_used", String(response.guestQuota.used));
+      }
 
       // For guest: Backend handles guest ID via cookie for rate limiting
       // But we still use conversationId (guestSessionId) for frontend state tracking
@@ -1267,7 +1276,7 @@ const ChatPage = () => {
               plan={plan.toLowerCase() as "free" | "go"}
               usageCount={plan === "Free" ? quotaUsed : undefined}
               usageLimit={
-                plan === "Free" ? getFreeLimitForModel(model) : undefined
+                plan === "Free" ? (quotaLimit ?? undefined) : undefined
               }
               onChangeSchool={() => setShowSchoolPicker(true)}
             />
@@ -1318,7 +1327,6 @@ const ChatPage = () => {
               selectedConversationId || conversationIdFromUrl || undefined
             }
             model={model}
-            freeLimits={freeLimits}
             tools={tools}
             memoryEnabled={memoryEnabled}
             onModelChange={(nextModel) => {
@@ -1411,13 +1419,28 @@ const ChatPage = () => {
           {/* Rate Limit Modal */}
           <RateLimitModal
             open={showRateLimit}
-            onClose={() => setShowRateLimit(false)}
+            onClose={() => {
+              setShowRateLimit(false);
+              // If guest closes modal without login, redirect to home
+              if (!isAuthenticated) {
+                navigate("/");
+              }
+            }}
             onUpgrade={() => {
               setShowRateLimit(false);
               setShowUpgrade(true);
             }}
+            onLogin={() => {
+              setShowRateLimit(false);
+              setAuthModal("login");
+            }}
+            onSignup={() => {
+              setShowRateLimit(false);
+              setAuthModal("signup");
+            }}
             plan={plan}
             remainingTime={3600}
+            quotaLimit={quotaLimit}
           />
 
           {/* Export Modal */}
@@ -1452,6 +1475,16 @@ const ChatPage = () => {
               model.toLowerCase().includes("government") ? "government" : "private"
             }
           />
+
+          {/* Auth Dialog */}
+          {!isAuthenticated && (
+            <AuthDialog
+              inline
+              open={authModal !== null}
+              onClose={() => setAuthModal(null)}
+              initialMode={authModal || "login"}
+            />
+          )}
         </div>
       </div>
     </div>

@@ -482,6 +482,21 @@ export const adminService = {
   },
 
   /**
+   * Get guest rate limits (public - no auth required)
+   */
+  async getPublicGuestLimits(): Promise<{
+    success: boolean;
+    limits: {
+      guest: number;
+      authenticated: number;
+      goPlan: number | null;
+    };
+  }> {
+    const response = await apiClient.get("/settings/limits/public");
+    return response.data;
+  },
+
+  /**
    * Update guest daily limit (admin only)
    */
   async updateGuestLimit(limit: number): Promise<{

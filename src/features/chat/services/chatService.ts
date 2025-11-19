@@ -29,6 +29,15 @@ export const chatService = {
     sessionId?: string | null
     relatedQuestions?: string[]
     sources?: any[]
+    rateLimit?: {
+      limit: number | null
+      current: number
+      message: string
+    }
+    guestQuota?: {
+      used: number
+      left: number
+    }
   }> {
     const response = await apiClient.post('/chat', data)
     return response.data
