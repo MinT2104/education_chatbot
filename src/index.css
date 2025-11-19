@@ -95,6 +95,21 @@ body::-webkit-scrollbar {
   background-clip: text;
 }
 
+/* Bounce animation - like original but slower */
+@keyframes avatar-bounce {
+  0%, 100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-10px);
+  }
+}
+
+/* Avatar bounce animation class */
+.avatar-float {
+  animation: avatar-bounce 2s ease-in-out infinite !important;
+}
+
 /* Smooth hover effects */
 .hover-lift {
   transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1),

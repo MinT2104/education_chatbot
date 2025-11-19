@@ -141,11 +141,15 @@ const ChatArea = ({
             <img
               src={heroAvatar}
               alt="Cute assistant"
+              style={{
+                willChange: 'transform',
+                backfaceVisibility: 'hidden',
+              }}
               className={`${
                 !isAuthenticated && isCompactHeight
                   ? "w-16 h-16 sm:w-24 sm:h-24 md:w-28 md:h-28 lg:w-32 lg:h-32 xl:w-36 xl:h-36"
                   : "w-20 h-20 sm:w-28 sm:h-28 md:w-36 md:h-36 lg:w-40 lg:h-40 xl:w-48 xl:h-48"
-              } mb-0.5 sm:mb-1 mx-auto rounded-full flex-shrink-0 animate-[bounce_1s_ease-in-out_3] hover:animate-[bounce_0.6s_ease-in-out_2] hover:scale-110 transition-transform duration-300`}
+              } mb-0.5 sm:mb-1 mx-auto rounded-full flex-shrink-0 avatar-float hover:scale-105 transition-transform duration-500`}
             />
             <div
               className={`-mt-1 sm:-mt-1.5 md:-mt-2 lg:-mt-4 xl:-mt-5 ${
