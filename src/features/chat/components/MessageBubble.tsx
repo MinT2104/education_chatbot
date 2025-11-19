@@ -1,6 +1,6 @@
 import { useState } from "react";
-import assistantAvatarDark from "../../../public/model_icon_dark.png";
-import assistantAvatarLight from "../../../public/model_icon_light.png";
+import aiAvatarDark from "../../../public/dark_theme.png";
+import aiAvatarLight from "../../../public/light_theme.png";
 import ReactMarkdown from "react-markdown";
 import { Prism as SyntaxHighlighter } from "react-syntax-highlighter";
 import { oneDark } from "react-syntax-highlighter/dist/esm/styles/prism";
@@ -61,7 +61,8 @@ const MessageBubble = ({
   const isUser = message.role === "user";
   const isError = message.isError === true;
   const isDark = useAppSelector((s) => s.ui.isDark);
-  const assistantAvatar = isDark ? assistantAvatarLight : assistantAvatarDark;
+  // Dark theme -> dark avatar, Light theme -> light avatar
+  const assistantAvatar = isDark ? aiAvatarDark : aiAvatarLight;
 
   // Get current content (from selected variant or default)
   const getCurrentContent = () => {
@@ -152,11 +153,11 @@ const MessageBubble = ({
     >
       {/* Avatar for assistant */}
       {!isUser && !hideUser && (
-        <div className="w-6 h-6 sm:w-7 sm:h-7 rounded-full overflow-hidden flex items-center justify-center shrink-0 bg-primary/10 border border-border/60">
+        <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-full overflow-hidden flex items-center justify-center shrink-0">
           <img
             src={assistantAvatar}
             alt="Assistant avatar"
-            className="w-[70%] h-[70%] sm:w-[75%] sm:h-[75%] object-contain"
+            className="w-full h-full object-cover"
           />
         </div>
       )}

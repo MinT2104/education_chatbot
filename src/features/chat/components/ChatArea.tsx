@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import cuteIcon from "../../../public/cute.png";
-import assistantAvatarDark from "../../../public/model_icon_dark.png";
-import assistantAvatarLight from "../../../public/model_icon_light.png";
+import aiAvatarDark from "../../../public/dark_theme.png";
+import aiAvatarLight from "../../../public/light_theme.png";
 import MessageBubble from "./MessageBubble";
 import SpaceStarter from "./SpaceStarter";
 import { NewMessage } from "../types";
@@ -51,7 +51,8 @@ const ChatArea = ({
   const initialIsCompactHeight =
     typeof window !== "undefined" ? window.innerHeight <= 900 : false;
   const isDark = useAppSelector((s) => s.ui.isDark);
-  const assistantAvatar = isDark ? assistantAvatarLight : assistantAvatarDark;
+  // Dark theme -> dark avatar, Light theme -> light avatar
+  const thinkingAvatar = isDark ? aiAvatarDark : aiAvatarLight;
   const computeHeroScale = () => {
     if (typeof window === "undefined") return 1;
     const { innerWidth, innerHeight } = window;
@@ -207,12 +208,13 @@ const ChatArea = ({
         {/* Streaming indicator */}
         {isStreaming && (
           <div className="flex gap-4 w-full max-w-[900px] mx-auto px-6 py-4">
-            <div 
-              className="w-8 h-8 rounded-full shrink-0 bg-cover bg-center bg-no-repeat"
-              style={{ backgroundImage: `url(${assistantAvatar})` }}
-              role="img"
-              aria-label="Assistant avatar"
-            />
+            <div className="w-10 h-10 rounded-full shrink-0 overflow-hidden">
+              <img
+                src={thinkingAvatar}
+                alt="Assistant avatar - thinking"
+                className="w-full h-full object-cover"
+              />
+            </div>
             <div className="flex-1">
               <div className="rounded-lg p-4">
                 <div className="flex items-center gap-2 text-muted-foreground">
