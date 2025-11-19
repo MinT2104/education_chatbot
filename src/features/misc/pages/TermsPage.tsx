@@ -1,12 +1,14 @@
 import { useEffect, useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import DOMPurify from "dompurify";
+import { ArrowLeft } from "lucide-react";
 import {
   staticPageService,
   type StaticPage,
 } from "../services/staticPageService";
 
 const TermsPage = () => {
+  const navigate = useNavigate();
   const [page, setPage] = useState<StaticPage | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -21,6 +23,15 @@ const TermsPage = () => {
   return (
     <div className="min-h-screen bg-background text-foreground">
       <div className="max-w-3xl mx-auto px-6 py-10">
+        {/* Back Button */}
+        <button
+          onClick={() => navigate(-1)}
+          className="flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors mb-6 group"
+        >
+          <ArrowLeft className="w-5 h-5 group-hover:-translate-x-1 transition-transform" />
+          <span>Back</span>
+        </button>
+
         <h1 className="text-2xl font-semibold mb-4">
           {loading ? "Loading..." : page?.title || "Terms of Service"}
         </h1>

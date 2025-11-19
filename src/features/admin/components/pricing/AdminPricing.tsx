@@ -13,15 +13,21 @@ import { toast } from "react-toastify";
 
 export const AdminPricing = () => {
   const [settings, setSettings] = useState<Record<string, string>>({});
+  const [guestLimit, setGuestLimit] = useState(10);
   const [loadingGovernment, setLoadingGovernment] = useState(false);
   const [loadingPrivate, setLoadingPrivate] = useState(false);
+  const [loadingGuest, setLoadingGuest] = useState(false);
 
   const load = async () => {
     try {
-      const res = await adminService.getAppSettings();
-      setSettings(res.settings || {});
-    } finally {
-      // no-op
+      const [settingsRes, limitsRes] = await Promise.all([
+        adminService.getAppSettings(),
+        adminService.getGuestLimits(),
+      ]);
+      setSettings(settingsRes.settings || {});
+      setGuestLimit(limitsRes.limits.guest);
+    } catch (error) {
+      console.error("Failed to load settings:", error);
     }
   };
 
@@ -61,6 +67,19 @@ export const AdminPricing = () => {
     }
   };
 
+  const handleSaveGuestLimit = async () => {
+    try {
+      setLoadingGuest(true);
+      const res = await adminService.updateGuestLimit(guestLimit);
+      setGuestLimit(res.limits.guest);
+      toast.success("Guest limit saved");
+    } catch (e: any) {
+      toast.error(e?.response?.data?.message || "Save failed");
+    } finally {
+      setLoadingGuest(false);
+    }
+  };
+
   return (
     <Card>
       <CardHeader>
@@ -70,6 +89,48 @@ export const AdminPricing = () => {
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4 sm:space-y-8">
+        {/* Guest Users limit */}
+        <div className="rounded-xl border border-border p-3 sm:p-4">
+          <div className="text-xs sm:text-sm font-medium mb-3">
+            Guest Users - Free Limit
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4">
+            <div className="sm:col-span-2">
+              <label className="text-xs sm:text-sm mb-1 block">
+                Free Limit (messages/day)
+              </label>
+              <Input
+                type="number"
+                min="0"
+                value={guestLimit}
+                onChange={(e) => {
+                  const val = e.target.value;
+                  // Allow empty string or valid number
+                  if (val === '') {
+                    setGuestLimit(0);
+                  } else {
+                    const num = parseInt(val, 10);
+                    if (!isNaN(num) && num >= 0) {
+                      setGuestLimit(num);
+                    }
+                  }
+                }}
+                placeholder="10"
+                className="text-sm"
+              />
+            </div>
+            <div className="flex items-end">
+              <Button
+                onClick={handleSaveGuestLimit}
+                disabled={loadingGuest}
+                className="w-full text-xs sm:text-sm"
+              >
+                {loadingGuest ? "Saving..." : "Save"}
+              </Button>
+            </div>
+          </div>
+        </div>
+
         {/* Government free limit */}
         <div className="rounded-xl border border-border p-3 sm:p-4">
           <div className="text-xs sm:text-sm font-medium mb-3">

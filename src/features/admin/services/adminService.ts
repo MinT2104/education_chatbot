@@ -25,6 +25,8 @@ export interface AdminUser {
   location?: string;
   plan: string;
   status: string;
+  email_verified?: boolean;
+  email_verified_at?: string;
   lastActive: string;
   createdAt: string;
   subscription?: AdminSubscription | null;
@@ -143,6 +145,42 @@ export const adminService = {
     const response = await apiClient.post(`/payment/admin/refund/${userId}`);
     return response.data;
   },
+
+  /**
+   * Delete user (Admin only)
+   */
+  async deleteUser(userId: string): Promise<{ success: boolean; message: string }> {
+    const response = await apiClient.delete(`/user/${userId}/delete`);
+    return response.data;
+  },
+
+  /**
+   * Toggle user status (Admin only)
+   */
+  async toggleUserStatus(
+    userId: string,
+    status: "active" | "inactive"
+  ): Promise<{ success: boolean; message: string; user: AdminUser }> {
+    const response = await apiClient.patch(`/user/${userId}/status`, { status });
+    return response.data;
+  },
+
+  /**
+   * Verify user email (Admin only)
+   */
+  async verifyUserEmail(userId: string): Promise<{ success: boolean; message: string; user: AdminUser }> {
+    const response = await apiClient.patch(`/user/${userId}/verify-email`);
+    return response.data;
+  },
+
+  /**
+   * Unverify user email (Admin only)
+   */
+  async unverifyUserEmail(userId: string): Promise<{ success: boolean; message: string; user: AdminUser }> {
+    const response = await apiClient.patch(`/user/${userId}/unverify-email`);
+    return response.data;
+  },
+
   /**
    * App settings (pricing/limits)
    */
@@ -426,6 +464,51 @@ export const adminService = {
   async deleteSubject(id: string): Promise<{ success: boolean }> {
     await apiClient.delete(`/subject/${id}`);
     return { success: true };
+  },
+
+  /**
+   * Get guest rate limits (admin only)
+   */
+  async getGuestLimits(): Promise<{
+    success: boolean;
+    limits: {
+      guest: number;
+      authenticated: number;
+      goPlan: number | null;
+    };
+  }> {
+    const response = await apiClient.get("/settings/limits/guest");
+    return response.data;
+  },
+
+  /**
+   * Update guest daily limit (admin only)
+   */
+  async updateGuestLimit(limit: number): Promise<{
+    success: boolean;
+    limits: {
+      guest: number;
+      authenticated: number;
+      goPlan: number | null;
+    };
+  }> {
+    const response = await apiClient.patch("/settings/limits/guest", { limit });
+    return response.data;
+  },
+
+  /**
+   * Update authenticated user daily limit (admin only)
+   */
+  async updateAuthLimit(limit: number): Promise<{
+    success: boolean;
+    limits: {
+      guest: number;
+      authenticated: number;
+      goPlan: number | null;
+    };
+  }> {
+    const response = await apiClient.patch("/settings/limits/authenticated", { limit });
+    return response.data;
   },
 };
 

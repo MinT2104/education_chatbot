@@ -1,3 +1,5 @@
+import apiClient from "../../../core/api/axios";
+
 export interface UserSettings {
   language: string;
   fontSize: "small" | "medium" | "large";
@@ -33,7 +35,7 @@ const getSettingsKey = (userId?: string | null): string => {
 
 export const settingsService = {
   /**
-   * Get user settings from sessionStorage
+   * Get user settings from sessionStorage (theme/UI only) and backend (preferences)
    */
   getSettings(userId?: string | null): UserSettings {
     const key = getSettingsKey(userId);
@@ -51,17 +53,71 @@ export const settingsService = {
   },
 
   /**
-   * Save user settings to sessionStorage
+   * Save user settings
+   * - Theme/UI settings: Save to sessionStorage
+   * - Preferences (memory, data, analytics): Save to backend
    */
-  saveSettings(settings: Partial<UserSettings>, userId?: string | null): void {
+  async saveSettings(settings: Partial<UserSettings>, userId?: string | null): Promise<void> {
     const key = getSettingsKey(userId);
     try {
+      // Always save to sessionStorage for immediate access
       const current = this.getSettings(userId);
       const updated = { ...current, ...settings };
       sessionStorage.setItem(key, JSON.stringify(updated));
+
+      // If user is authenticated and updating preferences, save to backend
+      const preferencesFields = ['memoryEnabled', 'dataCollection', 'analyticsEnabled'];
+      const hasPreferenceUpdate = Object.keys(settings).some(k => preferencesFields.includes(k));
+      
+      if (userId && hasPreferenceUpdate) {
+        try {
+          const payload: any = {};
+          if (settings.memoryEnabled !== undefined) payload.memoryEnabled = settings.memoryEnabled;
+          if (settings.dataCollection !== undefined) payload.dataCollection = settings.dataCollection;
+          if (settings.analyticsEnabled !== undefined) payload.analyticsEnabled = settings.analyticsEnabled;
+          
+          await apiClient.patch("/user/preferences", payload);
+        } catch (error) {
+          console.error("Error saving preferences to backend:", error);
+          // Don't throw - allow sessionStorage save to succeed
+        }
+      }
     } catch (error) {
       console.error("Error saving settings:", error);
     }
+  },
+
+  /**
+   * Load preferences from backend and merge with local settings
+   */
+  async loadPreferencesFromBackend(userId: string | null): Promise<UserSettings> {
+    if (!userId) {
+      return this.getSettings(userId);
+    }
+
+    try {
+      const response = await apiClient.get("/user/preferences");
+      if (response.data?.success && response.data?.preferences) {
+        const { memoryEnabled, dataCollection, analyticsEnabled } = response.data.preferences;
+        const current = this.getSettings(userId);
+        const updated = {
+          ...current,
+          memoryEnabled,
+          dataCollection,
+          analyticsEnabled
+        };
+        
+        // Save to sessionStorage for quick access
+        const key = getSettingsKey(userId);
+        sessionStorage.setItem(key, JSON.stringify(updated));
+        
+        return updated;
+      }
+    } catch (error) {
+      console.error("Error loading preferences from backend:", error);
+    }
+
+    return this.getSettings(userId);
   },
 
   /**

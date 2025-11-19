@@ -1,4 +1,5 @@
 import { useMemo, useState, useRef, useEffect } from "react";
+import { toast } from "react-toastify";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -177,6 +178,7 @@ export const AdminDocuments = ({
       });
 
       setUploadSuccess(true);
+      toast.success("Document uploaded and indexed successfully!");
       
       // Reset form
       setDocumentName("");
@@ -201,9 +203,9 @@ export const AdminDocuments = ({
       }
     } catch (error: any) {
       console.error("Upload error:", error);
-      setUploadError(
-        error.response?.data?.detail || error.message || "Failed to upload document"
-      );
+      const errorMessage = error.response?.data?.detail || error.message || "Failed to upload document";
+      setUploadError(errorMessage);
+      toast.error(errorMessage);
     } finally {
       setUploadLoading(false);
     }
@@ -244,13 +246,14 @@ export const AdminDocuments = ({
         onRefresh();
       }
       
+      toast.success("Document deleted successfully!");
       setDeleteDialogOpen(false);
       setDocumentToDelete(null);
     } catch (error: any) {
       console.error("Failed to delete document:", error);
-      setUploadError(
-        error.response?.data?.detail || error.message || "Failed to delete document"
-      );
+      const errorMessage = error.response?.data?.detail || error.message || "Failed to delete document";
+      setUploadError(errorMessage);
+      toast.error(errorMessage);
       // Keep dialog open on error so user can retry
     } finally {
       setDeleteLoading(false);

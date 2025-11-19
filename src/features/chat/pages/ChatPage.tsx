@@ -404,8 +404,16 @@ const ChatPage = () => {
     setIsStreaming(false);
     setWorkflowStep(null);
     setPendingSchoolName(null);
-    // For guest users, keep guestSchoolName (don't clear it)
-    // For authenticated users, schoolName is stored in conversation
+    
+    // Clear session storage so school picker appears for new chat
+    // This allows users to select a different school for each conversation
+    sessionService.clearSession();
+    
+    // For guest users, also clear guestSchoolName so they can pick a new school
+    if (!isAuthenticated) {
+      setGuestSchoolName(null);
+      localStorage.removeItem("guest_school_name");
+    }
 
     // Navigate to /app (no ID) when starting new chat
     navigate("/app", { replace: true });
@@ -1440,6 +1448,9 @@ const ChatPage = () => {
             open={showSchoolPicker}
             onClose={() => setShowSchoolPicker(false)}
             onSelect={handleSchoolSelect}
+            schoolType={
+              model.toLowerCase().includes("government") ? "government" : "private"
+            }
           />
         </div>
       </div>

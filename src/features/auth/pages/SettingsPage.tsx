@@ -25,9 +25,21 @@ const SettingsPage = () => {
   const userId = user?.email || user?.id || null;
 
   // Load settings from sessionStorage on mount
-  const [settings] = useState<UserSettings>(() =>
+  const [settings, setSettings] = useState<UserSettings>(() =>
     settingsService.getSettings(userId)
   );
+
+  // Load preferences from backend on mount
+  useEffect(() => {
+    if (userId) {
+      settingsService.loadPreferencesFromBackend(userId).then(loadedSettings => {
+        setSettings(loadedSettings);
+        setMemoryEnabled(loadedSettings.memoryEnabled);
+        setDataCollection(loadedSettings.dataCollection);
+        setAnalyticsEnabled(loadedSettings.analyticsEnabled);
+      });
+    }
+  }, [userId]);
 
   // General settings
   const [theme, setTheme] = useState<"light" | "dark" | "system">(
@@ -56,16 +68,9 @@ const SettingsPage = () => {
 
   // Save settings whenever they change
   useEffect(() => {
-    settingsService.saveSettings(
-      {
-        theme,
-        memoryEnabled,
-        dataCollection,
-        analyticsEnabled,
-      },
-      userId
-    );
-  }, [theme, memoryEnabled, dataCollection, analyticsEnabled, userId]);
+    // Only save theme to settings (not async)
+    settingsService.saveSettings({ theme }, userId);
+  }, [theme, userId]);
 
   // Handle theme change
   const handleThemeChange = (value: string) => {
@@ -73,25 +78,43 @@ const SettingsPage = () => {
   };
 
   // Handle memory enabled change
-  const handleMemoryEnabledChange = (checked: boolean) => {
+  const handleMemoryEnabledChange = async (checked: boolean) => {
     setMemoryEnabled(checked);
-    toast.success(
-      checked ? "Conversation memory enabled" : "Conversation memory disabled"
-    );
+    try {
+      await settingsService.saveSettings({ memoryEnabled: checked }, userId);
+      toast.success(
+        checked ? "Conversation memory enabled" : "Conversation memory disabled"
+      );
+    } catch (error) {
+      toast.error("Failed to save preference");
+      setMemoryEnabled(!checked); // Revert on error
+    }
   };
 
   // Handle data collection change
-  const handleDataCollectionChange = (checked: boolean) => {
+  const handleDataCollectionChange = async (checked: boolean) => {
     setDataCollection(checked);
-    toast.success(
-      checked ? "Data collection enabled" : "Data collection disabled"
-    );
+    try {
+      await settingsService.saveSettings({ dataCollection: checked }, userId);
+      toast.success(
+        checked ? "Data collection enabled" : "Data collection disabled"
+      );
+    } catch (error) {
+      toast.error("Failed to save preference");
+      setDataCollection(!checked); // Revert on error
+    }
   };
 
   // Handle analytics change
-  const handleAnalyticsChange = (checked: boolean) => {
+  const handleAnalyticsChange = async (checked: boolean) => {
     setAnalyticsEnabled(checked);
-    toast.success(checked ? "Analytics enabled" : "Analytics disabled");
+    try {
+      await settingsService.saveSettings({ analyticsEnabled: checked }, userId);
+      toast.success(checked ? "Analytics enabled" : "Analytics disabled");
+    } catch (error) {
+      toast.error("Failed to save preference");
+      setAnalyticsEnabled(!checked); // Revert on error
+    }
   };
 
   const [showCancelDialog, setShowCancelDialog] = useState(false);

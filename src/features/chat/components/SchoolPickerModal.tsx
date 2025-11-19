@@ -15,12 +15,14 @@ interface SchoolPickerModalProps {
   open: boolean;
   onClose: () => void;
   onSelect: (school: { name: string }, remember: boolean) => void;
+  schoolType?: 'government' | 'private'; // Filter schools by type
 }
 
 const SchoolPickerModal = ({
   open,
   onClose,
   onSelect,
+  schoolType = 'government', // Default to government for backward compatibility
 }: SchoolPickerModalProps) => {
   const [q, setQ] = useState("");
   const [debounced, setDebounced] = useState("");
@@ -35,21 +37,19 @@ const SchoolPickerModal = ({
   }, [q]);
 
   useEffect(() => {
-    if (open && schools.length === 0) {
-      loadSchools();
-    }
-    // Reset search and remember choice when modal opens
     if (open) {
+      loadSchools();
+      // Reset search and remember choice when modal opens
       setQ("");
       setRememberChoice(false);
     }
-  }, [open]);
+  }, [open, schoolType]);
 
   const loadSchools = async () => {
     try {
       setLoading(true);
       setError(null);
-      const data = await chatService.getSchools();
+      const data = await chatService.getSchools(schoolType);
       setSchools(data);
     } catch (err: any) {
       console.error("Failed to load schools:", err);

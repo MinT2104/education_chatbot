@@ -58,10 +58,12 @@ export const chatService = {
     await apiClient.post(`/chat/favorite/${historyId}`)
   },
 
-  async getSchools(): Promise<Array<{ id: string; name: string; address?: string; country?: string }>> {
-    const response = await apiClient.get('/school/public', {
-      params: { page: 1, limit: 1000 },
-    })
+  async getSchools(schoolType?: 'government' | 'private'): Promise<Array<{ id: string; name: string; address?: string; country?: string }>> {
+    const params: Record<string, any> = { page: 1, limit: 1000 };
+    if (schoolType) {
+      params.schoolType = schoolType;
+    }
+    const response = await apiClient.get('/school/public', { params });
     return response.data
   },
 

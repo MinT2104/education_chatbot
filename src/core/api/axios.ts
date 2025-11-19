@@ -167,10 +167,16 @@ apiClient.interceptors.response.use(
 
     // Handle 403 Forbidden
     if (error.response?.status === 403) {
+      // Don't auto-redirect on 403 in admin/console area
+      // Let the component handle the error (might be permission issue, not auth)
       const path = window.location.pathname;
-      if (!path.startsWith("/console")) {
+      const isAdminArea = path.startsWith("/console") || path.startsWith("/admin");
+      
+      if (!isAdminArea) {
+        // Only redirect to home if not in admin area
         window.location.href = "/home";
       }
+      // If in admin area, just reject the error and let component show error message
     }
 
     return Promise.reject(error);

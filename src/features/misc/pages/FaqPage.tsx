@@ -1,6 +1,17 @@
-import { Link } from "react-router-dom";
+import { useEffect, useState } from "react";
+import { Link, useNavigate } from "react-router-dom";
+import { ArrowLeft } from "lucide-react";
 
 const FaqPage = () => {
+  const navigate = useNavigate();
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    // Using hardcoded FAQ for better formatting
+    setLoading(false);
+  }, []);
+
+  // Fallback FAQ data if backend returns null
   const faqs = [
     {
       category: "Getting Started",
@@ -104,11 +115,23 @@ const FaqPage = () => {
   return (
     <div className="min-h-screen bg-background text-foreground">
       <div className="max-w-4xl mx-auto px-6 py-10">
-        <h1 className="text-3xl font-semibold mb-2">Frequently Asked Questions</h1>
+        {/* Back Button */}
+        <button
+          onClick={() => navigate(-1)}
+          className="flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors mb-6 group"
+        >
+          <ArrowLeft className="w-5 h-5 group-hover:-translate-x-1 transition-transform" />
+          <span>Back</span>
+        </button>
+
+        <h1 className="text-3xl font-semibold mb-2">
+          {loading ? "Loading..." : "Frequently Asked Questions"}
+        </h1>
         <p className="text-muted-foreground mb-8">
           Find answers to common questions about our service. If you can't find what you're looking for, please contact our support team.
         </p>
 
+        {/* Using hardcoded FAQ content */}
         <div className="space-y-8">
           {faqs.map((category, categoryIndex) => (
             <div key={categoryIndex} className="space-y-4">

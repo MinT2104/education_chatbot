@@ -31,6 +31,12 @@ import {
   ChevronRight,
   ArrowUpDown,
   RefreshCw,
+  Trash2,
+  Power,
+  CheckCircle,
+  XCircle,
+  Mail,
+  MailCheck,
 } from "lucide-react";
 import { adminService, AdminUser } from "../../services/adminService";
 import { UserDetailPanel } from "./UserDetailPanel";
@@ -303,7 +309,105 @@ export const AdminUsers = () => {
         <CardContent>
           {/* Bulk/Admin actions for selected user */}
           {selectedUser && (
-            <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-end gap-2 sm:gap-3 mb-4">
+            <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-end gap-2 sm:gap-3 mb-4 flex-wrap">
+              {/* Delete User */}
+              <Button
+                variant="destructive"
+                size="sm"
+                onClick={async () => {
+                  if (
+                    !confirm(
+                      `Are you sure you want to delete user "${selectedUser.name}"? This action cannot be undone.`
+                    )
+                  )
+                    return;
+
+                  try {
+                    await adminService.deleteUser(selectedUser.id);
+                    toast.success("User deleted successfully");
+                    loadUsers(true);
+                    setSelectedUser(null);
+                  } catch (e: any) {
+                    toast.error(e?.response?.data?.message || "Delete failed");
+                  }
+                }}
+                className="w-full sm:w-auto text-xs sm:text-sm"
+              >
+                <Trash2 className="h-3 w-3 sm:mr-1" />
+                <span className="hidden sm:inline">Delete User</span>
+                <span className="sm:hidden">Delete</span>
+              </Button>
+
+              {/* Activate/Deactivate */}
+              <Button
+                variant={selectedUser.status === "active" ? "outline" : "default"}
+                size="sm"
+                onClick={async () => {
+                  const newStatus =
+                    selectedUser.status === "active" ? "inactive" : "active";
+
+                  try {
+                    await adminService.toggleUserStatus(
+                      selectedUser.id,
+                      newStatus
+                    );
+                    toast.success(
+                      `User ${newStatus === "active" ? "activated" : "deactivated"} successfully`
+                    );
+                    loadUsers(true);
+                  } catch (e: any) {
+                    toast.error(
+                      e?.response?.data?.message || "Status update failed"
+                    );
+                  }
+                }}
+                className="w-full sm:w-auto text-xs sm:text-sm"
+              >
+                <Power className="h-3 w-3 sm:mr-1" />
+                <span className="hidden sm:inline">
+                  {selectedUser.status === "active" ? "Deactivate" : "Activate"}
+                </span>
+                <span className="sm:hidden">
+                  {selectedUser.status === "active" ? "Deactivate" : "Activate"}
+                </span>
+              </Button>
+
+              {/* Verify/Unverify Email */}
+              <Button
+                variant={selectedUser.email_verified ? "outline" : "default"}
+                size="sm"
+                onClick={async () => {
+                  try {
+                    if (selectedUser.email_verified) {
+                      await adminService.unverifyUserEmail(selectedUser.id);
+                      toast.success("Email unverified");
+                    } else {
+                      await adminService.verifyUserEmail(selectedUser.id);
+                      toast.success("Email verified");
+                    }
+                    loadUsers(true);
+                  } catch (e: any) {
+                    toast.error(
+                      e?.response?.data?.message || "Email verification failed"
+                    );
+                  }
+                }}
+                className="w-full sm:w-auto text-xs sm:text-sm"
+              >
+                {selectedUser.email_verified ? (
+                  <XCircle className="h-3 w-3 sm:mr-1" />
+                ) : (
+                  <MailCheck className="h-3 w-3 sm:mr-1" />
+                )}
+                <span className="hidden sm:inline">
+                  {selectedUser.email_verified ? "Unverify Email" : "Verify Email"}
+                </span>
+                <span className="sm:hidden">
+                  {selectedUser.email_verified ? "Unverify" : "Verify"}
+                </span>
+              </Button>
+
+              {/* Cancel Subscription */}
               <Button
                 variant="destructive"
                 size="sm"
@@ -324,6 +428,8 @@ export const AdminUsers = () => {
               >
                 Cancel Subscription
               </Button>
+
+              {/* Refund */}
               <Button
                 variant="outline"
                 size="sm"
@@ -360,7 +466,8 @@ export const AdminUsers = () => {
                       <SortButton field="plan">Plan</SortButton>
                     </TableHead>
                     <TableHead className="min-w-[80px]">Status</TableHead>
-                    <TableHead className="min-w-[100px] hidden lg:table-cell">
+                    <TableHead className="min-w-[100px] hidden lg:table-cell">Email Verified</TableHead>
+                    <TableHead className="min-w-[100px] hidden xl:table-cell">
                       <SortButton field="lastActive">Last Active</SortButton>
                     </TableHead>
                   </TableRow>
@@ -369,7 +476,7 @@ export const AdminUsers = () => {
                   {paginatedUsers.length === 0 ? (
                     <TableRow>
                       <TableCell
-                        colSpan={7}
+                        colSpan={8}
                         className="text-center py-8 text-muted-foreground"
                       >
                         No users found
@@ -441,7 +548,26 @@ export const AdminUsers = () => {
                             {user.status}
                           </Badge>
                         </TableCell>
-                        <TableCell className="text-xs sm:text-sm hidden lg:table-cell">
+                        <TableCell className="hidden lg:table-cell">
+                          {user.email_verified ? (
+                            <Badge
+                              variant="default"
+                              className="text-xs bg-blue-500 flex items-center gap-1 w-fit"
+                            >
+                              <CheckCircle className="h-3 w-3" />
+                              Verified
+                            </Badge>
+                          ) : (
+                            <Badge
+                              variant="secondary"
+                              className="text-xs flex items-center gap-1 w-fit"
+                            >
+                              <Mail className="h-3 w-3" />
+                              Not Verified
+                            </Badge>
+                          )}
+                        </TableCell>
+                        <TableCell className="text-xs sm:text-sm hidden xl:table-cell">
                           {user.lastActive
                             ? new Date(user.lastActive).toLocaleDateString()
                             : "—"}

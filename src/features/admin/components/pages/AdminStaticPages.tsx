@@ -8,12 +8,13 @@ import { adminService, StaticPageSummary } from "../../services/adminService";
 import ReactQuill from "react-quill";
 import "react-quill/dist/quill.snow.css";
 
-const PAGE_ORDER = ["terms", "privacy", "cookies"];
+const PAGE_ORDER = ["terms", "privacy", "cookies", "faq"];
 
 const labelMap: Record<string, string> = {
   terms: "Terms of Service",
   privacy: "Privacy Policy",
   cookies: "Cookie Policy",
+  faq: "FAQ (Frequently Asked Questions)",
 };
 
 export const AdminStaticPages = () => {

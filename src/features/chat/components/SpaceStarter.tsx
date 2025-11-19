@@ -148,20 +148,20 @@ const SpaceStarter: React.FC = () => {
   const containerWidthClass = isMobile
     ? "max-w-full"
     : isCompactDesktop
-    ? "max-w-[900px]"
-    : "max-w-[1080px]";
+    ? "max-w-[1280px]"
+    : "max-w-[1600px]";
 
   const gridLayoutClass = isMobile
     ? "grid-cols-2 gap-2"
     : isCompactDesktop
-    ? "grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-3.5 lg:gap-4"
-    : "grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3.5 sm:gap-4 lg:gap-5";
+    ? "grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-4.5 lg:gap-5"
+    : "grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-5 lg:gap-6";
 
   const cardPaddingClass = isMobile
-    ? "p-2 min-h-[80px]"
+    ? "p-2.5 min-h-[85px]"
     : isCompactDesktop
-    ? "p-4 sm:p-4.5 md:p-5 min-h-[96px]"
-    : "p-5 sm:p-5.5 md:p-6 min-h-[118px]";
+    ? "p-4 sm:p-4.5 md:p-5 min-h-[110px]"
+    : "p-5 sm:p-5.5 md:p-6 min-h-[130px]";
 
   const cardGapClass = isMobile
     ? "gap-2"
@@ -170,10 +170,10 @@ const SpaceStarter: React.FC = () => {
     : "gap-3 sm:gap-3.5";
 
   const iconSizeClass = isMobile
-    ? "text-[1.5rem] sm:text-[1.75rem]"
+    ? "text-[1.6rem] sm:text-[1.85rem]"
     : isCompactDesktop
-    ? "text-[2.05rem] sm:text-[2.3rem] md:text-[2.45rem]"
-    : "text-[2.3rem] sm:text-[2.55rem] md:text-[2.75rem]";
+    ? "text-[2.2rem] sm:text-[2.45rem] md:text-[2.6rem]"
+    : "text-[2.45rem] sm:text-[2.7rem] md:text-[2.9rem]";
 
   const titleSizeClass = isMobile
     ? "text-[0.85rem] sm:text-[0.95rem] md:text-[1rem]"
@@ -195,32 +195,32 @@ const SpaceStarter: React.FC = () => {
       {/* Pastel radial mist overlays */}
       <div className="pointer-events-none absolute inset-0">
         {/* Blue left (extend toward center to blend) */}
-        <div className="absolute bottom-6 -left-12 sm:-left-24 w-[320px] h-[180px] sm:w-[480px] sm:h-[270px] md:w-[640px] md:h-[360px] rounded-full bg-[radial-gradient(closest-side,rgba(59,130,246,0.28),transparent_70%)] dark:bg-[radial-gradient(closest-side,rgba(59,130,246,0.24),transparent_70%)] blur-3xl"></div>
+        <div className="absolute bottom-6 -left-12 sm:-left-24 w-[320px] h-[180px] sm:w-[480px] sm:h-[270px] md:w-[640px] md:h-[360px] rounded-full bg-[radial-gradient(closest-side,rgba(59,130,246,0.72),transparent_70%)] dark:bg-[radial-gradient(closest-side,rgba(59,130,246,0.64),transparent_70%)] blur-3xl"></div>
         {/* Purple center (largest, sits behind as bridge) */}
-        <div className="absolute -top-14 sm:-top-20 md:-top-28 left-1/2 -translate-x-1/2 w-[380px] h-[210px] sm:w-[570px] sm:h-[315px] md:w-[760px] md:h-[420px] rounded-full bg-[radial-gradient(closest-side,rgba(139,92,246,0.28),transparent_70%)] dark:bg-[radial-gradient(closest-side,rgba(139,92,246,0.24),transparent_70%)] blur-3xl"></div>
+        <div className="absolute -top-14 sm:-top-20 md:-top-28 left-1/2 -translate-x-1/2 w-[380px] h-[210px] sm:w-[570px] sm:h-[315px] md:w-[760px] md:h-[420px] rounded-full bg-[radial-gradient(closest-side,rgba(139,92,246,0.72),transparent_70%)] dark:bg-[radial-gradient(closest-side,rgba(139,92,246,0.64),transparent_70%)] blur-3xl"></div>
         {/* Lavender bridge to smooth overlaps */}
         <div className="absolute left-1/2 top-[38%] -translate-x-1/2 -translate-y-1/2 w-[410px] h-[230px] sm:w-[615px] sm:h-[345px] md:w-[820px] md:h-[460px] rounded-full blur-3xl">
-          <div className="w-full h-full rounded-full bg-[radial-gradient(closest-side,rgba(196,181,253,0.20),transparent_70%)] dark:bg-[radial-gradient(closest-side,rgba(196,181,253,0.18),transparent_70%)]"></div>
+          <div className="w-full h-full rounded-full bg-[radial-gradient(closest-side,rgba(196,181,253,0.56),transparent_70%)] dark:bg-[radial-gradient(closest-side,rgba(196,181,253,0.48),transparent_70%)]"></div>
         </div>
         {/* Pink right (pull inward for blend) */}
-        <div className="absolute bottom-8 -right-6 sm:-right-12 w-[320px] h-[180px] sm:w-[480px] sm:h-[270px] md:w-[640px] md:h-[360px] rounded-full bg-[radial-gradient(closest-side,rgba(244,114,182,0.28),transparent_70%)] dark:bg-[radial-gradient(closest-side,rgba(244,114,182,0.24),transparent_70%)] blur-3xl"></div>
+        <div className="absolute bottom-8 -right-6 sm:-right-12 w-[320px] h-[180px] sm:w-[480px] sm:h-[270px] md:w-[640px] md:h-[360px] rounded-full bg-[radial-gradient(closest-side,rgba(244,114,182,0.72),transparent_70%)] dark:bg-[radial-gradient(closest-side,rgba(244,114,182,0.64),transparent_70%)] blur-3xl"></div>
       </div>
       <div className="relative p-2 sm:p-4 md:p-5 lg:p-6">
-        {/* <div className="flex items-center justify-between mb-1.5 sm:mb-2">
+        <div className="flex items-center justify-between mb-1.5 sm:mb-2">
           <h2 className="text-sm sm:text-base font-semibold text-foreground">
             Start with a Space
           </h2>
           <button className="text-xs sm:text-sm font-medium text-foreground hover:text-foreground/80 transition-colors">
             Explore hundreds more →
           </button>
-        </div> */}
+        </div>
 
         {/* Responsive grid */}
         <div className={`grid ${gridLayoutClass} w-full`}>
           {displayedSpaces.map((space, idx) => (
             <button
               key={idx}
-              className={`group rounded-lg bg-card/70 dark:bg-card/50 hover:bg-card/90 dark:hover:bg-card/65 transition-all flex ${cardGapClass} shadow-sm dark:shadow-md text-left focus:outline-none focus:ring-2 focus:ring-primary/50 active:scale-[0.99] ${cardPaddingClass}`}
+              className={`group rounded-lg bg-card/70 dark:bg-card/50 hover:bg-card/90 dark:hover:bg-card/65 transition-all flex ${cardGapClass} shadow-[0_2px_8px_rgba(0,0,0,0.08),0_1px_3px_rgba(0,0,0,0.06)] hover:shadow-[0_4px_12px_rgba(0,0,0,0.12),0_2px_6px_rgba(0,0,0,0.08)] dark:shadow-[0_2px_8px_rgba(0,0,0,0.2),0_1px_3px_rgba(0,0,0,0.15)] dark:hover:shadow-[0_4px_12px_rgba(0,0,0,0.3),0_2px_6px_rgba(0,0,0,0.2)] text-left focus:outline-none focus:ring-2 focus:ring-primary/50 active:scale-[0.99] ${cardPaddingClass}`}
               onClick={() => {
                 const detail = space.content || space.title;
                 window.dispatchEvent(
@@ -230,7 +230,7 @@ const SpaceStarter: React.FC = () => {
               type="button"
             >
               <div
-                className={`${iconSizeClass} shrink-0 leading-none self-start mt-0.5`}
+                className={`${iconSizeClass} shrink-0 leading-none self-center`}
               >
                 {space.icon}
               </div>

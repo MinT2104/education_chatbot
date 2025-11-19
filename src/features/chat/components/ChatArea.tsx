@@ -124,7 +124,7 @@ const ChatArea = ({
                   ? "gap-3 sm:gap-4 md:gap-5 lg:gap-6"
                   : "gap-3 sm:gap-6 md:gap-9 lg:gap-10"
               } pb-0 px-3 sm:px-4 md:px-8`
-        } pt-2 sm:pt-4 md:pt-5 lg:pt-6 text-center w-full max-w-6xl mx-auto`}
+        } pt-2 sm:pt-4 md:pt-5 lg:pt-6 text-center w-full max-w-[1650px] mx-auto`}
         style={
           heroScale < 0.98
             ? {
