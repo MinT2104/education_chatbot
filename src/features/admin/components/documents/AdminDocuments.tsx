@@ -120,14 +120,34 @@ export const AdminDocuments = ({
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
-      // Validate file type
-      if (file.type !== "application/pdf" && !file.name.endsWith(".pdf")) {
-        setUploadError("Please upload a PDF file");
+      // Accept: PDF, MP4, MP3, and other video/audio formats
+      const allowedTypes = [
+        'application/pdf',
+        'video/mp4',
+        'audio/mp3',
+        'audio/mpeg',
+        'video/quicktime',
+        'video/x-msvideo',
+        'video/webm',
+        'audio/wav',
+        'audio/ogg'
+      ];
+      const allowedExtensions = ['.pdf', '.mp4', '.mp3', '.mov', '.avi', '.webm', '.wav', '.ogg'];
+      
+      const fileExtension = file.name.toLowerCase().substring(file.name.lastIndexOf('.'));
+      const isValidType = allowedTypes.includes(file.type) || allowedExtensions.includes(fileExtension);
+      
+      if (!isValidType) {
+        setUploadError("Please upload a valid file (PDF, MP4, MP3, MOV, AVI, WEBM, WAV, OGG)");
         return;
       }
-      // Validate file size (50MB)
-      if (file.size > 50 * 1024 * 1024) {
-        setUploadError("File size must be less than 50MB");
+      // Validate file size (100MB for video/audio, 50MB for PDF)
+      const maxSize = file.type.startsWith('video/') || file.type.startsWith('audio/') 
+        ? 100 * 1024 * 1024 
+        : 50 * 1024 * 1024;
+      if (file.size > maxSize) {
+        const maxSizeMB = maxSize / (1024 * 1024);
+        setUploadError(`File size must be less than ${maxSizeMB}MB`);
         return;
       }
       setSelectedFile(file);
@@ -404,7 +424,7 @@ export const AdminDocuments = ({
                     ref={fileInputRef}
                     type="file"
                     id="doc-file"
-                    accept=".pdf"
+                    accept=".pdf,.mp4,.mp3,.mov,.avi,.webm,.wav,.ogg,video/*,audio/*"
                     onChange={handleFileSelect}
                     disabled={uploadLoading}
                     className="hidden"
@@ -420,10 +440,26 @@ export const AdminDocuments = ({
                     <Upload className="w-8 h-8 mx-auto mb-2 text-muted-foreground" />
                     {selectedFile ? (
                       <div>
-                        <p className="text-sm font-medium">{selectedFile.name}</p>
+                        <div className="flex items-center justify-center gap-2 mb-1">
+                          {selectedFile.type.startsWith('video/') && (
+                            <span className="text-2xl">🎥</span>
+                          )}
+                          {selectedFile.type.startsWith('audio/') && (
+                            <span className="text-2xl">🎵</span>
+                          )}
+                          {selectedFile.type === 'application/pdf' && (
+                            <FileText className="w-6 h-6 text-primary" />
+                          )}
+                          <p className="text-sm font-medium">{selectedFile.name}</p>
+                        </div>
                         <p className="text-xs text-muted-foreground mt-1">
                           {(selectedFile.size / (1024 * 1024)).toFixed(2)} MB
                         </p>
+                        {(selectedFile.type.startsWith('video/') || selectedFile.type.startsWith('audio/')) && (
+                          <p className="text-xs text-blue-600 dark:text-blue-400 mt-2">
+                            ℹ️ Audio/Video will be transcribed and indexed as text
+                          </p>
+                        )}
                       </div>
                     ) : (
                       <>
@@ -431,7 +467,10 @@ export const AdminDocuments = ({
                           Click to upload or drag and drop
                         </p>
                         <p className="text-xs text-muted-foreground mt-1">
-                          PDF files up to 50MB
+                          PDF, MP4, MP3, and other video/audio files
+                        </p>
+                        <p className="text-xs text-muted-foreground">
+                          Up to 100MB for video/audio, 50MB for PDF
                         </p>
                       </>
                     )}

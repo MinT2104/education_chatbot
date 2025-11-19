@@ -206,15 +206,6 @@ const SpaceStarter: React.FC = () => {
         <div className="absolute bottom-8 -right-6 sm:-right-12 w-[320px] h-[180px] sm:w-[480px] sm:h-[270px] md:w-[640px] md:h-[360px] rounded-full bg-[radial-gradient(closest-side,rgba(244,114,182,0.72),transparent_70%)] dark:bg-[radial-gradient(closest-side,rgba(244,114,182,0.64),transparent_70%)] blur-3xl"></div>
       </div>
       <div className="relative p-2 sm:p-4 md:p-5 lg:p-6">
-        <div className="flex items-center justify-between mb-1.5 sm:mb-2">
-          <h2 className="text-sm sm:text-base font-semibold text-foreground">
-            Start with a Space
-          </h2>
-          <button className="text-xs sm:text-sm font-medium text-foreground hover:text-foreground/80 transition-colors">
-            Explore hundreds more →
-          </button>
-        </div>
-
         {/* Responsive grid */}
         <div className={`grid ${gridLayoutClass} w-full`}>
           {displayedSpaces.map((space, idx) => (

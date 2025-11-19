@@ -1,5 +1,4 @@
 import { useEffect, useRef, useState } from "react";
-import cuteIcon from "../../../public/cute.png";
 import aiAvatarDark from "../../../public/dark_theme.png";
 import aiAvatarLight from "../../../public/light_theme.png";
 import MessageBubble from "./MessageBubble";
@@ -53,6 +52,7 @@ const ChatArea = ({
   const isDark = useAppSelector((s) => s.ui.isDark);
   // Dark theme -> dark avatar, Light theme -> light avatar
   const thinkingAvatar = isDark ? aiAvatarDark : aiAvatarLight;
+  const heroAvatar = isDark ? aiAvatarDark : aiAvatarLight;
   const computeHeroScale = () => {
     if (typeof window === "undefined") return 1;
     const { innerWidth, innerHeight } = window;
@@ -139,13 +139,13 @@ const ChatArea = ({
           {/* removed decorative icon above header */}
           <div className="flex flex-col items-center">
             <img
-              src={cuteIcon}
+              src={heroAvatar}
               alt="Cute assistant"
               className={`${
                 !isAuthenticated && isCompactHeight
                   ? "w-16 h-16 sm:w-24 sm:h-24 md:w-28 md:h-28 lg:w-32 lg:h-32 xl:w-36 xl:h-36"
                   : "w-20 h-20 sm:w-28 sm:h-28 md:w-36 md:h-36 lg:w-40 lg:h-40 xl:w-48 xl:h-48"
-              } mb-0.5 sm:mb-1 mx-auto rounded-full flex-shrink-0`}
+              } mb-0.5 sm:mb-1 mx-auto rounded-full flex-shrink-0 animate-[bounce_1s_ease-in-out_3] hover:animate-[bounce_0.6s_ease-in-out_2] hover:scale-110 transition-transform duration-300`}
             />
             <div
               className={`-mt-1 sm:-mt-1.5 md:-mt-2 lg:-mt-4 xl:-mt-5 ${
