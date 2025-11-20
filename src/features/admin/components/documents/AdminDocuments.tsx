@@ -120,29 +120,42 @@ export const AdminDocuments = ({
   }, [isUploadDocOpen]);
 
   const validateFile = (file: File): string | null => {
-    // Accept: PDF, MP4, MP3, and other video/audio formats
+    // Match with Python backend SUPPORTED_EXTENSIONS
+    // PDF, images, and videos only (no audio files)
+    const allowedExtensions = [
+      '.pdf', '.txt',
+      '.jpg', '.jpeg', '.png', '.bmp', '.gif',
+      '.mp4', '.avi', '.mov', '.mkv'
+    ];
+    const fileExtension = file.name.toLowerCase().substring(file.name.lastIndexOf('.'));
+    
+    // Also check MIME types as fallback
     const allowedTypes = [
       'application/pdf',
+      'text/plain',
+      'image/jpeg',
+      'image/png',
+      'image/bmp',
+      'image/gif',
       'video/mp4',
-      'audio/mp3',
-      'audio/mpeg',
       'video/quicktime',
       'video/x-msvideo',
-      'video/webm',
-      'audio/wav',
-      'audio/ogg'
+      'video/x-matroska'
     ];
-    const allowedExtensions = ['.pdf', '.mp4', '.mp3', '.mov', '.avi', '.webm', '.wav', '.ogg'];
     
-    const fileExtension = file.name.toLowerCase().substring(file.name.lastIndexOf('.'));
-    const isValidType = allowedTypes.includes(file.type) || allowedExtensions.includes(fileExtension);
+    const isValidExtension = allowedExtensions.includes(fileExtension);
+    const isValidType = file.type && (
+      allowedTypes.includes(file.type) ||
+      file.type.startsWith('video/') ||
+      file.type.startsWith('image/')
+    );
     
-    if (!isValidType) {
-      return "Please upload a valid file (PDF, MP4, MP3, MOV, AVI, WEBM, WAV, OGG)";
+    if (!isValidExtension && !isValidType) {
+      return "Please upload a valid file (PDF, TXT, Images, or Video: MP4, AVI, MOV, MKV)";
     }
     
-    // Validate file size (100MB for video/audio, 50MB for PDF)
-    const maxSize = file.type.startsWith('video/') || file.type.startsWith('audio/') 
+    // Validate file size (100MB for video, 50MB for others)
+    const maxSize = file.type.startsWith('video/') || ['.mp4', '.avi', '.mov', '.mkv'].includes(fileExtension)
       ? 100 * 1024 * 1024 
       : 50 * 1024 * 1024;
     if (file.size > maxSize) {
@@ -351,9 +364,8 @@ export const AdminDocuments = ({
             <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
               <DialogHeader>
                 <DialogTitle>Upload Master Training File</DialogTitle>
-                <DialogDescription>
-                  Upload educational content that will be indexed for AI
-                  responses
+<DialogDescription>
+                  Upload educational content that will be indexed for AI responses. Supports PDF, TXT, Images (JPG, PNG, BMP, GIF), and Videos (MP4, AVI, MOV, MKV).
                 </DialogDescription>
               </DialogHeader>
               <div className="space-y-4 py-4">
@@ -470,7 +482,7 @@ export const AdminDocuments = ({
                     ref={fileInputRef}
                     type="file"
                     id="doc-file"
-                    accept=".pdf,.mp4,.mp3,.mov,.avi,.webm,.wav,.ogg,video/*,audio/*"
+                    accept=".pdf,.txt,.jpg,.jpeg,.png,.bmp,.gif,.mp4,.avi,.mov,.mkv,video/*,image/*"
                     onChange={handleFileSelect}
                     disabled={uploadLoading}
                     className="hidden"
@@ -495,20 +507,23 @@ export const AdminDocuments = ({
                           {selectedFile.type.startsWith('video/') && (
                             <span className="text-2xl">🎥</span>
                           )}
-                          {selectedFile.type.startsWith('audio/') && (
-                            <span className="text-2xl">🎵</span>
+                          {selectedFile.type.startsWith('image/') && (
+                            <span className="text-2xl">🖼️</span>
                           )}
                           {selectedFile.type === 'application/pdf' && (
                             <FileText className="w-6 h-6 text-primary" />
+                          )}
+                          {selectedFile.type === 'text/plain' && (
+                            <span className="text-2xl">📄</span>
                           )}
                           <p className="text-sm font-medium">{selectedFile.name}</p>
                         </div>
                         <p className="text-xs text-muted-foreground mt-1">
                           {(selectedFile.size / (1024 * 1024)).toFixed(2)} MB
                         </p>
-                        {(selectedFile.type.startsWith('video/') || selectedFile.type.startsWith('audio/')) && (
+                        {selectedFile.type.startsWith('video/') && (
                           <p className="text-xs text-blue-600 dark:text-blue-400 mt-2">
-                            ℹ️ Audio/Video will be transcribed and indexed as text
+                            ℹ️ Video will be transcribed and indexed as text
                           </p>
                         )}
                       </div>
@@ -518,10 +533,10 @@ export const AdminDocuments = ({
                           Click to upload or drag and drop
                         </p>
                         <p className="text-xs text-muted-foreground mt-1">
-                          PDF, MP4, MP3, and other video/audio files
+                          PDF, TXT, Images, or Videos (MP4, AVI, MOV, MKV)
                         </p>
                         <p className="text-xs text-muted-foreground">
-                          Up to 100MB for video/audio, 50MB for PDF
+                          Up to 100MB for videos, 50MB for other files
                         </p>
                       </>
                     )}
