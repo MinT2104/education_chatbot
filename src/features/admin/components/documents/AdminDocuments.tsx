@@ -281,7 +281,21 @@ export const AdminDocuments = ({
       setIsUploadDocOpen(false);
     } catch (error: any) {
       console.error("Upload error:", error);
-      const errorMessage = error.response?.data?.detail || error.message || "Failed to upload document";
+      
+      let errorMessage = "Failed to upload document";
+      
+      if (error.code === 'ECONNABORTED' || error.message?.includes('timeout')) {
+        errorMessage = "Upload timeout. The file may be too large or the server is taking too long to process. Please try with a smaller file or try again later.";
+      } else if (error.response?.status === 502) {
+        errorMessage = "Server error while processing the file. This may be due to a corrupted file or server overload. Please try again or contact support.";
+      } else if (error.response?.status === 413) {
+        errorMessage = "File is too large. Please try with a smaller file.";
+      } else if (error.response?.data?.detail) {
+        errorMessage = error.response.data.detail;
+      } else if (error.message) {
+        errorMessage = error.message;
+      }
+      
       setUploadError(errorMessage);
       toast.error(errorMessage);
     } finally {

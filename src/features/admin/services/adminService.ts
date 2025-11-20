@@ -345,7 +345,9 @@ export const adminService = {
           "Content-Type": "multipart/form-data",
         },
         onUploadProgress: data.onUploadProgress,
-        timeout: 0, // No timeout - allow uploads to take as long as needed
+        timeout: 600000, // 10 minutes for large video files
+        maxBodyLength: Infinity,
+        maxContentLength: Infinity,
       }
     );
     return response.data;
