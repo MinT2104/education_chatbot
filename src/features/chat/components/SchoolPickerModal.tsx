@@ -1,6 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Label } from "@/components/ui/label";
 import { chatService } from "../services/chatService";
 import { X } from "lucide-react";
 
@@ -73,18 +72,18 @@ const SchoolPickerModal = ({
 
   if (!open) return null;
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
       <div className="absolute inset-0 bg-black/50" onClick={onClose} />
-      <div className="relative z-10 w-full max-w-lg rounded-2xl bg-surface p-6 shadow-[0_8px_24px_rgba(0,0,0,.4),inset_0_0_0_1px_var(--border)]">
+      <div className="relative z-10 w-full max-w-lg mx-auto rounded-2xl bg-surface p-4 sm:p-6 shadow-[0_8px_24px_rgba(0,0,0,.4),inset_0_0_0_1px_var(--border)] max-h-[90vh] flex flex-col">
         <button
           aria-label="Close"
           onClick={onClose}
-          className="absolute cursor-pointer right-3 top-3 rounded-md p-2 text-text-subtle hover:bg-surface-muted hover:text-text focus:outline-none focus:ring-2 focus:ring-primary-500/40"
+          className="absolute cursor-pointer right-2 top-2 sm:right-3 sm:top-3 rounded-md p-2 text-text-subtle hover:bg-surface-muted hover:text-text focus:outline-none focus:ring-2 focus:ring-primary-500/40"
         >
           <X className="cursor-pointer" size={18} />
         </button>
-        <h2 className="text-lg font-semibold text-text">Choose your school</h2>
-        <p className="text-sm text-text-subtle mt-1">
+        <h2 className="text-base sm:text-lg font-semibold text-text">Choose your school</h2>
+        <p className="text-xs sm:text-sm text-text-subtle mt-1">
           Enter your school name to get personalized content
         </p>
         <input
@@ -92,17 +91,17 @@ const SchoolPickerModal = ({
           value={q}
           onChange={(e) => setQ(e.target.value)}
           placeholder="Search by name..."
-          className="mt-3 w-full px-4 py-2 rounded-xl bg-surface-muted focus:outline-none focus:shadow-[0_0_0_3px_rgba(0,0,0,.12),inset_0_0_0_1px_rgba(0,0,0,.20)]"
+          className="mt-3 w-full px-3 sm:px-4 py-2 text-sm rounded-xl bg-surface-muted focus:outline-none focus:shadow-[0_0_0_3px_rgba(0,0,0,.12),inset_0_0_0_1px_rgba(0,0,0,.20)]"
           disabled={loading}
         />
-        <div className="mt-4 max-h-80 overflow-y-auto space-y-2">
+        <div className="mt-4 flex-1 overflow-y-auto space-y-2 min-h-0">
           {loading && (
-            <div className="text-sm text-text-subtle text-center py-8">
+            <div className="text-xs sm:text-sm text-text-subtle text-center py-8">
               Loading schools...
             </div>
           )}
           {error && (
-            <div className="text-sm text-red-500 text-center py-4">
+            <div className="text-xs sm:text-sm text-red-500 text-center py-4">
               {error}
               <button
                 onClick={loadSchools}
@@ -118,34 +117,46 @@ const SchoolPickerModal = ({
               <button
                 key={s.id}
                 onClick={() => handleSelect(s)}
-                className="w-full text-left px-4 py-2 rounded-xl bg-surface hover:bg-primary-500/8 transition-colors"
+                className="w-full text-left px-3 sm:px-4 py-2 text-sm rounded-xl bg-surface hover:bg-primary-500/8 transition-colors"
               >
                 {s.name}
               </button>
             ))}
           {!loading && !error && results.length === 0 && schools.length > 0 && (
-            <div className="text-sm text-text-subtle text-center py-4">
+            <div className="text-xs sm:text-sm text-text-subtle text-center py-4">
               No schools found matching "{debounced}"
             </div>
           )}
           {!loading && !error && schools.length === 0 && (
-            <div className="text-sm text-text-subtle text-center py-4">
+            <div className="text-xs sm:text-sm text-text-subtle text-center py-4">
               No schools available
             </div>
           )}
         </div>
-        <div className="mt-4 pt-4 border-t border-border flex items-center gap-2">
+        <div className="mt-4 pt-4 border-t border-border flex items-center gap-1.5 flex-shrink-0">
           <Checkbox
             id="remember-school"
             checked={rememberChoice}
             onCheckedChange={(checked) => setRememberChoice(checked as boolean)}
+            className="!h-3.5 !w-3.5 !min-h-0 !min-w-0 shrink-0"
+            style={{ height: '14px !important', width: '14px !important' }}
           />
-          <Label
+          <label
             htmlFor="remember-school"
-            className="text-sm text-text cursor-pointer font-normal"
+            className="cursor-pointer select-none !text-[13px] !leading-[1.2]"
+            style={{ 
+              fontSize: '13px !important',
+              fontWeight: '400 !important',
+              lineHeight: '1.2 !important',
+              color: 'var(--text)',
+              maxWidth: '100%',
+              WebkitTextSizeAdjust: 'none !important',
+              textSizeAdjust: 'none !important',
+              MozTextSizeAdjust: 'none !important'
+            }}
           >
             Do not ask me again
-          </Label>
+          </label>
         </div>
       </div>
     </div>

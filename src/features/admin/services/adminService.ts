@@ -328,6 +328,7 @@ export const adminService = {
     school_name: string;
     standard: string;
     subject: string;
+    onUploadProgress?: (progressEvent: any) => void;
   }): Promise<{ success: boolean; message?: string; [key: string]: any }> {
     const formData = new FormData();
     formData.append("file", data.file);
@@ -343,6 +344,8 @@ export const adminService = {
         headers: {
           "Content-Type": "multipart/form-data",
         },
+        onUploadProgress: data.onUploadProgress,
+        timeout: 0, // No timeout - allow uploads to take as long as needed
       }
     );
     return response.data;
@@ -523,6 +526,22 @@ export const adminService = {
     };
   }> {
     const response = await apiClient.patch("/settings/limits/authenticated", { limit });
+    return response.data;
+  },
+
+  /**
+   * Get dashboard statistics
+   */
+  async getDashboardStats(): Promise<{
+    success: boolean;
+    stats: {
+      newUsersToday: number;
+      salesToday: number;
+      totalRevenueToday: string;
+      canceledOrdersToday: number;
+    };
+  }> {
+    const response = await apiClient.get("/dashboard/stats");
     return response.data;
   },
 };

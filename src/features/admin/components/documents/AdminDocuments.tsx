@@ -60,6 +60,7 @@ export const AdminDocuments = ({
   const [documentSearch, setDocumentSearch] = useState("");
   const [isUploadDocOpen, setIsUploadDocOpen] = useState(false);
   const [uploadLoading, setUploadLoading] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState(0);
   const [uploadError, setUploadError] = useState<string | null>(null);
   const [uploadSuccess, setUploadSuccess] = useState(false);
   
@@ -75,6 +76,7 @@ export const AdminDocuments = ({
   const [selectedSubject, setSelectedSubject] = useState("");
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const [isDragging, setIsDragging] = useState(false);
 
   // Subjects API states
   const [subjects, setSubjects] = useState<Subject[]>([]);
@@ -117,37 +119,79 @@ export const AdminDocuments = ({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isUploadDocOpen]);
 
+  const validateFile = (file: File): string | null => {
+    // Accept: PDF, MP4, MP3, and other video/audio formats
+    const allowedTypes = [
+      'application/pdf',
+      'video/mp4',
+      'audio/mp3',
+      'audio/mpeg',
+      'video/quicktime',
+      'video/x-msvideo',
+      'video/webm',
+      'audio/wav',
+      'audio/ogg'
+    ];
+    const allowedExtensions = ['.pdf', '.mp4', '.mp3', '.mov', '.avi', '.webm', '.wav', '.ogg'];
+    
+    const fileExtension = file.name.toLowerCase().substring(file.name.lastIndexOf('.'));
+    const isValidType = allowedTypes.includes(file.type) || allowedExtensions.includes(fileExtension);
+    
+    if (!isValidType) {
+      return "Please upload a valid file (PDF, MP4, MP3, MOV, AVI, WEBM, WAV, OGG)";
+    }
+    
+    // Validate file size (100MB for video/audio, 50MB for PDF)
+    const maxSize = file.type.startsWith('video/') || file.type.startsWith('audio/') 
+      ? 100 * 1024 * 1024 
+      : 50 * 1024 * 1024;
+    if (file.size > maxSize) {
+      const maxSizeMB = maxSize / (1024 * 1024);
+      return `File size must be less than ${maxSizeMB}MB`;
+    }
+    
+    return null;
+  };
+
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
-      // Accept: PDF, MP4, MP3, and other video/audio formats
-      const allowedTypes = [
-        'application/pdf',
-        'video/mp4',
-        'audio/mp3',
-        'audio/mpeg',
-        'video/quicktime',
-        'video/x-msvideo',
-        'video/webm',
-        'audio/wav',
-        'audio/ogg'
-      ];
-      const allowedExtensions = ['.pdf', '.mp4', '.mp3', '.mov', '.avi', '.webm', '.wav', '.ogg'];
-      
-      const fileExtension = file.name.toLowerCase().substring(file.name.lastIndexOf('.'));
-      const isValidType = allowedTypes.includes(file.type) || allowedExtensions.includes(fileExtension);
-      
-      if (!isValidType) {
-        setUploadError("Please upload a valid file (PDF, MP4, MP3, MOV, AVI, WEBM, WAV, OGG)");
+      const error = validateFile(file);
+      if (error) {
+        setUploadError(error);
         return;
       }
-      // Validate file size (100MB for video/audio, 50MB for PDF)
-      const maxSize = file.type.startsWith('video/') || file.type.startsWith('audio/') 
-        ? 100 * 1024 * 1024 
-        : 50 * 1024 * 1024;
-      if (file.size > maxSize) {
-        const maxSizeMB = maxSize / (1024 * 1024);
-        setUploadError(`File size must be less than ${maxSizeMB}MB`);
+      setSelectedFile(file);
+      setUploadError(null);
+    }
+  };
+
+  const handleDragOver = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (!uploadLoading) {
+      setIsDragging(true);
+    }
+  };
+
+  const handleDragLeave = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(false);
+  };
+
+  const handleDrop = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(false);
+
+    if (uploadLoading) return;
+
+    const file = e.dataTransfer.files?.[0];
+    if (file) {
+      const error = validateFile(file);
+      if (error) {
+        setUploadError(error);
         return;
       }
       setSelectedFile(file);
@@ -181,6 +225,7 @@ export const AdminDocuments = ({
     setUploadLoading(true);
     setUploadError(null);
     setUploadSuccess(false);
+    setUploadProgress(0);
 
     try {
       // Find school name from selected school ID
@@ -195,6 +240,12 @@ export const AdminDocuments = ({
         school_name: school.name,
         standard: selectedStandard,
         subject: selectedSubject,
+        onUploadProgress: (progressEvent: any) => {
+          const percentCompleted = Math.round(
+            (progressEvent.loaded * 100) / progressEvent.total
+          );
+          setUploadProgress(percentCompleted);
+        },
       });
 
       setUploadSuccess(true);
@@ -210,17 +261,11 @@ export const AdminDocuments = ({
         fileInputRef.current.value = "";
       }
 
-      // Refresh documents list
+      // Refresh documents list and close dialog immediately
       if (onRefresh) {
-        setTimeout(() => {
-          onRefresh();
-          setIsUploadDocOpen(false);
-        }, 1500);
-      } else {
-        setTimeout(() => {
-          setIsUploadDocOpen(false);
-        }, 1500);
+        onRefresh();
       }
+      setIsUploadDocOpen(false);
     } catch (error: any) {
       console.error("Upload error:", error);
       const errorMessage = error.response?.data?.detail || error.message || "Failed to upload document";
@@ -243,6 +288,7 @@ export const AdminDocuments = ({
       setSelectedFile(null);
       setUploadError(null);
       setUploadSuccess(false);
+      setUploadProgress(0);
       if (fileInputRef.current) {
         fileInputRef.current.value = "";
       }
@@ -431,11 +477,16 @@ export const AdminDocuments = ({
                   />
                   <div
                     onClick={() => !uploadLoading && fileInputRef.current?.click()}
+                    onDragOver={handleDragOver}
+                    onDragLeave={handleDragLeave}
+                    onDrop={handleDrop}
                     className={`border-2 border-dashed rounded-lg p-8 text-center transition-colors ${
                       uploadLoading
                         ? "opacity-50 cursor-not-allowed"
                         : "hover:border-primary cursor-pointer"
-                    } ${selectedFile ? "border-primary bg-primary/5" : ""}`}
+                    } ${selectedFile ? "border-primary bg-primary/5" : ""} ${
+                      isDragging ? "border-primary-500 bg-primary/10" : ""
+                    }`}
                   >
                     <Upload className="w-8 h-8 mx-auto mb-2 text-muted-foreground" />
                     {selectedFile ? (
@@ -476,6 +527,22 @@ export const AdminDocuments = ({
                     )}
                   </div>
                 </div>
+                
+                {/* Upload Progress Bar */}
+                {uploadLoading && uploadProgress > 0 && (
+                  <div className="space-y-2">
+                    <div className="flex justify-between text-sm">
+                      <span className="text-muted-foreground">Uploading...</span>
+                      <span className="font-medium">{uploadProgress}%</span>
+                    </div>
+                    <div className="w-full bg-muted rounded-full h-2.5 overflow-hidden">
+                      <div
+                        className="bg-primary h-2.5 rounded-full transition-all duration-300 ease-out"
+                        style={{ width: `${uploadProgress}%` }}
+                      />
+                    </div>
+                  </div>
+                )}
               </div>
               <DialogFooter>
                 <Button

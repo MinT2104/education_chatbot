@@ -43,6 +43,7 @@ const PricingPage = () => {
   const [plans, setPlans] = useState<Plan[]>([]);
   const [loading, setLoading] = useState(true);
   const [authModal, setAuthModal] = useState<"login" | "signup" | null>(null);
+  const [switchingToFree, setSwitchingToFree] = useState(false);
 
   useEffect(() => {
     // Load plans
@@ -76,7 +77,7 @@ const PricingPage = () => {
       (user as any)?.subscription?.planName
   );
 
-  const handleUpgrade = (planCode: string) => {
+  const handleUpgrade = async (planCode: string) => {
     const targetCode = normalizePlanCode(planCode);
     if (!isAuthenticated) {
       setAuthModal("login");
@@ -90,16 +91,19 @@ const PricingPage = () => {
 
     // Switch to free: cancel current subscription, refresh user, stay on page
     if (targetCode === "free") {
-      (async () => {
-        try {
-          await paymentService.cancelSubscription();
-          toast.success("Switched to Free plan");
-          dispatch(getMe());
-        } catch (error: any) {
-          console.error("Failed to cancel subscription:", error);
-          toast.error("Unable to switch to Free right now");
-        }
-      })();
+      if (switchingToFree) return; // Prevent multiple clicks
+      
+      try {
+        setSwitchingToFree(true);
+        await paymentService.cancelSubscription();
+        toast.success("Switched to Free plan");
+        await dispatch(getMe());
+      } catch (error: any) {
+        console.error("Failed to cancel subscription:", error);
+        toast.error("Unable to switch to Free right now");
+      } finally {
+        setSwitchingToFree(false);
+      }
       return;
     }
 
@@ -119,6 +123,7 @@ const PricingPage = () => {
 
     if (plan.code === "free") {
       if (isCurrent) return "Current plan";
+      if (switchingToFree) return "Switching...";
       return isAuthenticated ? "Switch to Free" : "Get Started";
     }
     if (isCurrent) return "Current plan";
@@ -278,8 +283,9 @@ const PricingPage = () => {
                     onClick={() => handleUpgrade(plan.code)}
                     className={getPlanButtonStyle(plan)}
                     disabled={
-                      isAuthenticated &&
-                      userPlanCode === normalizePlanCode(plan.code)
+                      (isAuthenticated &&
+                        userPlanCode === normalizePlanCode(plan.code)) ||
+                      (plan.code === "free" && switchingToFree)
                     }
                   >
                     {getPlanButtonText(plan)}

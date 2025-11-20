@@ -1330,7 +1330,15 @@ const ChatPage = () => {
             tools={tools}
             memoryEnabled={memoryEnabled}
             onModelChange={(nextModel) => {
-              setModel(nextModel);
+              // If there are messages in current session, require new session
+              if (currentMessages.length > 0) {
+                toast.info("Please start a new chat to change school type");
+                handleNewChat();
+                // Set the new model after starting new chat
+                setTimeout(() => setModel(nextModel), 100);
+              } else {
+                setModel(nextModel);
+              }
             }}
             onToggleTool={handleToggleTool}
             onToggleMemory={handleToggleMemory}
