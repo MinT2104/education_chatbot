@@ -11,6 +11,7 @@ import {
   MessageSquare,
   ScrollText,
   BookOpen,
+  Clock,
 } from "lucide-react";
 
 interface AdminTabsProps {
@@ -77,6 +78,15 @@ export const AdminTabs = ({ onTabChange }: AdminTabsProps) => {
         >
           <List className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
           <span className="hidden sm:inline">Logs</span>
+        </TabsTrigger>
+        <TabsTrigger
+          value="cron"
+          className="flex items-center gap-1 sm:gap-2 text-xs sm:text-sm whitespace-nowrap"
+          onClick={() => onTabChange("cron")}
+        >
+          <Clock className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+          <span className="hidden sm:inline">Cron Jobs</span>
+          <span className="sm:hidden">Cron</span>
         </TabsTrigger>
         <TabsTrigger
           value="pricing"

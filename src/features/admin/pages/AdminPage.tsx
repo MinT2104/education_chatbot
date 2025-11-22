@@ -18,6 +18,7 @@ import { AdminPrompts } from "../components/prompts/AdminPrompts";
 import { AdminStaticPages } from "../components/pages/AdminStaticPages";
 import { AdminSubjects } from "../components/subjects/AdminSubjects";
 import { AdminPlanManagement } from "../components/plans/AdminPlanManagement";
+import { AdminCronJobs } from "../components/cron/AdminCronJobs";
 
 const AdminPage = () => {
   const [activeTab, setActiveTab] = useState("dashboard");
@@ -177,6 +178,10 @@ const AdminPage = () => {
 
           <TabsContent value="logs" className="space-y-4 sm:space-y-6">
             <AdminLogs />
+          </TabsContent>
+
+          <TabsContent value="cron" className="space-y-4 sm:space-y-6">
+            <AdminCronJobs />
           </TabsContent>
 
           <TabsContent value="pricing" className="space-y-4 sm:space-y-6">

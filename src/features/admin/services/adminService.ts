@@ -546,6 +546,44 @@ export const adminService = {
     const response = await apiClient.get("/dashboard/stats");
     return response.data;
   },
+
+  /**
+   * Cron Jobs Management
+   */
+
+  /**
+   * Get cron job status
+   */
+  async getCronStatus(): Promise<CronStatus> {
+    const response = await apiClient.get("/cron/status");
+    return response.data;
+  },
+
+  /**
+   * Trigger cron job manually
+   */
+  async triggerCronJob(): Promise<CronTriggerResponse> {
+    const response = await apiClient.post("/cron/check-document-status");
+    return response.data;
+  },
+
+  /**
+   * Get cron logs for a specific date
+   */
+  async getCronLogs(date?: string): Promise<CronLogsResponse> {
+    const response = await apiClient.get("/cron/logs", {
+      params: date ? { date } : {},
+    });
+    return response.data;
+  },
+
+  /**
+   * Get available log dates
+   */
+  async getCronLogDates(): Promise<CronLogDatesResponse> {
+    const response = await apiClient.get("/cron/logs/dates");
+    return response.data;
+  },
 };
 
 // Re-export School type for backward compatibility
@@ -573,4 +611,39 @@ export interface Subject {
   isActive: boolean;
   createdAt: string;
   updatedAt: string;
+}
+
+/**
+ * Cron job management
+ */
+
+export interface CronStatus {
+  running: boolean;
+  isCurrentlyChecking: boolean;
+  checkInterval: string;
+  pythonServerUrl: string;
+}
+
+export interface CronLogsResponse {
+  success: boolean;
+  logs: string[];
+  date: string;
+  totalLines: number;
+  returnedLines: number;
+  logFile: string;
+}
+
+export interface CronLogDatesResponse {
+  success: boolean;
+  dates: string[];
+  totalDates: number;
+}
+
+export interface CronTriggerResponse {
+  success: boolean;
+  message: string;
+  result: any;
+  duration: string;
+  triggeredBy: string;
+  triggeredAt: string;
 }
