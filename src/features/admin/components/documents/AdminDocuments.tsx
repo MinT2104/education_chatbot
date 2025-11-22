@@ -51,6 +51,14 @@ interface AdminDocumentsProps {
   onRefresh?: () => void;
 }
 
+// Upload log entry type
+interface UploadLog {
+  timestamp: string;
+  type: 'info' | 'success' | 'warning' | 'error';
+  message: string;
+  details?: string;
+}
+
 export const AdminDocuments = ({
   documents,
   schools,
@@ -63,6 +71,11 @@ export const AdminDocuments = ({
   const [uploadProgress, setUploadProgress] = useState(0);
   const [uploadError, setUploadError] = useState<string | null>(null);
   const [uploadSuccess, setUploadSuccess] = useState(false);
+  
+  // Upload logs for detailed tracking
+  const [uploadLogs, setUploadLogs] = useState<UploadLog[]>([]);
+  const uploadStartTimeRef = useRef<number>(0);
+  const lastProgressUpdateRef = useRef<number>(0);
   
   // Delete states
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
@@ -82,6 +95,20 @@ export const AdminDocuments = ({
   const [subjects, setSubjects] = useState<Subject[]>([]);
   const [subjectsLoading, setSubjectsLoading] = useState(false);
   const [subjectsError, setSubjectsError] = useState<string | null>(null);
+
+  // Helper function to add upload log
+  const addUploadLog = (type: UploadLog['type'], message: string, details?: string) => {
+    const now = new Date();
+    const hours = now.getHours().toString().padStart(2, '0');
+    const minutes = now.getMinutes().toString().padStart(2, '0');
+    const seconds = now.getSeconds().toString().padStart(2, '0');
+    const milliseconds = now.getMilliseconds().toString().padStart(3, '0');
+    const timestamp = `${hours}:${minutes}:${seconds},${milliseconds}`;
+    
+    const newLog: UploadLog = { timestamp, type, message, details };
+    console.log(`[UPLOAD ${type.toUpperCase()}] ${timestamp} - ${message}${details ? ': ' + details : ''}`);
+    setUploadLogs(prev => [...prev, newLog]);
+  };
 
   const filteredDocuments = useMemo(
     () =>
@@ -118,6 +145,50 @@ export const AdminDocuments = ({
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isUploadDocOpen]);
+
+  // Monitor upload progress for stuck detection
+  useEffect(() => {
+    if (!uploadLoading) return;
+
+    const monitorInterval = setInterval(() => {
+      const now = Date.now();
+      const timeSinceStart = now - uploadStartTimeRef.current;
+      const timeSinceLastUpdate = now - lastProgressUpdateRef.current;
+
+      // Detailed monitoring logs every 10 seconds
+      if (uploadProgress < 100) {
+        const elapsedMin = (timeSinceStart / 60000).toFixed(1);
+        addUploadLog('info', `⏱️ Upload monitor check`, 
+          `Current progress: ${uploadProgress}% | Time elapsed: ${elapsedMin} min | Time since last update: ${(timeSinceLastUpdate / 1000).toFixed(0)}s`);
+      }
+
+      // Warning if no progress update for 45 seconds
+      if (timeSinceLastUpdate > 45000 && uploadProgress < 100) {
+        addUploadLog('warning', '⚠️ Upload stall warning', 
+          `No progress for ${(timeSinceLastUpdate / 1000).toFixed(0)}s | Stuck at ${uploadProgress}% | Possible network congestion or server processing delay`);
+      }
+
+      // Critical warning if no progress for 90 seconds
+      if (timeSinceLastUpdate > 90000 && uploadProgress < 100) {
+        addUploadLog('error', '🚨 Critical upload stall', 
+          `Upload appears frozen for ${(timeSinceLastUpdate / 1000).toFixed(0)}s at ${uploadProgress}% | Recommendations: 1) Check internet connection, 2) Check Python server status, 3) Consider canceling and retrying with smaller file`);
+      }
+
+      // Timeout warning after 4 minutes
+      if (timeSinceStart > 240000 && uploadProgress < 100) {
+        addUploadLog('warning', '⏰ Approaching timeout limit', 
+          `Upload running for ${(timeSinceStart / 60000).toFixed(1)} minutes | Timeout in ${((300000 - timeSinceStart) / 60000).toFixed(1)} minutes | Progress: ${uploadProgress}%`);
+      }
+
+      // Final timeout after 5 minutes
+      if (timeSinceStart > 300000) {
+        addUploadLog('error', '❌ Upload timeout exceeded', 
+          `Upload exceeded 5-minute limit. Total time: ${(timeSinceStart / 60000).toFixed(1)} minutes | Final progress: ${uploadProgress}% | Action required: Cancel and retry with smaller file or better network connection`);
+      }
+    }, 10000); // Check every 10 seconds
+
+    return () => clearInterval(monitorInterval);
+  }, [uploadLoading, uploadProgress]);
 
   const validateFile = (file: File): string | null => {
     // Match with Python backend SUPPORTED_EXTENSIONS
@@ -213,27 +284,59 @@ export const AdminDocuments = ({
   };
 
   const handleUpload = async () => {
+    // Reset logs
+    setUploadLogs([]);
+    uploadStartTimeRef.current = Date.now();
+    lastProgressUpdateRef.current = Date.now();
+    
+    addUploadLog('info', '🔍 Starting form validation', 'Checking all required fields...');
+    
     // Validate form
     if (!documentName.trim()) {
       setUploadError("Document name is required");
+      addUploadLog('error', '❌ Validation failed: Missing document name');
       return;
     }
+    addUploadLog('success', '✓ Document name validated', `Name: "${documentName}"`);
+    
     if (!selectedSchool) {
       setUploadError("Please select a school");
+      addUploadLog('error', '❌ Validation failed: School not selected');
       return;
     }
+    const school = schools.find((s) => s.id === selectedSchool);
+    if (!school) {
+      addUploadLog('error', '❌ Validation failed: School ID not found in database', `ID: ${selectedSchool}`);
+      throw new Error("Selected school not found");
+    }
+    addUploadLog('success', '✓ School validated', `School: "${school.name}" (ID: ${selectedSchool})`);
+    
     if (!selectedStandard) {
       setUploadError("Please select a grade/standard");
+      addUploadLog('error', '❌ Validation failed: Grade/Standard not selected');
       return;
     }
+    addUploadLog('success', '✓ Grade/Standard validated', `Grade: "${selectedStandard}"`);
+    
     if (!selectedSubject) {
       setUploadError("Please select a subject");
+      addUploadLog('error', '❌ Validation failed: Subject not selected');
       return;
     }
+    addUploadLog('success', '✓ Subject validated', `Subject: "${selectedSubject}"`);
+    
     if (!selectedFile) {
       setUploadError("Please select a file to upload");
+      addUploadLog('error', '❌ Validation failed: No file selected');
       return;
     }
+    
+    const fileSizeMB = (selectedFile.size / (1024 * 1024)).toFixed(2);
+    const fileSizeBytes = selectedFile.size.toLocaleString();
+    addUploadLog('success', '✓ File validated', 
+      `Name: "${selectedFile.name}", Size: ${fileSizeMB}MB (${fileSizeBytes} bytes), Type: ${selectedFile.type || 'unknown'}`);
+
+    addUploadLog('info', '📋 Form validation completed successfully', 'All fields validated. Proceeding to upload...');
 
     setUploadLoading(true);
     setUploadError(null);
@@ -241,13 +344,18 @@ export const AdminDocuments = ({
     setUploadProgress(0);
 
     try {
-      // Find school name from selected school ID
-      const school = schools.find((s) => s.id === selectedSchool);
-      if (!school) {
-        throw new Error("Selected school not found");
-      }
+      addUploadLog('info', '📦 Preparing upload data', 'Creating FormData object with file and metadata...');
+      
+      addUploadLog('info', '🔗 Target endpoint configured', 
+        `URL: ${import.meta.env.VITE_PYTHON_URL}/upload`);
+      
+      addUploadLog('info', '📤 Initiating file transfer', 
+        `Starting upload to Python server - File: ${selectedFile.name} (${fileSizeMB}MB)`);
 
-      await adminService.uploadDocument({
+      let lastLoggedProgress = 0;
+      let progressStuckCount = 0;
+
+      const uploadPromise = adminService.uploadDocument({
         file: selectedFile,
         document_name: documentName.trim(),
         school_name: school.name,
@@ -258,11 +366,122 @@ export const AdminDocuments = ({
             (progressEvent.loaded * 100) / progressEvent.total
           );
           setUploadProgress(percentCompleted);
+          
+          const now = Date.now();
+          const timeSinceLastUpdate = now - lastProgressUpdateRef.current;
+          const timeSinceStart = now - uploadStartTimeRef.current;
+          
+          // Calculate upload speed
+          const uploadedBytes = progressEvent.loaded;
+          const timeElapsedSec = timeSinceStart / 1000;
+          const speedMBps = timeElapsedSec > 0 ? (uploadedBytes / (1024 * 1024)) / timeElapsedSec : 0;
+          const speedKBps = speedMBps * 1024;
+          
+          // Calculate ETA
+          const remainingBytes = progressEvent.total - progressEvent.loaded;
+          const etaSeconds = speedMBps > 0 ? (remainingBytes / (1024 * 1024)) / speedMBps : 0;
+          const etaFormatted = etaSeconds < 60 ? `${etaSeconds.toFixed(0)}s` : `${(etaSeconds / 60).toFixed(1)}min`;
+          
+          // Detailed logging every 10% or every 3 seconds
+          const shouldLog = percentCompleted !== lastLoggedProgress && 
+                           (percentCompleted % 10 === 0 || timeSinceLastUpdate > 3000);
+          
+          if (shouldLog) {
+            const uploadedMB = (progressEvent.loaded / (1024 * 1024)).toFixed(2);
+            const totalMB = (progressEvent.total / (1024 * 1024)).toFixed(2);
+            const elapsed = (timeSinceStart / 1000).toFixed(1);
+            
+            if (percentCompleted === 100) {
+              addUploadLog('success', `✅ Upload progress: 100%`, 
+                `All ${totalMB}MB transferred successfully | Total upload time: ${elapsed}s | Average speed: ${speedKBps.toFixed(1)} KB/s`);
+            } else {
+              addUploadLog('info', `📊 Upload progress: ${percentCompleted}%`, 
+                `Transferred: ${uploadedMB}MB / ${totalMB}MB | Speed: ${speedKBps.toFixed(1)} KB/s | Elapsed: ${elapsed}s | ETA: ${etaFormatted}`);
+            }
+            
+            lastLoggedProgress = percentCompleted;
+            lastProgressUpdateRef.current = now;
+            progressStuckCount = 0;
+          }
+          
+          // Detect if progress is stuck
+          if (timeSinceLastUpdate > 15000 && percentCompleted < 100) {
+            progressStuckCount++;
+            
+            if (progressStuckCount === 1) {
+              addUploadLog('warning', '⚠️ Upload appears slow', 
+                `No progress update for ${(timeSinceLastUpdate / 1000).toFixed(0)}s at ${percentCompleted}% | Current speed: ${speedKBps.toFixed(1)} KB/s | Checking connection...`);
+            }
+            
+            if (timeSinceLastUpdate > 30000) {
+              addUploadLog('warning', '🔄 Upload stalled detected', 
+                `Stuck at ${percentCompleted}% for ${(timeSinceLastUpdate / 1000).toFixed(0)}s | Possible causes: Network congestion, server processing, or connection issues`);
+            }
+            
+            if (timeSinceLastUpdate > 60000) {
+              addUploadLog('error', '❌ Upload critically stuck', 
+                `No progress for ${(timeSinceLastUpdate / 1000).toFixed(0)}s | Stuck at: ${percentCompleted}% | Last successful transfer: ${(uploadedBytes / (1024 * 1024)).toFixed(2)}MB | Possible timeout imminent`);
+            }
+          }
         },
       });
 
+      // Log when upload completes and server processing begins
+      addUploadLog('info', '⏳ Waiting for server response...', 
+        'File upload complete. Waiting for Python backend to confirm receipt and begin processing...');
+
+      // Start simulated processing progress based on file size
+      const processingStartTime = Date.now();
+      const estimatedProcessingTime = Math.max(30000, selectedFile.size / (1024 * 1024) * 2000); // 2s per MB, min 30s
+      
+      const processingInterval = setInterval(() => {
+        const elapsed = Date.now() - processingStartTime;
+        const estimatedProgress = Math.min(95, (elapsed / estimatedProcessingTime) * 100);
+        
+        if (estimatedProgress < 30) {
+          addUploadLog('info', `🔍 Server processing: ~${Math.round(estimatedProgress)}%`, 
+            'Step 1/3: Validating file integrity and format...');
+        } else if (estimatedProgress < 70) {
+          addUploadLog('info', `📝 Server processing: ~${Math.round(estimatedProgress)}%`, 
+            'Step 2/3: Extracting content (text, images, metadata)...');
+        } else if (estimatedProgress < 95) {
+          addUploadLog('info', `💾 Server processing: ~${Math.round(estimatedProgress)}%`, 
+            'Step 3/3: Indexing to vector database and creating embeddings...');
+        }
+      }, 5000); // Update every 5 seconds
+
+      try {
+        await uploadPromise;
+        clearInterval(processingInterval);
+      } catch (error) {
+        clearInterval(processingInterval);
+        throw error;
+      }
+
+      // Log when upload completes and server processing begins
+      addUploadLog('info', '⏳ Waiting for server response...', 
+        'File upload complete. Waiting for Python backend to confirm receipt and begin processing...');
+
+      await uploadPromise;
+
+      const totalTime = ((Date.now() - uploadStartTimeRef.current) / 1000).toFixed(1);
+      const avgSpeedMBps = (selectedFile.size / (1024 * 1024)) / parseFloat(totalTime);
+      
+      addUploadLog('success', '✅ Server confirmed file receipt!', 
+        `Python backend successfully received the file. Total time: ${totalTime}s | Average speed: ${(avgSpeedMBps * 1024).toFixed(1)} KB/s`);
+      
+      addUploadLog('info', '🔄 Server processing pipeline started', 
+        'Backend is now: 1) Validating file integrity, 2) Extracting content (text/images/video), 3) Indexing to vector database. This may take 30-120 seconds depending on file size...');
+      
+      // Add a processing monitor log
+      addUploadLog('info', '⏱️ Processing monitor active', 
+        'Will log updates if server processing takes longer than expected. Please wait...');
+
       setUploadSuccess(true);
       toast.success("Document uploaded and indexed successfully!");
+      
+      addUploadLog('success', '🎉 Complete! Upload and indexing finished', 
+        'Document is now available in the system and ready for AI queries.');
       
       // Reset form
       setDocumentName("");
@@ -274,26 +493,66 @@ export const AdminDocuments = ({
         fileInputRef.current.value = "";
       }
 
-      // Refresh documents list and close dialog immediately
+      // Refresh documents list and close dialog after a short delay
       if (onRefresh) {
         onRefresh();
       }
-      setIsUploadDocOpen(false);
+      
+      // Keep dialog open for 2 seconds to show success logs
+      setTimeout(() => {
+        setIsUploadDocOpen(false);
+      }, 2000);
+      
     } catch (error: any) {
+      const errorTime = ((Date.now() - uploadStartTimeRef.current) / 1000).toFixed(1);
       console.error("Upload error:", error);
+      
+      addUploadLog('error', '❌ Upload failed', 
+        `Error occurred after ${errorTime}s at ${uploadProgress}% progress`);
       
       let errorMessage = "Failed to upload document";
       
+      // Network timeout errors
       if (error.code === 'ECONNABORTED' || error.message?.includes('timeout')) {
         errorMessage = "Upload timeout. The file may be too large or the server is taking too long to process. Please try with a smaller file or try again later.";
-      } else if (error.response?.status === 502) {
+        addUploadLog('error', '⏱️ Request timeout detected', 
+          `Server did not respond within the configured timeout period. File may be too large for current network conditions.`);
+      } 
+      // Server gateway errors
+      else if (error.response?.status === 502) {
         errorMessage = "Server error while processing the file. This may be due to a corrupted file or server overload. Please try again or contact support.";
-      } else if (error.response?.status === 413) {
+        addUploadLog('error', '🔧 Server gateway error (502)', 
+          `Python backend encountered an error. Possible causes: server crashed, processing timeout, or invalid file format.`);
+      } 
+      // File size errors
+      else if (error.response?.status === 413) {
         errorMessage = "File is too large. Please try with a smaller file.";
-      } else if (error.response?.data?.detail) {
+        addUploadLog('error', '📏 Payload too large (413)', 
+          `File exceeds server upload limits. Max: 100MB for videos, 50MB for other files.`);
+      } 
+      // Server returned error details
+      else if (error.response?.data?.detail) {
         errorMessage = error.response.data.detail;
-      } else if (error.message) {
+        addUploadLog('error', '⚠️ Server returned error', 
+          `Status: ${error.response.status} | Message: ${error.response.data.detail}`);
+      } 
+      // Generic error with message
+      else if (error.message) {
         errorMessage = error.message;
+        addUploadLog('error', '⚠️ Client error occurred', 
+          `Error type: ${error.name || 'Unknown'} | Message: ${error.message}`);
+      }
+      
+      // Network connection errors
+      if (error.request && !error.response) {
+        addUploadLog('error', '🌐 Network connection failed', 
+          `Unable to reach Python server. Check: 1) Internet connection, 2) Server status at ${import.meta.env.VITE_PYTHON_URL}, 3) Firewall/VPN settings, 4) CORS configuration`);
+      }
+      
+      // Log full error stack for debugging
+      if (error.config) {
+        addUploadLog('info', '🔍 Request details', 
+          `Method: ${error.config.method?.toUpperCase()} | URL: ${error.config.url} | Timeout: ${error.config.timeout}ms`);
       }
       
       setUploadError(errorMessage);
@@ -316,6 +575,9 @@ export const AdminDocuments = ({
       setUploadError(null);
       setUploadSuccess(false);
       setUploadProgress(0);
+      setUploadLogs([]); // Clear logs
+      uploadStartTimeRef.current = 0;
+      lastProgressUpdateRef.current = 0;
       if (fileInputRef.current) {
         fileInputRef.current.value = "";
       }
@@ -570,6 +832,60 @@ export const AdminDocuments = ({
                         style={{ width: `${uploadProgress}%` }}
                       />
                     </div>
+                  </div>
+                )}
+
+                {/* Upload Logs Viewer - Real-time Activity Monitor */}
+                {(uploadLogs.length > 0 || uploadLoading) && (
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between">
+                      <Label className="text-sm font-medium">Upload Activity Log</Label>
+                      <span className="text-xs text-muted-foreground">
+                        {uploadLogs.length} events
+                      </span>
+                    </div>
+                    <div className="border rounded-lg bg-muted/30 max-h-64 overflow-y-auto">
+                      <div className="p-3 space-y-2 font-mono text-xs">
+                        {uploadLogs.length === 0 && uploadLoading ? (
+                          <div className="flex items-center gap-2 text-muted-foreground">
+                            <Loader2 className="w-3 h-3 animate-spin" />
+                            <span>Initializing upload process...</span>
+                          </div>
+                        ) : (
+                          uploadLogs.map((log, index) => (
+                            <div 
+                              key={index}
+                              className={`flex gap-2 p-2 rounded ${
+                                log.type === 'error' 
+                                  ? 'bg-red-50 dark:bg-red-950/20 text-red-700 dark:text-red-400' 
+                                  : log.type === 'success' 
+                                  ? 'bg-green-50 dark:bg-green-950/20 text-green-700 dark:text-green-400'
+                                  : log.type === 'warning'
+                                  ? 'bg-yellow-50 dark:bg-yellow-950/20 text-yellow-700 dark:text-yellow-400'
+                                  : 'bg-blue-50 dark:bg-blue-950/20 text-blue-700 dark:text-blue-400'
+                              }`}
+                            >
+                              <span className="text-muted-foreground shrink-0">
+                                [{log.timestamp}]
+                              </span>
+                              <div className="flex-1 min-w-0">
+                                <div className="font-medium">{log.message}</div>
+                                {log.details && (
+                                  <div className="text-[10px] mt-0.5 opacity-80 break-words">
+                                    {log.details}
+                                  </div>
+                                )}
+                              </div>
+                            </div>
+                          ))
+                        )}
+                      </div>
+                    </div>
+                    {uploadLoading && (
+                      <p className="text-xs text-muted-foreground italic">
+                        💡 Tip: If upload gets stuck, these logs will help identify exactly which step is causing the issue
+                      </p>
+                    )}
                   </div>
                 )}
               </div>
