@@ -158,10 +158,11 @@ OR
 - Monitoring: Mỗi 10s check
 - Errors: Immediate
 
-### Timeout Settings
-- Progress warning: 30s no update
-- Stuck warning: 60s no update
-- Total timeout: 5 minutes (300s)
+### Timeout Settings (Optimized for Slow Networks)
+- Progress warning (slow): 2 minutes (120s) no update
+- Progress warning (stuck): 5 minutes (300s) no update
+- Approaching timeout: 25 minutes
+- Total timeout: 30 minutes (1800s) - very generous for slow networks and large files
 
 ### Error Detection
 - Network errors (no response)

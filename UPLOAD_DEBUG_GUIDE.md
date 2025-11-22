@@ -63,9 +63,9 @@ Hệ thống tự động phát hiện và cảnh báo khi:
 🔍 Đang kiểm tra kết nối...: Thời gian đã trôi qua: 85s
 ```
 
-#### ❌ **Timeout (quá 5 phút)**
+#### ❌ **Timeout (quá 30 phút)**
 ```
-❌ Upload timeout: Upload đã vượt quá 5 phút. Vui lòng hủy và thử lại với file nhỏ hơn.
+❌ Upload timeout: Upload đã vượt quá 30 phút. File quá lớn hoặc mạng quá chậm.
 ```
 
 ### 4. **Error Detection (Phát hiện lỗi)**

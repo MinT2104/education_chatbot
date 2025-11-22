@@ -268,21 +268,23 @@ Console shows:
 
 ---
 
-### Test Case 12: Timeout (5 minutes)
-**Objective:** Verify 5-minute timeout
+### Test Case 12: Timeout (30 minutes)
+**Objective:** Verify 30-minute timeout for slow networks
 
 **Steps:**
-1. Simulate very slow upload (throttle extreme)
-2. Wait for 5+ minutes
-3. Observe logs
+1. Simulate very slow upload (throttle extreme - 10 KB/s)
+2. Upload large file (>100MB)
+3. Wait for 30+ minutes
+4. Observe logs
 
 **Expected Results:**
 ```
-After 5 minutes:
-[HH:MM:SS] ❌ Upload timeout: Upload đã vượt quá 5 phút. Vui lòng hủy và thử lại với file nhỏ hơn.
+After 30 minutes:
+[HH:MM:SS] ❌ Upload timeout: Upload đã vượt quá 30 phút. File quá lớn hoặc mạng quá chậm.
 ```
 
-✅ Timeout message after 300 seconds
+✅ Timeout message after 1800 seconds (30 minutes)
+✅ Warning at 25 minutes
 ✅ User can cancel
 ✅ Clear instruction
 

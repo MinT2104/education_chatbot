@@ -27,9 +27,10 @@ Hiển thị realtime tất cả hoạt động:
 - ✅ Hoàn thành/Lỗi
 
 ### 2. Tự Động Cảnh Báo
-- ⚠️ **30s không tiến triển** → Cảnh báo chậm
-- 🚨 **60s không tiến triển** → Cảnh báo stuck
-- ⏱️ **5 phút** → Timeout
+- ⏳ **2 phút không tiến triển** → Cảnh báo chậm (bình thường với mạng chậm)
+- ⚠️ **5 phút không tiến triển** → Cảnh báo stuck (vẫn OK)
+- ⏰ **25 phút** → Sắp hết thời gian
+- ⏱️ **30 phút** → Timeout (rất rộng rãi cho mạng chậm!)
 
 ### 3. Chi Tiết Lỗi
 Khi có lỗi, log sẽ cho biết:

@@ -162,28 +162,26 @@ export const AdminDocuments = ({
           `Current progress: ${uploadProgress}% | Time elapsed: ${elapsedMin} min | Time since last update: ${(timeSinceLastUpdate / 1000).toFixed(0)}s`);
       }
 
-      // Warning if no progress update for 45 seconds
-      if (timeSinceLastUpdate > 45000 && uploadProgress < 100) {
-        addUploadLog('warning', '⚠️ Upload stall warning', 
-          `No progress for ${(timeSinceLastUpdate / 1000).toFixed(0)}s | Stuck at ${uploadProgress}% | Possible network congestion or server processing delay`);
-      }
-
-      // Critical warning if no progress for 90 seconds
-      if (timeSinceLastUpdate > 90000 && uploadProgress < 100) {
+        // Warning if no progress update for 120 seconds (2 minutes)
+        if (timeSinceLastUpdate > 120000 && uploadProgress < 100) {
+          addUploadLog('warning', '⚠️ Upload stall warning',
+            `No progress for ${(timeSinceLastUpdate / 1000).toFixed(0)}s | Stuck at ${uploadProgress}% | Possible slow network or server processing delay`);
+        }      // Critical warning if no progress for 300 seconds (5 minutes)
+      if (timeSinceLastUpdate > 300000 && uploadProgress < 100) {
         addUploadLog('error', '🚨 Critical upload stall', 
-          `Upload appears frozen for ${(timeSinceLastUpdate / 1000).toFixed(0)}s at ${uploadProgress}% | Recommendations: 1) Check internet connection, 2) Check Python server status, 3) Consider canceling and retrying with smaller file`);
+          `Upload appears frozen for ${(timeSinceLastUpdate / 1000).toFixed(0)}s at ${uploadProgress}% | This is normal for slow networks. Recommendations: 1) Wait patiently if network is slow, 2) Check Python server status, 3) Consider canceling only if stuck >10 minutes`);
       }
 
-      // Timeout warning after 4 minutes
-      if (timeSinceStart > 240000 && uploadProgress < 100) {
+      // Timeout warning after 25 minutes (approaching 30-minute limit)
+      if (timeSinceStart > 1500000 && uploadProgress < 100) {
         addUploadLog('warning', '⏰ Approaching timeout limit', 
-          `Upload running for ${(timeSinceStart / 60000).toFixed(1)} minutes | Timeout in ${((300000 - timeSinceStart) / 60000).toFixed(1)} minutes | Progress: ${uploadProgress}%`);
+          `Upload running for ${(timeSinceStart / 60000).toFixed(1)} minutes | Timeout in ${((1800000 - timeSinceStart) / 60000).toFixed(1)} minutes | Progress: ${uploadProgress}%`);
       }
 
-      // Final timeout after 5 minutes
-      if (timeSinceStart > 300000) {
+      // Final timeout after 30 minutes (generous limit for slow networks)
+      if (timeSinceStart > 1800000) {
         addUploadLog('error', '❌ Upload timeout exceeded', 
-          `Upload exceeded 5-minute limit. Total time: ${(timeSinceStart / 60000).toFixed(1)} minutes | Final progress: ${uploadProgress}% | Action required: Cancel and retry with smaller file or better network connection`);
+          `Upload exceeded 30-minute limit. Total time: ${(timeSinceStart / 60000).toFixed(1)} minutes | Final progress: ${uploadProgress}% | Action required: Network may be too slow. Consider: 1) Using faster internet, 2) Splitting into smaller files, 3) Uploading during off-peak hours`);
       }
     }, 10000); // Check every 10 seconds
 
@@ -382,9 +380,9 @@ export const AdminDocuments = ({
           const etaSeconds = speedMBps > 0 ? (remainingBytes / (1024 * 1024)) / speedMBps : 0;
           const etaFormatted = etaSeconds < 60 ? `${etaSeconds.toFixed(0)}s` : `${(etaSeconds / 60).toFixed(1)}min`;
           
-          // Detailed logging every 10% or every 3 seconds
+          // Detailed logging every 10% or every 5 seconds (less frequent for slow networks)
           const shouldLog = percentCompleted !== lastLoggedProgress && 
-                           (percentCompleted % 10 === 0 || timeSinceLastUpdate > 3000);
+                           (percentCompleted % 10 === 0 || timeSinceLastUpdate > 5000);
           
           if (shouldLog) {
             const uploadedMB = (progressEvent.loaded / (1024 * 1024)).toFixed(2);
@@ -404,23 +402,23 @@ export const AdminDocuments = ({
             progressStuckCount = 0;
           }
           
-          // Detect if progress is stuck
-          if (timeSinceLastUpdate > 15000 && percentCompleted < 100) {
+          // Detect if progress is stuck (more tolerant for slow networks)
+          if (timeSinceLastUpdate > 30000 && percentCompleted < 100) {
             progressStuckCount++;
             
             if (progressStuckCount === 1) {
-              addUploadLog('warning', '⚠️ Upload appears slow', 
-                `No progress update for ${(timeSinceLastUpdate / 1000).toFixed(0)}s at ${percentCompleted}% | Current speed: ${speedKBps.toFixed(1)} KB/s | Checking connection...`);
+              addUploadLog('info', '⏳ Upload progressing slowly', 
+                `No progress update for ${(timeSinceLastUpdate / 1000).toFixed(0)}s at ${percentCompleted}% | Current speed: ${speedKBps.toFixed(1)} KB/s | This is normal for slow networks`);
             }
             
-            if (timeSinceLastUpdate > 30000) {
-              addUploadLog('warning', '🔄 Upload stalled detected', 
-                `Stuck at ${percentCompleted}% for ${(timeSinceLastUpdate / 1000).toFixed(0)}s | Possible causes: Network congestion, server processing, or connection issues`);
+            if (timeSinceLastUpdate > 120000) {
+              addUploadLog('warning', '🔄 Upload very slow', 
+                `Stuck at ${percentCompleted}% for ${(timeSinceLastUpdate / 1000).toFixed(0)}s | Possible causes: Very slow network, large file, or server processing`);
             }
             
-            if (timeSinceLastUpdate > 60000) {
-              addUploadLog('error', '❌ Upload critically stuck', 
-                `No progress for ${(timeSinceLastUpdate / 1000).toFixed(0)}s | Stuck at: ${percentCompleted}% | Last successful transfer: ${(uploadedBytes / (1024 * 1024)).toFixed(2)}MB | Possible timeout imminent`);
+            if (timeSinceLastUpdate > 300000) {
+              addUploadLog('warning', '⚠️ Upload taking unusually long', 
+                `No progress for ${(timeSinceLastUpdate / 1000).toFixed(0)}s | Stuck at: ${percentCompleted}% | Last successful transfer: ${(uploadedBytes / (1024 * 1024)).toFixed(2)}MB | Please wait or check network connection`);
             }
           }
         },
@@ -514,9 +512,9 @@ export const AdminDocuments = ({
       
       // Network timeout errors
       if (error.code === 'ECONNABORTED' || error.message?.includes('timeout')) {
-        errorMessage = "Upload timeout. The file may be too large or the server is taking too long to process. Please try with a smaller file or try again later.";
-        addUploadLog('error', '⏱️ Request timeout detected', 
-          `Server did not respond within the configured timeout period. File may be too large for current network conditions.`);
+        errorMessage = "Upload timeout after 30 minutes. This typically happens with: 1) Very slow network connection, 2) Extremely large files (>500MB), or 3) Server processing issues. Please try: splitting file into smaller parts, using faster internet, or uploading during off-peak hours.";
+        addUploadLog('error', '⏱️ Upload timeout (30 min limit exceeded)', 
+          `Timeout at ${uploadProgress}% after ${errorTime}s. File may be too large for current network speed. Solutions: 1) Split file into smaller chunks, 2) Check network stability, 3) Try during better network conditions.`);
       } 
       // Server gateway errors
       else if (error.response?.status === 502) {
