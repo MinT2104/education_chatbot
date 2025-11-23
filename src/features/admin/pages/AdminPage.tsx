@@ -115,7 +115,7 @@ const AdminPage = () => {
           subject: doc.subject || "",
           uploadedBy: "admin", // Default value
           uploadedAt: uploadedAt,
-          indexed: true, // Default to indexed
+          indexed: doc.status === 2, // status 0=uploading, 1=uploaded, 2=indexed
         };
       });
 

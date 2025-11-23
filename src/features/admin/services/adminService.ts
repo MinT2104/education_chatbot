@@ -320,37 +320,11 @@ export const adminService = {
   },
 
   /**
-   * Upload PDF document to external API
+   * Helper: Get school by name
    */
-  async uploadDocument(data: {
-    file: File;
-    document_name: string;
-    school_name: string;
-    standard: string;
-    subject: string;
-    onUploadProgress?: (progressEvent: any) => void;
-  }): Promise<{ success: boolean; message?: string; [key: string]: any }> {
-    const formData = new FormData();
-    formData.append("file", data.file);
-    formData.append("document_name", data.document_name);
-    formData.append("school_name", data.school_name);
-    formData.append("standard", data.standard);
-    formData.append("subject", data.subject);
-
-    const response = await axios.post(
-      import.meta.env.VITE_PYTHON_URL + "/upload",
-      formData,
-      {
-        headers: {
-          "Content-Type": "multipart/form-data",
-        },
-        onUploadProgress: data.onUploadProgress,
-        timeout: 1800000, // 30 minutes for slow networks and large files
-        maxBodyLength: Infinity,
-        maxContentLength: Infinity,
-      }
-    );
-    return response.data;
+  async getSchoolByName(name: string): Promise<School | null> {
+    const schools = await this.getAllSchools();
+    return schools.find(s => s.name === name) || null;
   },
 
   /**
@@ -582,6 +556,55 @@ export const adminService = {
    */
   async getCronLogDates(): Promise<CronLogDatesResponse> {
     const response = await apiClient.get("/cron/logs/dates");
+    return response.data;
+  },
+
+  /**
+   * Upload document - FAST, just save file and return
+   * Browser uploads file → Save to server → DB status=1 → DONE
+   * Indexing happens later via cron job (background)
+   */
+  async uploadDocument(params: {
+    file: File;
+    document_name: string;
+    school_name: string;
+    standard: string;
+    subject: string;
+    onUploadProgress?: (progressEvent: any) => void;
+  }): Promise<{ success: boolean; documentId: string }> {
+    const { file, document_name, school_name, standard, subject, onUploadProgress } = params;
+
+    // Get school ID
+    const schools = await apiClient.get("/school", {
+      params: { page: 1, limit: 1000 },
+    });
+    const schoolsList = Array.isArray(schools.data) ? schools.data : schools.data?.rows || [];
+    const school = schoolsList.find((s: any) => s.name === school_name);
+    
+    if (!school) {
+      throw new Error(`School not found: ${school_name}`);
+    }
+
+    // Upload file to server storage (NOT indexing yet)
+    const formData = new FormData();
+    formData.append("file", file);
+    formData.append("document_name", document_name);
+    formData.append("school_id", school.id);
+    formData.append("school_name", school_name);
+    formData.append("grade", standard);
+    formData.append("subject", subject);
+
+    // Call NodeJS API to save file and create DB record with status=1
+    const response = await apiClient.post("/document/upload-only", formData, {
+      headers: {
+        "Content-Type": "multipart/form-data",
+      },
+      timeout: 300000, // 5 minutes - just for file upload, not indexing
+      maxBodyLength: Infinity,
+      maxContentLength: Infinity,
+      onUploadProgress,
+    });
+
     return response.data;
   },
 };
