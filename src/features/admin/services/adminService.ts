@@ -583,9 +583,10 @@ export const adminService = {
   },
 
   /**
-   * Upload document - NEW 2-STEP FLOW for smooth UX
+   * Upload document - NEW 2-STEP FLOW for smooth UX with CHUNKED UPLOAD support
    * Step 1: Create record in Supabase (status=0/pending)
-   * Step 2: Upload to Python with document_id → Python updates status
+   * Step 2a: For large files (>10MB): Upload in chunks with retry
+   * Step 2b: For small files: Direct upload (legacy)
    */
   async uploadDocument(params: {
     file: File;
@@ -602,6 +603,9 @@ export const adminService = {
     message?: string;
   }> {
     const { file, document_name, school_name, standard, subject, onUploadProgress, onLog } = params;
+
+    // Import chunked upload service
+    const { ChunkedUploadService, shouldUseChunkedUpload } = await import('./chunkedUploadService');
 
     // STEP 1: Validate school and initiate upload
     const schools = await apiClient.get("/school", {
@@ -628,46 +632,111 @@ export const adminService = {
     });
 
     const documentId = initResult.document.id;
+    const uploadId = initResult.document.upload_id || ChunkedUploadService.generateUploadId();
     const step1Success = `✅ Document ID created: ${documentId} (status=pending)`;
     console.log(`[UPLOAD] ${step1Success}`);
     if (onLog) onLog('success', step1Success);
 
     try {
-      // STEP 2: Upload to Python with document_id
-      const step2Msg = `Step 2/2: Uploading file to Python server...`;
-      console.log(`[UPLOAD] ${step2Msg}`);
-      if (onLog) onLog('info', step2Msg);
+      // STEP 2: Decide between chunked or direct upload
+      const useChunked = shouldUseChunkedUpload(file);
+      const fileSizeMB = (file.size / (1024 * 1024)).toFixed(2);
 
-      const formData = new FormData();
-      formData.append("file", file);
-      formData.append("document_name", document_name);
-      formData.append("school_name", school_name);
-      formData.append("standard", standard);
-      formData.append("subject", subject);
-      formData.append("document_id", documentId); // ✨ CRITICAL: Pass document_id
+      if (useChunked) {
+        // STEP 2a: Chunked upload for large files
+        const step2Msg = `Step 2/2: Uploading large file (${fileSizeMB}MB) in chunks...`;
+        console.log(`[UPLOAD] ${step2Msg}`);
+        if (onLog) onLog('info', step2Msg, 'Using chunked upload for reliability');
 
-      const response = await axios.post(import.meta.env.VITE_PYTHON_URL + "/upload", formData, {
-        headers: {
-          "Content-Type": "multipart/form-data",
-        },
-        timeout: 1800000, // 30 minutes for large files
-        onUploadProgress,
-      });
+        const chunkedService = new ChunkedUploadService();
+        const result = await chunkedService.uploadFileInChunks({
+          file,
+          uploadId,
+          documentId,
+          metadata: {
+            document_name,
+            school_name,
+            standard,
+            subject,
+          },
+          onChunkProgress: (chunkIndex: number, progress: number) => {
+            // Optional: track individual chunk progress
+            if (progress === 100) {
+              onLog?.('info', `Chunk ${chunkIndex + 1} uploaded`);
+            }
+          },
+          onChunkComplete: (chunkIndex: number, total: number) => {
+            // Update overall progress based on chunks completed
+            const overallProgress = Math.round(((chunkIndex + 1) / total) * 100);
+            onUploadProgress?.({
+              loaded: overallProgress,
+              total: 100,
+            });
+          },
+          onChunkError: (chunkIndex: number, error: Error, willRetry: boolean, attempt: number) => {
+            if (willRetry) {
+              onLog?.('warning', `Chunk ${chunkIndex + 1} failed (${attempt} attempts), retrying...`, error.message);
+            } else {
+              onLog?.('error', `Chunk ${chunkIndex + 1} failed after max retries`, error.message);
+            }
+          },
+          onOverallProgress: (percent: number) => {
+            onUploadProgress?.({
+              loaded: percent,
+              total: 100,
+            });
+          },
+          onLog,
+        });
 
-      console.log(`[UPLOAD] ✅ Python processing complete!`, response.data);
+        return {
+          success: result.success,
+          documentId: result.document_id,
+          status: result.status === 2 ? 'success' : 'pending',
+          message: result.message,
+        };
 
-      // Python automatically updated status to 'success'
-      return {
-        success: true,
-        documentId: documentId,
-        status: 'success',
-        message: 'Document uploaded and indexed successfully!',
-      };
+      } else {
+        // STEP 2b: Direct upload for small files (legacy)
+        const step2Msg = `Step 2/2: Uploading small file (${fileSizeMB}MB) directly...`;
+        console.log(`[UPLOAD] ${step2Msg}`);
+        if (onLog) onLog('info', step2Msg, 'Using direct upload');
+
+        const formData = new FormData();
+        formData.append("file", file);
+        formData.append("document_name", document_name);
+        formData.append("school_name", school_name);
+        formData.append("standard", standard);
+        formData.append("subject", subject);
+        formData.append("document_id", documentId);
+
+        const response = await axios.post(import.meta.env.VITE_PYTHON_URL + "/upload", formData, {
+          headers: {
+            "Content-Type": "multipart/form-data",
+          },
+          timeout: 1800000, // 30 minutes
+          onUploadProgress,
+        });
+
+        const step2Success = `✅ Python processing complete (status=${response.data.status})`;
+        console.log(`[UPLOAD] ${step2Success}`);
+        if (onLog) onLog('success', step2Success);
+
+        return {
+          success: true,
+          documentId,
+          status: response.data.status === 2 ? 'success' : 'pending',
+          message: response.data.message,
+        };
+      }
 
     } catch (error: any) {
-      console.error(`[UPLOAD] ❌ Python upload failed:`, error.message);
+      // Log detailed error
+      const errorMsg = `Python upload failed: ${error.message || error}`;
+      console.error(`[UPLOAD ERROR]`, error);
+      if (onLog) onLog('error', errorMsg, error.response?.data?.detail || '');
 
-      // Python automatically updated status to 'failed', or cron will retry if status=0
+      // Re-throw to be handled by caller
       throw error;
     }
   },
