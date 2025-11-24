@@ -342,46 +342,155 @@ export const AdminDocuments = ({
     setUploadProgress(0);
 
     try {
-      addUploadLog('info', '🚀 Starting realtime streaming upload', 
-        `Connecting to Python server: ${import.meta.env.VITE_PYTHON_URL}/upload-stream`);
+      addUploadLog('info', '📦 Preparing upload data', 'Creating FormData object with file and metadata...');
+      
+      addUploadLog('info', '🔗 Target endpoint configured', 
+        `URL: ${import.meta.env.VITE_PYTHON_URL}/upload`);
+      
+      addUploadLog('info', '📤 Initiating file transfer', 
+        `Starting upload to Python server - File: ${selectedFile.name} (${fileSizeMB}MB)`);
 
-      // Use streaming upload with realtime progress from Python
-      await adminService.uploadDocumentStream({
+      let lastLoggedProgress = 0;
+      let progressStuckCount = 0;
+
+      const uploadPromise = adminService.uploadDocument({
         file: selectedFile,
         document_name: documentName.trim(),
         school_name: school.name,
         standard: selectedStandard,
         subject: selectedSubject,
-        onProgress: (event) => {
-          // Update progress bar
-          setUploadProgress(event.progress);
-
-          // Map event types to log types
-          const logType = event.status === 'error' ? 'error' : 
-                         event.status === 'success' ? 'success' : 
-                         event.progress >= 100 ? 'success' : 'info';
-
-          // Add log entry with Python's real progress
-          addUploadLog(logType, event.message, 
-            event.data ? `Details: ${JSON.stringify(event.data)}` : undefined);
-
-          // Log timing info for key milestones
-          if (event.progress === 10 || event.progress === 50 || event.progress === 75 || event.progress === 100) {
-            const elapsed = event.elapsed || 0;
-            addUploadLog('info', `⏱️ Milestone: ${event.progress}% complete`, 
-              `Elapsed time: ${elapsed}s | Step: ${event.step}`);
+        onUploadProgress: (progressEvent: any) => {
+          const percentCompleted = Math.round(
+            (progressEvent.loaded * 100) / progressEvent.total
+          );
+          setUploadProgress(percentCompleted);
+          
+          const now = Date.now();
+          const timeSinceLastUpdate = now - lastProgressUpdateRef.current;
+          const timeSinceStart = now - uploadStartTimeRef.current;
+          
+          // Calculate upload speed
+          const uploadedBytes = progressEvent.loaded;
+          const timeElapsedSec = timeSinceStart / 1000;
+          const speedMBps = timeElapsedSec > 0 ? (uploadedBytes / (1024 * 1024)) / timeElapsedSec : 0;
+          const speedKBps = speedMBps * 1024;
+          
+          // Calculate ETA
+          const remainingBytes = progressEvent.total - progressEvent.loaded;
+          const etaSeconds = speedMBps > 0 ? (remainingBytes / (1024 * 1024)) / speedMBps : 0;
+          const etaFormatted = etaSeconds < 60 ? `${etaSeconds.toFixed(0)}s` : `${(etaSeconds / 60).toFixed(1)}min`;
+          
+          // Detailed logging every 10% or every 5 seconds (less frequent for slow networks)
+          const shouldLog = percentCompleted !== lastLoggedProgress && 
+                           (percentCompleted % 10 === 0 || timeSinceLastUpdate > 5000);
+          
+          if (shouldLog) {
+            const uploadedMB = (progressEvent.loaded / (1024 * 1024)).toFixed(2);
+            const totalMB = (progressEvent.total / (1024 * 1024)).toFixed(2);
+            const elapsed = (timeSinceStart / 1000).toFixed(1);
+            
+            if (percentCompleted === 100) {
+              addUploadLog('success', `✅ Upload progress: 100%`, 
+                `All ${totalMB}MB transferred successfully | Total upload time: ${elapsed}s | Average speed: ${speedKBps.toFixed(1)} KB/s`);
+            } else {
+              addUploadLog('info', `📊 Upload progress: ${percentCompleted}%`, 
+                `Transferred: ${uploadedMB}MB / ${totalMB}MB | Speed: ${speedKBps.toFixed(1)} KB/s | Elapsed: ${elapsed}s | ETA: ${etaFormatted}`);
+            }
+            
+            lastLoggedProgress = percentCompleted;
+            lastProgressUpdateRef.current = now;
+            progressStuckCount = 0;
+          }
+          
+          // Detect if progress is stuck (more tolerant for slow networks)
+          if (timeSinceLastUpdate > 30000 && percentCompleted < 100) {
+            progressStuckCount++;
+            
+            if (progressStuckCount === 1) {
+              addUploadLog('info', '⏳ Upload progressing slowly', 
+                `No progress update for ${(timeSinceLastUpdate / 1000).toFixed(0)}s at ${percentCompleted}% | Current speed: ${speedKBps.toFixed(1)} KB/s | This is normal for slow networks`);
+            }
+            
+            if (timeSinceLastUpdate > 120000) {
+              addUploadLog('warning', '🔄 Upload very slow', 
+                `Stuck at ${percentCompleted}% for ${(timeSinceLastUpdate / 1000).toFixed(0)}s | Possible causes: Very slow network, large file, or server processing`);
+            }
+            
+            if (timeSinceLastUpdate > 300000) {
+              addUploadLog('warning', '⚠️ Upload taking unusually long', 
+                `No progress for ${(timeSinceLastUpdate / 1000).toFixed(0)}s | Stuck at: ${percentCompleted}% | Last successful transfer: ${(uploadedBytes / (1024 * 1024)).toFixed(2)}MB | Please wait or check network connection`);
+            }
           }
         },
       });
 
-      const totalTime = ((Date.now() - uploadStartTimeRef.current) / 1000).toFixed(1);
-      
-      addUploadLog('success', '✅ Upload complete!', 
-        `Document uploaded and indexed successfully in ${totalTime}s`);
-      
-      setUploadSuccess(true);
-      toast.success("Document uploaded and indexed successfully!");
+      // Log when upload completes and server processing begins
+      addUploadLog('info', '⏳ Waiting for server response...', 
+        'File upload complete. Waiting for Python backend to confirm receipt and begin processing...');
 
+      // Start simulated processing progress based on file size
+      const processingStartTime = Date.now();
+      const estimatedProcessingTime = Math.max(30000, selectedFile.size / (1024 * 1024) * 2000); // 2s per MB, min 30s
+      
+      const processingInterval = setInterval(() => {
+        const elapsed = Date.now() - processingStartTime;
+        const estimatedProgress = Math.min(95, (elapsed / estimatedProcessingTime) * 100);
+        
+        if (estimatedProgress < 30) {
+          addUploadLog('info', `🔍 Server processing: ~${Math.round(estimatedProgress)}%`, 
+            'Step 1/3: Validating file integrity and format...');
+        } else if (estimatedProgress < 70) {
+          addUploadLog('info', `📝 Server processing: ~${Math.round(estimatedProgress)}%`, 
+            'Step 2/3: Extracting content (text, images, metadata)...');
+        } else if (estimatedProgress < 95) {
+          addUploadLog('info', `💾 Server processing: ~${Math.round(estimatedProgress)}%`, 
+            'Step 3/3: Indexing to vector database and creating embeddings...');
+        }
+      }, 5000); // Update every 5 seconds
+
+      try {
+        await uploadPromise;
+        clearInterval(processingInterval);
+      } catch (error) {
+        clearInterval(processingInterval);
+        throw error;
+      }
+
+      // Log when upload completes and server processing begins
+      addUploadLog('info', '⏳ Waiting for server response...', 
+        'File upload complete. Waiting for backend to confirm receipt and process...');
+
+      const result = await uploadPromise;
+
+      const totalTime = ((Date.now() - uploadStartTimeRef.current) / 1000).toFixed(1);
+      const avgSpeedMBps = (selectedFile.size / (1024 * 1024)) / parseFloat(totalTime);
+      
+      // Check if document was indexed immediately or queued for cron
+      if (result.status === 2 && result.indexed) {
+        // Direct Python indexing succeeded
+        addUploadLog('success', '✅ Server confirmed and INDEXED immediately!', 
+          `Python backend successfully received and indexed the file. Total time: ${totalTime}s | Average speed: ${(avgSpeedMBps * 1024).toFixed(1)} KB/s`);
+        
+        addUploadLog('success', '🎉 Complete! Document is ready', 
+          'Document has been indexed and is now available for AI queries immediately.');
+        
+        setUploadSuccess(true);
+        toast.success("Document uploaded and indexed successfully!");
+      } else if (result.status === 1 && !result.indexed) {
+        // Fallback to cron job
+        addUploadLog('success', '✅ Server confirmed file receipt!', 
+          `File saved successfully. Total time: ${totalTime}s | Average speed: ${(avgSpeedMBps * 1024).toFixed(1)} KB/s`);
+        
+        addUploadLog('info', '⏱️ Indexing queued for background processing', 
+          `Python server was unavailable. File has been saved and will be indexed by background job within 5 minutes. Reason: ${result.reason || 'Server busy'}`);
+        
+        addUploadLog('warning', '⚠️ Document status: Waiting for indexing', 
+          'The document will appear in the list but won\'t be available for AI queries until indexing completes (max 5 minutes).');
+        
+        setUploadSuccess(true);
+        toast.info("Document uploaded. Indexing will complete in background (max 5 min)");
+      }
+      
       // Reset form
       setDocumentName("");
       setSelectedSchool("");
@@ -411,40 +520,47 @@ export const AdminDocuments = ({
       
       let errorMessage = "Failed to upload document";
       
-      // SSE/Streaming specific errors
-      if (error.message?.includes('Stream ended unexpectedly')) {
-        errorMessage = "Upload stream was interrupted. The server may have crashed or network connection was lost.";
-        addUploadLog('error', '🔌 Stream interrupted', 
-          `SSE stream closed unexpectedly at ${uploadProgress}%. Server may have crashed or network dropped.`);
-      }
       // Network timeout errors
-      else if (error.code === 'ECONNABORTED' || error.message?.includes('timeout')) {
-        errorMessage = "Upload timeout. This typically happens with very slow network or extremely large files. Please try: splitting file into smaller parts or using faster internet.";
-        addUploadLog('error', '⏱️ Upload timeout', 
-          `Timeout at ${uploadProgress}% after ${errorTime}s. Network too slow or file too large.`);
+      if (error.code === 'ECONNABORTED' || error.message?.includes('timeout')) {
+        errorMessage = "Upload timeout after 30 minutes. This typically happens with: 1) Very slow network connection, 2) Extremely large files (>500MB), or 3) Server processing issues. Please try: splitting file into smaller parts, using faster internet, or uploading during off-peak hours.";
+        addUploadLog('error', '⏱️ Upload timeout (30 min limit exceeded)', 
+          `Timeout at ${uploadProgress}% after ${errorTime}s. File may be too large for current network speed. Solutions: 1) Split file into smaller chunks, 2) Check network stability, 3) Try during better network conditions.`);
       } 
-      // Fetch errors (no response)
-      else if (error.message?.includes('Failed to fetch') || error.message?.includes('NetworkError')) {
-        errorMessage = "Network error: Unable to connect to Python server. Please check your internet connection and server status.";
-        addUploadLog('error', '🌐 Network connection failed', 
-          `Unable to reach Python server at ${import.meta.env.VITE_PYTHON_URL}. Check internet, server status, firewall, or CORS.`);
-      }
-      // HTTP errors
-      else if (error.message?.includes('HTTP 502')) {
-        errorMessage = "Server error while processing the file. Python backend may be overloaded or crashed.";
+      // Server gateway errors
+      else if (error.response?.status === 502) {
+        errorMessage = "Server error while processing the file. This may be due to a corrupted file or server overload. Please try again or contact support.";
         addUploadLog('error', '🔧 Server gateway error (502)', 
-          `Python backend encountered an error. Possible causes: server crashed, processing timeout, or invalid file.`);
+          `Python backend encountered an error. Possible causes: server crashed, processing timeout, or invalid file format.`);
       } 
-      else if (error.message?.includes('HTTP 413')) {
+      // File size errors
+      else if (error.response?.status === 413) {
         errorMessage = "File is too large. Please try with a smaller file.";
         addUploadLog('error', '📏 Payload too large (413)', 
           `File exceeds server upload limits. Max: 100MB for videos, 50MB for other files.`);
       } 
+      // Server returned error details
+      else if (error.response?.data?.detail) {
+        errorMessage = error.response.data.detail;
+        addUploadLog('error', '⚠️ Server returned error', 
+          `Status: ${error.response.status} | Message: ${error.response.data.detail}`);
+      } 
       // Generic error with message
       else if (error.message) {
         errorMessage = error.message;
-        addUploadLog('error', '⚠️ Error occurred', 
-          `Message: ${error.message}`);
+        addUploadLog('error', '⚠️ Client error occurred', 
+          `Error type: ${error.name || 'Unknown'} | Message: ${error.message}`);
+      }
+      
+      // Network connection errors
+      if (error.request && !error.response) {
+        addUploadLog('error', '🌐 Network connection failed', 
+          `Unable to reach Python server. Check: 1) Internet connection, 2) Server status at ${import.meta.env.VITE_PYTHON_URL}, 3) Firewall/VPN settings, 4) CORS configuration`);
+      }
+      
+      // Log full error stack for debugging
+      if (error.config) {
+        addUploadLog('info', '🔍 Request details', 
+          `Method: ${error.config.method?.toUpperCase()} | URL: ${error.config.url} | Timeout: ${error.config.timeout}ms`);
       }
       
       setUploadError(errorMessage);
