@@ -560,9 +560,8 @@ export const adminService = {
   },
 
   /**
-   * Upload document - FAST, just save file and return
-   * Browser uploads file → Save to server → DB status=1 → DONE
-   * Indexing happens later via cron job (background)
+   * Upload document - Hybrid strategy
+   * Try Python API directly first, fallback to cron if failed
    */
   async uploadDocument(params: {
     file: File;
@@ -571,7 +570,14 @@ export const adminService = {
     standard: string;
     subject: string;
     onUploadProgress?: (progressEvent: any) => void;
-  }): Promise<{ success: boolean; documentId: string }> {
+  }): Promise<{ 
+    success: boolean; 
+    documentId: string;
+    status: number;
+    indexed: boolean;
+    method: 'direct' | 'cron_queued';
+    reason?: string;
+  }> {
     const { file, document_name, school_name, standard, subject, onUploadProgress } = params;
 
     // Get school ID

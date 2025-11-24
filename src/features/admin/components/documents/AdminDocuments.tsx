@@ -458,28 +458,38 @@ export const AdminDocuments = ({
 
       // Log when upload completes and server processing begins
       addUploadLog('info', '⏳ Waiting for server response...', 
-        'File upload complete. Waiting for Python backend to confirm receipt and begin processing...');
+        'File upload complete. Waiting for backend to confirm receipt and process...');
 
-      await uploadPromise;
+      const result = await uploadPromise;
 
       const totalTime = ((Date.now() - uploadStartTimeRef.current) / 1000).toFixed(1);
       const avgSpeedMBps = (selectedFile.size / (1024 * 1024)) / parseFloat(totalTime);
       
-      addUploadLog('success', '✅ Server confirmed file receipt!', 
-        `Python backend successfully received the file. Total time: ${totalTime}s | Average speed: ${(avgSpeedMBps * 1024).toFixed(1)} KB/s`);
-      
-      addUploadLog('info', '🔄 Server processing pipeline started', 
-        'Backend is now: 1) Validating file integrity, 2) Extracting content (text/images/video), 3) Indexing to vector database. This may take 30-120 seconds depending on file size...');
-      
-      // Add a processing monitor log
-      addUploadLog('info', '⏱️ Processing monitor active', 
-        'Will log updates if server processing takes longer than expected. Please wait...');
-
-      setUploadSuccess(true);
-      toast.success("Document uploaded and indexed successfully!");
-      
-      addUploadLog('success', '🎉 Complete! Upload and indexing finished', 
-        'Document is now available in the system and ready for AI queries.');
+      // Check if document was indexed immediately or queued for cron
+      if (result.status === 2 && result.indexed) {
+        // Direct Python indexing succeeded
+        addUploadLog('success', '✅ Server confirmed and INDEXED immediately!', 
+          `Python backend successfully received and indexed the file. Total time: ${totalTime}s | Average speed: ${(avgSpeedMBps * 1024).toFixed(1)} KB/s`);
+        
+        addUploadLog('success', '🎉 Complete! Document is ready', 
+          'Document has been indexed and is now available for AI queries immediately.');
+        
+        setUploadSuccess(true);
+        toast.success("Document uploaded and indexed successfully!");
+      } else if (result.status === 1 && !result.indexed) {
+        // Fallback to cron job
+        addUploadLog('success', '✅ Server confirmed file receipt!', 
+          `File saved successfully. Total time: ${totalTime}s | Average speed: ${(avgSpeedMBps * 1024).toFixed(1)} KB/s`);
+        
+        addUploadLog('info', '⏱️ Indexing queued for background processing', 
+          `Python server was unavailable. File has been saved and will be indexed by background job within 5 minutes. Reason: ${result.reason || 'Server busy'}`);
+        
+        addUploadLog('warning', '⚠️ Document status: Waiting for indexing', 
+          'The document will appear in the list but won\'t be available for AI queries until indexing completes (max 5 minutes).');
+        
+        setUploadSuccess(true);
+        toast.info("Document uploaded. Indexing will complete in background (max 5 min)");
+      }
       
       // Reset form
       setDocumentName("");
