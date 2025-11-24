@@ -71,17 +71,17 @@ export const AdminDocuments = ({
   const [uploadProgress, setUploadProgress] = useState(0);
   const [uploadError, setUploadError] = useState<string | null>(null);
   const [uploadSuccess, setUploadSuccess] = useState(false);
-  
+
   // Upload logs for detailed tracking
   const [uploadLogs, setUploadLogs] = useState<UploadLog[]>([]);
   const uploadStartTimeRef = useRef<number>(0);
   const lastProgressUpdateRef = useRef<number>(0);
-  
+
   // Delete states
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [documentToDelete, setDocumentToDelete] = useState<Document | null>(null);
   const [deleteLoading, setDeleteLoading] = useState(false);
-  
+
   // Form states
   const [documentName, setDocumentName] = useState("");
   const [selectedSchool, setSelectedSchool] = useState("");
@@ -104,7 +104,7 @@ export const AdminDocuments = ({
     const seconds = now.getSeconds().toString().padStart(2, '0');
     const milliseconds = now.getMilliseconds().toString().padStart(3, '0');
     const timestamp = `${hours}:${minutes}:${seconds},${milliseconds}`;
-    
+
     const newLog: UploadLog = { timestamp, type, message, details };
     console.log(`[UPLOAD ${type.toUpperCase()}] ${timestamp} - ${message}${details ? ': ' + details : ''}`);
     setUploadLogs(prev => [...prev, newLog]);
@@ -158,29 +158,29 @@ export const AdminDocuments = ({
       // Detailed monitoring logs every 10 seconds
       if (uploadProgress < 100) {
         const elapsedMin = (timeSinceStart / 60000).toFixed(1);
-        addUploadLog('info', `⏱️ Upload monitor check`, 
+        addUploadLog('info', `⏱️ Upload monitor check`,
           `Current progress: ${uploadProgress}% | Time elapsed: ${elapsedMin} min | Time since last update: ${(timeSinceLastUpdate / 1000).toFixed(0)}s`);
       }
 
-        // Warning if no progress update for 120 seconds (2 minutes)
-        if (timeSinceLastUpdate > 120000 && uploadProgress < 100) {
-          addUploadLog('warning', '⚠️ Upload stall warning',
-            `No progress for ${(timeSinceLastUpdate / 1000).toFixed(0)}s | Stuck at ${uploadProgress}% | Possible slow network or server processing delay`);
-        }      // Critical warning if no progress for 300 seconds (5 minutes)
+      // Warning if no progress update for 120 seconds (2 minutes)
+      if (timeSinceLastUpdate > 120000 && uploadProgress < 100) {
+        addUploadLog('warning', '⚠️ Upload stall warning',
+          `No progress for ${(timeSinceLastUpdate / 1000).toFixed(0)}s | Stuck at ${uploadProgress}% | Possible slow network or server processing delay`);
+      }      // Critical warning if no progress for 300 seconds (5 minutes)
       if (timeSinceLastUpdate > 300000 && uploadProgress < 100) {
-        addUploadLog('error', '🚨 Critical upload stall', 
+        addUploadLog('error', '🚨 Critical upload stall',
           `Upload appears frozen for ${(timeSinceLastUpdate / 1000).toFixed(0)}s at ${uploadProgress}% | This is normal for slow networks. Recommendations: 1) Wait patiently if network is slow, 2) Check Python server status, 3) Consider canceling only if stuck >10 minutes`);
       }
 
       // Timeout warning after 25 minutes (approaching 30-minute limit)
       if (timeSinceStart > 1500000 && uploadProgress < 100) {
-        addUploadLog('warning', '⏰ Approaching timeout limit', 
+        addUploadLog('warning', '⏰ Approaching timeout limit',
           `Upload running for ${(timeSinceStart / 60000).toFixed(1)} minutes | Timeout in ${((1800000 - timeSinceStart) / 60000).toFixed(1)} minutes | Progress: ${uploadProgress}%`);
       }
 
       // Final timeout after 30 minutes (generous limit for slow networks)
       if (timeSinceStart > 1800000) {
-        addUploadLog('error', '❌ Upload timeout exceeded', 
+        addUploadLog('error', '❌ Upload timeout exceeded',
           `Upload exceeded 30-minute limit. Total time: ${(timeSinceStart / 60000).toFixed(1)} minutes | Final progress: ${uploadProgress}% | Action required: Network may be too slow. Consider: 1) Using faster internet, 2) Splitting into smaller files, 3) Uploading during off-peak hours`);
       }
     }, 10000); // Check every 10 seconds
@@ -197,7 +197,7 @@ export const AdminDocuments = ({
       '.mp4', '.avi', '.mov', '.mkv'
     ];
     const fileExtension = file.name.toLowerCase().substring(file.name.lastIndexOf('.'));
-    
+
     // Also check MIME types as fallback
     const allowedTypes = [
       'application/pdf',
@@ -211,27 +211,27 @@ export const AdminDocuments = ({
       'video/x-msvideo',
       'video/x-matroska'
     ];
-    
+
     const isValidExtension = allowedExtensions.includes(fileExtension);
     const isValidType = file.type && (
       allowedTypes.includes(file.type) ||
       file.type.startsWith('video/') ||
       file.type.startsWith('image/')
     );
-    
+
     if (!isValidExtension && !isValidType) {
       return "Please upload a valid file (PDF, TXT, Images, or Video: MP4, AVI, MOV, MKV)";
     }
-    
+
     // Validate file size (100MB for video, 50MB for others)
     const maxSize = file.type.startsWith('video/') || ['.mp4', '.avi', '.mov', '.mkv'].includes(fileExtension)
-      ? 100 * 1024 * 1024 
+      ? 100 * 1024 * 1024
       : 50 * 1024 * 1024;
     if (file.size > maxSize) {
       const maxSizeMB = maxSize / (1024 * 1024);
       return `File size must be less than ${maxSizeMB}MB`;
     }
-    
+
     return null;
   };
 
@@ -286,9 +286,9 @@ export const AdminDocuments = ({
     setUploadLogs([]);
     uploadStartTimeRef.current = Date.now();
     lastProgressUpdateRef.current = Date.now();
-    
+
     addUploadLog('info', '🔍 Starting form validation', 'Checking all required fields...');
-    
+
     // Validate form
     if (!documentName.trim()) {
       setUploadError("Document name is required");
@@ -296,7 +296,7 @@ export const AdminDocuments = ({
       return;
     }
     addUploadLog('success', '✓ Document name validated', `Name: "${documentName}"`);
-    
+
     if (!selectedSchool) {
       setUploadError("Please select a school");
       addUploadLog('error', '❌ Validation failed: School not selected');
@@ -308,30 +308,30 @@ export const AdminDocuments = ({
       throw new Error("Selected school not found");
     }
     addUploadLog('success', '✓ School validated', `School: "${school.name}" (ID: ${selectedSchool})`);
-    
+
     if (!selectedStandard) {
       setUploadError("Please select a grade/standard");
       addUploadLog('error', '❌ Validation failed: Grade/Standard not selected');
       return;
     }
     addUploadLog('success', '✓ Grade/Standard validated', `Grade: "${selectedStandard}"`);
-    
+
     if (!selectedSubject) {
       setUploadError("Please select a subject");
       addUploadLog('error', '❌ Validation failed: Subject not selected');
       return;
     }
     addUploadLog('success', '✓ Subject validated', `Subject: "${selectedSubject}"`);
-    
+
     if (!selectedFile) {
       setUploadError("Please select a file to upload");
       addUploadLog('error', '❌ Validation failed: No file selected');
       return;
     }
-    
+
     const fileSizeMB = (selectedFile.size / (1024 * 1024)).toFixed(2);
     const fileSizeBytes = selectedFile.size.toLocaleString();
-    addUploadLog('success', '✓ File validated', 
+    addUploadLog('success', '✓ File validated',
       `Name: "${selectedFile.name}", Size: ${fileSizeMB}MB (${fileSizeBytes} bytes), Type: ${selectedFile.type || 'unknown'}`);
 
     addUploadLog('info', '📋 Form validation completed successfully', 'All fields validated. Proceeding to upload...');
@@ -343,11 +343,11 @@ export const AdminDocuments = ({
 
     try {
       addUploadLog('info', '📦 Preparing upload data', 'Creating FormData object with file and metadata...');
-      
-      addUploadLog('info', '🔗 Target endpoint configured', 
+
+      addUploadLog('info', '🔗 Target endpoint configured',
         `URL: ${import.meta.env.VITE_PYTHON_URL}/upload`);
-      
-      addUploadLog('info', '📤 Initiating file transfer', 
+
+      addUploadLog('info', '📤 Initiating file transfer',
         `Starting upload to Python server - File: ${selectedFile.name} (${fileSizeMB}MB)`);
 
       let lastLoggedProgress = 0;
@@ -359,138 +359,122 @@ export const AdminDocuments = ({
         school_name: school.name,
         standard: selectedStandard,
         subject: selectedSubject,
+        onLog: (type: 'info' | 'success' | 'warning' | 'error', message: string, details?: string) => {
+          addUploadLog(type, message, details);
+        },
         onUploadProgress: (progressEvent: any) => {
           const percentCompleted = Math.round(
             (progressEvent.loaded * 100) / progressEvent.total
           );
-          setUploadProgress(percentCompleted);
-          
+
+          // Scale upload progress to max 80% (leaving 20% for server processing)
+          const scaledProgress = Math.round(percentCompleted * 0.8);
+          setUploadProgress(scaledProgress);
+
           const now = Date.now();
           const timeSinceLastUpdate = now - lastProgressUpdateRef.current;
           const timeSinceStart = now - uploadStartTimeRef.current;
-          
+
           // Calculate upload speed
           const uploadedBytes = progressEvent.loaded;
           const timeElapsedSec = timeSinceStart / 1000;
           const speedMBps = timeElapsedSec > 0 ? (uploadedBytes / (1024 * 1024)) / timeElapsedSec : 0;
           const speedKBps = speedMBps * 1024;
-          
+
           // Calculate ETA
           const remainingBytes = progressEvent.total - progressEvent.loaded;
           const etaSeconds = speedMBps > 0 ? (remainingBytes / (1024 * 1024)) / speedMBps : 0;
           const etaFormatted = etaSeconds < 60 ? `${etaSeconds.toFixed(0)}s` : `${(etaSeconds / 60).toFixed(1)}min`;
-          
+
           // Detailed logging every 10% or every 5 seconds (less frequent for slow networks)
-          const shouldLog = percentCompleted !== lastLoggedProgress && 
-                           (percentCompleted % 10 === 0 || timeSinceLastUpdate > 5000);
-          
+          const shouldLog = percentCompleted !== lastLoggedProgress &&
+            (percentCompleted % 10 === 0 || timeSinceLastUpdate > 5000);
+
           if (shouldLog) {
             const uploadedMB = (progressEvent.loaded / (1024 * 1024)).toFixed(2);
             const totalMB = (progressEvent.total / (1024 * 1024)).toFixed(2);
             const elapsed = (timeSinceStart / 1000).toFixed(1);
-            
+
             if (percentCompleted === 100) {
-              addUploadLog('success', `✅ Upload progress: 100%`, 
-                `All ${totalMB}MB transferred successfully | Total upload time: ${elapsed}s | Average speed: ${speedKBps.toFixed(1)} KB/s`);
+              addUploadLog('success', `✅ File transfer complete (100%)`,
+                `All ${totalMB}MB sent to server | Time: ${elapsed}s | Speed: ${speedKBps.toFixed(1)} KB/s`);
             } else {
-              addUploadLog('info', `📊 Upload progress: ${percentCompleted}%`, 
-                `Transferred: ${uploadedMB}MB / ${totalMB}MB | Speed: ${speedKBps.toFixed(1)} KB/s | Elapsed: ${elapsed}s | ETA: ${etaFormatted}`);
+              addUploadLog('info', `📊 Uploading: ${percentCompleted}%`,
+                `Transferred: ${uploadedMB}MB / ${totalMB}MB | Speed: ${speedKBps.toFixed(1)} KB/s | ETA: ${etaFormatted}`);
             }
-            
+
             lastLoggedProgress = percentCompleted;
             lastProgressUpdateRef.current = now;
             progressStuckCount = 0;
           }
-          
+
           // Detect if progress is stuck (more tolerant for slow networks)
           if (timeSinceLastUpdate > 30000 && percentCompleted < 100) {
             progressStuckCount++;
-            
+
             if (progressStuckCount === 1) {
-              addUploadLog('info', '⏳ Upload progressing slowly', 
-                `No progress update for ${(timeSinceLastUpdate / 1000).toFixed(0)}s at ${percentCompleted}% | Current speed: ${speedKBps.toFixed(1)} KB/s | This is normal for slow networks`);
-            }
-            
-            if (timeSinceLastUpdate > 120000) {
-              addUploadLog('warning', '🔄 Upload very slow', 
-                `Stuck at ${percentCompleted}% for ${(timeSinceLastUpdate / 1000).toFixed(0)}s | Possible causes: Very slow network, large file, or server processing`);
-            }
-            
-            if (timeSinceLastUpdate > 300000) {
-              addUploadLog('warning', '⚠️ Upload taking unusually long', 
-                `No progress for ${(timeSinceLastUpdate / 1000).toFixed(0)}s | Stuck at: ${percentCompleted}% | Last successful transfer: ${(uploadedBytes / (1024 * 1024)).toFixed(2)}MB | Please wait or check network connection`);
+              addUploadLog('info', '⏳ Upload progressing slowly',
+                `No progress update for ${(timeSinceLastUpdate / 1000).toFixed(0)}s at ${percentCompleted}% | Current speed: ${speedKBps.toFixed(1)} KB/s`);
             }
           }
         },
       });
 
       // Log when upload completes and server processing begins
-      addUploadLog('info', '⏳ Waiting for server response...', 
-        'File upload complete. Waiting for Python backend to confirm receipt and begin processing...');
+      // Note: This log is now handled by onLog callback or onUploadProgress 100%
 
       // Start simulated processing progress based on file size
       const processingStartTime = Date.now();
       const estimatedProcessingTime = Math.max(30000, selectedFile.size / (1024 * 1024) * 2000); // 2s per MB, min 30s
-      
+
       const processingInterval = setInterval(() => {
         const elapsed = Date.now() - processingStartTime;
-        const estimatedProgress = Math.min(95, (elapsed / estimatedProcessingTime) * 100);
-        
-        if (estimatedProgress < 30) {
-          addUploadLog('info', `🔍 Server processing: ~${Math.round(estimatedProgress)}%`, 
-            'Step 1/3: Validating file integrity and format...');
-        } else if (estimatedProgress < 70) {
-          addUploadLog('info', `📝 Server processing: ~${Math.round(estimatedProgress)}%`, 
-            'Step 2/3: Extracting content (text, images, metadata)...');
-        } else if (estimatedProgress < 95) {
-          addUploadLog('info', `💾 Server processing: ~${Math.round(estimatedProgress)}%`, 
-            'Step 3/3: Indexing to vector database and creating embeddings...');
-        }
-      }, 5000); // Update every 5 seconds
+        // Simulate processing from 80% to 95%
+        const processingPercent = Math.min(95, 80 + (elapsed / estimatedProcessingTime) * 15);
 
+        // Only update if we are past the upload phase (upload reached 100% -> scaled 80%)
+        setUploadProgress(prev => Math.max(prev, Math.round(processingPercent)));
+
+        const estimatedProgress = (elapsed / estimatedProcessingTime) * 100;
+
+        if (estimatedProgress < 30 && estimatedProgress > 25) {
+          // Logs are now handled by simulated steps, but we can keep these as "Processing updates"
+          // avoiding duplicate logs if possible
+        }
+      }, 1000); // Update every 1 second for smoother bar
+
+      // Await the upload promise only ONCE and store the result
+      let result;
       try {
-        await uploadPromise;
+        result = await uploadPromise;
         clearInterval(processingInterval);
       } catch (error) {
         clearInterval(processingInterval);
         throw error;
       }
 
-      // Log when upload completes and server processing begins
-      addUploadLog('info', '⏳ Waiting for server response...', 
-        'File upload complete. Waiting for backend to confirm receipt and process...');
-
-      const result = await uploadPromise;
-
       const totalTime = ((Date.now() - uploadStartTimeRef.current) / 1000).toFixed(1);
       const avgSpeedMBps = (selectedFile.size / (1024 * 1024)) / parseFloat(totalTime);
-      
-      // Check if document was indexed immediately or queued for cron
-      if (result.status === 2 && result.indexed) {
-        // Direct Python indexing succeeded
-        addUploadLog('success', '✅ Server confirmed and INDEXED immediately!', 
-          `Python backend successfully received and indexed the file. Total time: ${totalTime}s | Average speed: ${(avgSpeedMBps * 1024).toFixed(1)} KB/s`);
-        
-        addUploadLog('success', '🎉 Complete! Document is ready', 
+
+      // Check upload result
+      if (result.success && result.status === 'success') {
+        // Upload and indexing successful
+        addUploadLog('success', '✅ Document uploaded and indexed!',
+          `Python successfully processed the file. Total time: ${totalTime}s | Average speed: ${(avgSpeedMBps * 1024).toFixed(1)} KB/s`);
+
+        addUploadLog('success', '🎉 Complete! Document is ready',
           'Document has been indexed and is now available for AI queries immediately.');
-        
+
         setUploadSuccess(true);
         toast.success("Document uploaded and indexed successfully!");
-      } else if (result.status === 1 && !result.indexed) {
-        // Fallback to cron job
-        addUploadLog('success', '✅ Server confirmed file receipt!', 
-          `File saved successfully. Total time: ${totalTime}s | Average speed: ${(avgSpeedMBps * 1024).toFixed(1)} KB/s`);
-        
-        addUploadLog('info', '⏱️ Indexing queued for background processing', 
-          `Python server was unavailable. File has been saved and will be indexed by background job within 5 minutes. Reason: ${result.reason || 'Server busy'}`);
-        
-        addUploadLog('warning', '⚠️ Document status: Waiting for indexing', 
-          'The document will appear in the list but won\'t be available for AI queries until indexing completes (max 5 minutes).');
-        
+      } else {
+        // Unexpected response
+        addUploadLog('warning', '⚠️ Upload completed with warnings',
+          `Status: ${result.status} | The document was saved but may need retry.`);
+
         setUploadSuccess(true);
-        toast.info("Document uploaded. Indexing will complete in background (max 5 min)");
+        toast.info("Document uploaded. Please check status.");
       }
-      
       // Reset form
       setDocumentName("");
       setSelectedSchool("");
@@ -505,64 +489,64 @@ export const AdminDocuments = ({
       if (onRefresh) {
         onRefresh();
       }
-      
+
       // Keep dialog open for 2 seconds to show success logs
       setTimeout(() => {
         setIsUploadDocOpen(false);
       }, 2000);
-      
+
     } catch (error: any) {
       const errorTime = ((Date.now() - uploadStartTimeRef.current) / 1000).toFixed(1);
       console.error("Upload error:", error);
-      
-      addUploadLog('error', '❌ Upload failed', 
+
+      addUploadLog('error', '❌ Upload failed',
         `Error occurred after ${errorTime}s at ${uploadProgress}% progress`);
-      
+
       let errorMessage = "Failed to upload document";
-      
+
       // Network timeout errors
       if (error.code === 'ECONNABORTED' || error.message?.includes('timeout')) {
         errorMessage = "Upload timeout after 30 minutes. This typically happens with: 1) Very slow network connection, 2) Extremely large files (>500MB), or 3) Server processing issues. Please try: splitting file into smaller parts, using faster internet, or uploading during off-peak hours.";
-        addUploadLog('error', '⏱️ Upload timeout (30 min limit exceeded)', 
+        addUploadLog('error', '⏱️ Upload timeout (30 min limit exceeded)',
           `Timeout at ${uploadProgress}% after ${errorTime}s. File may be too large for current network speed. Solutions: 1) Split file into smaller chunks, 2) Check network stability, 3) Try during better network conditions.`);
-      } 
+      }
       // Server gateway errors
       else if (error.response?.status === 502) {
         errorMessage = "Server error while processing the file. This may be due to a corrupted file or server overload. Please try again or contact support.";
-        addUploadLog('error', '🔧 Server gateway error (502)', 
+        addUploadLog('error', '🔧 Server gateway error (502)',
           `Python backend encountered an error. Possible causes: server crashed, processing timeout, or invalid file format.`);
-      } 
+      }
       // File size errors
       else if (error.response?.status === 413) {
         errorMessage = "File is too large. Please try with a smaller file.";
-        addUploadLog('error', '📏 Payload too large (413)', 
+        addUploadLog('error', '📏 Payload too large (413)',
           `File exceeds server upload limits. Max: 100MB for videos, 50MB for other files.`);
-      } 
+      }
       // Server returned error details
       else if (error.response?.data?.detail) {
         errorMessage = error.response.data.detail;
-        addUploadLog('error', '⚠️ Server returned error', 
+        addUploadLog('error', '⚠️ Server returned error',
           `Status: ${error.response.status} | Message: ${error.response.data.detail}`);
-      } 
+      }
       // Generic error with message
       else if (error.message) {
         errorMessage = error.message;
-        addUploadLog('error', '⚠️ Client error occurred', 
+        addUploadLog('error', '⚠️ Client error occurred',
           `Error type: ${error.name || 'Unknown'} | Message: ${error.message}`);
       }
-      
+
       // Network connection errors
       if (error.request && !error.response) {
-        addUploadLog('error', '🌐 Network connection failed', 
+        addUploadLog('error', '🌐 Network connection failed',
           `Unable to reach Python server. Check: 1) Internet connection, 2) Server status at ${import.meta.env.VITE_PYTHON_URL}, 3) Firewall/VPN settings, 4) CORS configuration`);
       }
-      
+
       // Log full error stack for debugging
       if (error.config) {
-        addUploadLog('info', '🔍 Request details', 
+        addUploadLog('info', '🔍 Request details',
           `Method: ${error.config.method?.toUpperCase()} | URL: ${error.config.url} | Timeout: ${error.config.timeout}ms`);
       }
-      
+
       setUploadError(errorMessage);
       toast.error(errorMessage);
     } finally {
@@ -572,7 +556,7 @@ export const AdminDocuments = ({
 
   const handleDialogClose = (open: boolean) => {
     setIsUploadDocOpen(open);
-    
+
     if (!open && !uploadLoading) {
       // Reset form when dialog closes
       setDocumentName("");
@@ -603,12 +587,12 @@ export const AdminDocuments = ({
     setDeleteLoading(true);
     try {
       await adminService.deleteDocument(documentToDelete.id);
-      
+
       // Refresh documents list
       if (onRefresh) {
         onRefresh();
       }
-      
+
       toast.success("Document deleted successfully!");
       setDeleteDialogOpen(false);
       setDocumentToDelete(null);
@@ -648,7 +632,7 @@ export const AdminDocuments = ({
             <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
               <DialogHeader>
                 <DialogTitle>Upload Master Training File</DialogTitle>
-<DialogDescription>
+                <DialogDescription>
                   Upload educational content that will be indexed for AI responses. Supports PDF, TXT, Images (JPG, PNG, BMP, GIF), and Videos (MP4, AVI, MOV, MKV).
                 </DialogDescription>
               </DialogHeader>
@@ -721,14 +705,14 @@ export const AdminDocuments = ({
                     disabled={uploadLoading || subjectsLoading}
                   >
                     <SelectTrigger id="doc-subject">
-                      <SelectValue 
+                      <SelectValue
                         placeholder={
-                          subjectsLoading 
-                            ? "Loading subjects..." 
-                            : subjectsError 
-                            ? "Error loading subjects" 
-                            : "Select subject"
-                        } 
+                          subjectsLoading
+                            ? "Loading subjects..."
+                            : subjectsError
+                              ? "Error loading subjects"
+                              : "Select subject"
+                        }
                       />
                     </SelectTrigger>
                     <SelectContent>
@@ -776,13 +760,11 @@ export const AdminDocuments = ({
                     onDragOver={handleDragOver}
                     onDragLeave={handleDragLeave}
                     onDrop={handleDrop}
-                    className={`border-2 border-dashed rounded-lg p-8 text-center transition-colors ${
-                      uploadLoading
-                        ? "opacity-50 cursor-not-allowed"
-                        : "hover:border-primary cursor-pointer"
-                    } ${selectedFile ? "border-primary bg-primary/5" : ""} ${
-                      isDragging ? "border-primary-500 bg-primary/10" : ""
-                    }`}
+                    className={`border-2 border-dashed rounded-lg p-8 text-center transition-colors ${uploadLoading
+                      ? "opacity-50 cursor-not-allowed"
+                      : "hover:border-primary cursor-pointer"
+                      } ${selectedFile ? "border-primary bg-primary/5" : ""} ${isDragging ? "border-primary-500 bg-primary/10" : ""
+                      }`}
                   >
                     <Upload className="w-8 h-8 mx-auto mb-2 text-muted-foreground" />
                     {selectedFile ? (
@@ -826,7 +808,7 @@ export const AdminDocuments = ({
                     )}
                   </div>
                 </div>
-                
+
                 {/* Upload Progress Bar */}
                 {uploadLoading && uploadProgress > 0 && (
                   <div className="space-y-2">
@@ -861,17 +843,16 @@ export const AdminDocuments = ({
                           </div>
                         ) : (
                           uploadLogs.map((log, index) => (
-                            <div 
+                            <div
                               key={index}
-                              className={`flex gap-2 p-2 rounded ${
-                                log.type === 'error' 
-                                  ? 'bg-red-50 dark:bg-red-950/20 text-red-700 dark:text-red-400' 
-                                  : log.type === 'success' 
+                              className={`flex gap-2 p-2 rounded ${log.type === 'error'
+                                ? 'bg-red-50 dark:bg-red-950/20 text-red-700 dark:text-red-400'
+                                : log.type === 'success'
                                   ? 'bg-green-50 dark:bg-green-950/20 text-green-700 dark:text-green-400'
                                   : log.type === 'warning'
-                                  ? 'bg-yellow-50 dark:bg-yellow-950/20 text-yellow-700 dark:text-yellow-400'
-                                  : 'bg-blue-50 dark:bg-blue-950/20 text-blue-700 dark:text-blue-400'
-                              }`}
+                                    ? 'bg-yellow-50 dark:bg-yellow-950/20 text-yellow-700 dark:text-yellow-400'
+                                    : 'bg-blue-50 dark:bg-blue-950/20 text-blue-700 dark:text-blue-400'
+                                }`}
                             >
                               <span className="text-muted-foreground shrink-0">
                                 [{log.timestamp}]
@@ -950,77 +931,77 @@ export const AdminDocuments = ({
                   <TableHead className="text-right min-w-[100px]">Actions</TableHead>
                 </TableRow>
               </TableHeader>
-            <TableBody>
-              {loading ? (
-                <TableRow>
-                  <TableCell
-                    colSpan={8}
-                    className="text-center py-8 text-muted-foreground"
-                  >
-                    Loading documents...
-                  </TableCell>
-                </TableRow>
-              ) : filteredDocuments.length === 0 ? (
-                <TableRow>
-                  <TableCell
-                    colSpan={8}
-                    className="text-center py-8 text-muted-foreground"
-                  >
-                    No documents found
-                  </TableCell>
-                </TableRow>
-              ) : (
-                filteredDocuments.map((doc) => (
-                  <TableRow key={doc.id}>
-                    <TableCell className="font-medium">
-                      <div className="flex items-center gap-2">
-                        <FileText className="w-4 h-4 text-muted-foreground flex-shrink-0" />
-                        <span className="truncate text-xs sm:text-sm">{doc.name}</span>
-                      </div>
-                    </TableCell>
-                    <TableCell className="text-xs sm:text-sm hidden md:table-cell">
-                      <span className="truncate block">{doc.schoolName}</span>
-                    </TableCell>
-                    <TableCell className="text-xs sm:text-sm">{doc.standard}</TableCell>
-                    <TableCell className="hidden lg:table-cell">
-                      <Badge variant="outline" className="text-xs">{doc.subject}</Badge>
-                    </TableCell>
-                    <TableCell className="text-xs sm:text-sm hidden md:table-cell">
-                      {doc.fileSize.toFixed(1)} MB
-                    </TableCell>
-                    <TableCell>
-                      {doc.indexed ? (
-                        <Badge variant="default" className="bg-green-500 text-xs">
-                          Indexed
-                        </Badge>
-                      ) : (
-                        <Badge variant="secondary" className="text-xs">Pending</Badge>
-                      )}
-                    </TableCell>
-                    <TableCell className="text-xs sm:text-sm hidden lg:table-cell">
-                      {doc.uploadedAt}
-                    </TableCell>
-                    <TableCell className="text-right">
-                      <div className="flex justify-end gap-1 sm:gap-2">
-                        <Button variant="ghost" size="icon" className="h-8 w-8">
-                          <Edit className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          onClick={() => handleDeleteClick(doc)}
-                          disabled={deleteLoading}
-                          className="h-8 w-8"
-                        >
-                          <Trash2 className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-destructive" />
-                        </Button>
-                      </div>
+              <TableBody>
+                {loading ? (
+                  <TableRow>
+                    <TableCell
+                      colSpan={8}
+                      className="text-center py-8 text-muted-foreground"
+                    >
+                      Loading documents...
                     </TableCell>
                   </TableRow>
-                ))
-              )}
-            </TableBody>
-          </Table>
+                ) : filteredDocuments.length === 0 ? (
+                  <TableRow>
+                    <TableCell
+                      colSpan={8}
+                      className="text-center py-8 text-muted-foreground"
+                    >
+                      No documents found
+                    </TableCell>
+                  </TableRow>
+                ) : (
+                  filteredDocuments.map((doc) => (
+                    <TableRow key={doc.id}>
+                      <TableCell className="font-medium">
+                        <div className="flex items-center gap-2">
+                          <FileText className="w-4 h-4 text-muted-foreground flex-shrink-0" />
+                          <span className="truncate text-xs sm:text-sm">{doc.name}</span>
+                        </div>
+                      </TableCell>
+                      <TableCell className="text-xs sm:text-sm hidden md:table-cell">
+                        <span className="truncate block">{doc.schoolName}</span>
+                      </TableCell>
+                      <TableCell className="text-xs sm:text-sm">{doc.standard}</TableCell>
+                      <TableCell className="hidden lg:table-cell">
+                        <Badge variant="outline" className="text-xs">{doc.subject}</Badge>
+                      </TableCell>
+                      <TableCell className="text-xs sm:text-sm hidden md:table-cell">
+                        {doc.fileSize.toFixed(1)} MB
+                      </TableCell>
+                      <TableCell>
+                        {doc.indexed ? (
+                          <Badge variant="default" className="bg-green-500 text-xs">
+                            Indexed
+                          </Badge>
+                        ) : (
+                          <Badge variant="secondary" className="text-xs">Pending</Badge>
+                        )}
+                      </TableCell>
+                      <TableCell className="text-xs sm:text-sm hidden lg:table-cell">
+                        {doc.uploadedAt}
+                      </TableCell>
+                      <TableCell className="text-right">
+                        <div className="flex justify-end gap-1 sm:gap-2">
+                          <Button variant="ghost" size="icon" className="h-8 w-8">
+                            <Edit className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => handleDeleteClick(doc)}
+                            disabled={deleteLoading}
+                            className="h-8 w-8"
+                          >
+                            <Trash2 className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-destructive" />
+                          </Button>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  ))
+                )}
+              </TableBody>
+            </Table>
           </div>
         </div>
       </CardContent>

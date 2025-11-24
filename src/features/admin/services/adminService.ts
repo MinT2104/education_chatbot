@@ -332,7 +332,7 @@ export const adminService = {
    */
   async deleteDocument(
     documentId: string
-  ): Promise<{ success: boolean; message?: string; [key: string]: any }> {
+  ): Promise<{ success: boolean; message?: string;[key: string]: any }> {
     const response = await axios.delete(
       import.meta.env.VITE_PYTHON_URL + `/delete/${documentId}`
     );
@@ -560,8 +560,32 @@ export const adminService = {
   },
 
   /**
-   * Upload document - Hybrid strategy
-   * Try Python API directly first, fallback to cron if failed
+   * Initiate document upload - Step 1
+   * Creates a pending record in Supabase via Node.js
+   */
+  async initiateUpload(params: {
+    document_name: string;
+    school_id: string;
+    grade: string;
+    subject: string;
+    file: File;
+  }): Promise<{ document: any }> {
+    const response = await apiClient.post("/document/initiate", {
+      school_id: params.school_id,
+      document_name: params.document_name,
+      file_name: params.file.name,
+      file_size: params.file.size,
+      file_type: params.file.type,
+      grade: params.grade,
+      subject: params.subject,
+    });
+    return response.data;
+  },
+
+  /**
+   * Upload document - NEW 2-STEP FLOW for smooth UX
+   * Step 1: Create record in Supabase (status=0/pending)
+   * Step 2: Upload to Python with document_id → Python updates status
    */
   async uploadDocument(params: {
     file: File;
@@ -570,48 +594,82 @@ export const adminService = {
     standard: string;
     subject: string;
     onUploadProgress?: (progressEvent: any) => void;
-  }): Promise<{ 
-    success: boolean; 
+    onLog?: (type: 'info' | 'success' | 'warning' | 'error', message: string, details?: string) => void;
+  }): Promise<{
+    success: boolean;
     documentId: string;
-    status: number;
-    indexed: boolean;
-    method: 'direct' | 'cron_queued';
-    reason?: string;
+    status: string;
+    message?: string;
   }> {
-    const { file, document_name, school_name, standard, subject, onUploadProgress } = params;
+    const { file, document_name, school_name, standard, subject, onUploadProgress, onLog } = params;
 
-    // Get school ID
+    // STEP 1: Validate school and initiate upload
     const schools = await apiClient.get("/school", {
       params: { page: 1, limit: 1000 },
     });
     const schoolsList = Array.isArray(schools.data) ? schools.data : schools.data?.rows || [];
     const school = schoolsList.find((s: any) => s.name === school_name);
-    
+
     if (!school) {
       throw new Error(`School not found: ${school_name}`);
     }
 
-    // Upload file to server storage (NOT indexing yet)
-    const formData = new FormData();
-    formData.append("file", file);
-    formData.append("document_name", document_name);
-    formData.append("school_id", school.id);
-    formData.append("school_name", school_name);
-    formData.append("grade", standard);
-    formData.append("subject", subject);
+    const step1Msg = `Step 1/2: Creating pending record for "${document_name}"`;
+    console.log(`[UPLOAD] ${step1Msg}`);
+    if (onLog) onLog('info', step1Msg);
 
-    // Call NodeJS API to save file and create DB record with status=1
-    const response = await apiClient.post("/document/upload-only", formData, {
-      headers: {
-        "Content-Type": "multipart/form-data",
-      },
-      timeout: 300000, // 5 minutes - just for file upload, not indexing
-      maxBodyLength: Infinity,
-      maxContentLength: Infinity,
-      onUploadProgress,
+    // STEP 1: Create pending record in Supabase (status=0)
+    const initResult = await this.initiateUpload({
+      document_name,
+      school_id: school.id,
+      grade: standard,
+      subject: subject,
+      file: file,
     });
 
-    return response.data;
+    const documentId = initResult.document.id;
+    const step1Success = `✅ Document ID created: ${documentId} (status=pending)`;
+    console.log(`[UPLOAD] ${step1Success}`);
+    if (onLog) onLog('success', step1Success);
+
+    try {
+      // STEP 2: Upload to Python with document_id
+      const step2Msg = `Step 2/2: Uploading file to Python server...`;
+      console.log(`[UPLOAD] ${step2Msg}`);
+      if (onLog) onLog('info', step2Msg);
+
+      const formData = new FormData();
+      formData.append("file", file);
+      formData.append("document_name", document_name);
+      formData.append("school_name", school_name);
+      formData.append("standard", standard);
+      formData.append("subject", subject);
+      formData.append("document_id", documentId); // ✨ CRITICAL: Pass document_id
+
+      const response = await axios.post(import.meta.env.VITE_PYTHON_URL + "/upload", formData, {
+        headers: {
+          "Content-Type": "multipart/form-data",
+        },
+        timeout: 1800000, // 30 minutes for large files
+        onUploadProgress,
+      });
+
+      console.log(`[UPLOAD] ✅ Python processing complete!`, response.data);
+
+      // Python automatically updated status to 'success'
+      return {
+        success: true,
+        documentId: documentId,
+        status: 'success',
+        message: 'Document uploaded and indexed successfully!',
+      };
+
+    } catch (error: any) {
+      console.error(`[UPLOAD] ❌ Python upload failed:`, error.message);
+
+      // Python automatically updated status to 'failed', or cron will retry if status=0
+      throw error;
+    }
   },
 };
 
