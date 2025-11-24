@@ -225,10 +225,11 @@ export const AdminDocuments = ({
       return "Please upload a valid file (PDF, TXT, Images, or Video: MP4, AVI, MOV, MKV)";
     }
 
-    // Validate file size (100MB for video, 50MB for others)
+    // Validate file size (500MB for video, 200MB for PDF/others)
+    // With chunked upload, we can handle larger files reliably
     const maxSize = file.type.startsWith('video/') || ['.mp4', '.avi', '.mov', '.mkv'].includes(fileExtension)
-      ? 100 * 1024 * 1024
-      : 50 * 1024 * 1024;
+      ? 500 * 1024 * 1024  // 500MB for videos
+      : 200 * 1024 * 1024; // 200MB for PDFs and other files
     if (file.size > maxSize) {
       const maxSizeMB = maxSize / (1024 * 1024);
       return `File size must be less than ${maxSizeMB}MB`;
