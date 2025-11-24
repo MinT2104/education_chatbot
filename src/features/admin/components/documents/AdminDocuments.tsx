@@ -69,6 +69,7 @@ export const AdminDocuments = ({
   const [isUploadDocOpen, setIsUploadDocOpen] = useState(false);
   const [uploadLoading, setUploadLoading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
+  const [processingProgress, setProcessingProgress] = useState(0);
   const [uploadError, setUploadError] = useState<string | null>(null);
   const [uploadSuccess, setUploadSuccess] = useState(false);
 
@@ -76,6 +77,7 @@ export const AdminDocuments = ({
   const [uploadLogs, setUploadLogs] = useState<UploadLog[]>([]);
   const uploadStartTimeRef = useRef<number>(0);
   const lastProgressUpdateRef = useRef<number>(0);
+  const progressValueRef = useRef<number>(0);
 
   // Delete states
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
@@ -286,6 +288,7 @@ export const AdminDocuments = ({
     setUploadLogs([]);
     uploadStartTimeRef.current = Date.now();
     lastProgressUpdateRef.current = Date.now();
+    progressValueRef.current = 0;
 
     addUploadLog('info', '🔍 Starting form validation', 'Checking all required fields...');
 
@@ -335,11 +338,11 @@ export const AdminDocuments = ({
       `Name: "${selectedFile.name}", Size: ${fileSizeMB}MB (${fileSizeBytes} bytes), Type: ${selectedFile.type || 'unknown'}`);
 
     addUploadLog('info', '📋 Form validation completed successfully', 'All fields validated. Proceeding to upload...');
-
     setUploadLoading(true);
     setUploadError(null);
     setUploadSuccess(false);
     setUploadProgress(0);
+    setProcessingProgress(0);
 
     try {
       addUploadLog('info', '📦 Preparing upload data', 'Creating FormData object with file and metadata...');
@@ -352,6 +355,27 @@ export const AdminDocuments = ({
 
       let lastLoggedProgress = 0;
       let progressStuckCount = 0;
+
+      // Start simulated processing progress based on file size
+      // But only show it moving after upload is done
+      const processingStartTimeRef = { current: 0 };
+      const estimatedProcessingTime = Math.max(30000, selectedFile.size / (1024 * 1024) * 2000); // 2s per MB, min 30s
+
+      const processingInterval = setInterval(() => {
+        // Only start processing progress if upload is complete (100%)
+        // Use ref because state variable uploadProgress is stale in this closure
+        if (progressValueRef.current < 100) return;
+
+        if (processingStartTimeRef.current === 0) {
+          processingStartTimeRef.current = Date.now();
+        }
+
+        const elapsed = Date.now() - processingStartTimeRef.current;
+        // Simulate processing from 0% to 95%
+        const processingPercent = Math.min(95, (elapsed / estimatedProcessingTime) * 100);
+
+        setProcessingProgress(Math.round(processingPercent));
+      }, 1000);
 
       const uploadPromise = adminService.uploadDocument({
         file: selectedFile,
@@ -367,9 +391,8 @@ export const AdminDocuments = ({
             (progressEvent.loaded * 100) / progressEvent.total
           );
 
-          // Scale upload progress to max 80% (leaving 20% for server processing)
-          const scaledProgress = Math.round(percentCompleted * 0.8);
-          setUploadProgress(scaledProgress);
+          setUploadProgress(percentCompleted);
+          progressValueRef.current = percentCompleted; // Update ref for interval
 
           const now = Date.now();
           const timeSinceLastUpdate = now - lastProgressUpdateRef.current;
@@ -423,31 +446,12 @@ export const AdminDocuments = ({
       // Log when upload completes and server processing begins
       // Note: This log is now handled by onLog callback or onUploadProgress 100%
 
-      // Start simulated processing progress based on file size
-      const processingStartTime = Date.now();
-      const estimatedProcessingTime = Math.max(30000, selectedFile.size / (1024 * 1024) * 2000); // 2s per MB, min 30s
-
-      const processingInterval = setInterval(() => {
-        const elapsed = Date.now() - processingStartTime;
-        // Simulate processing from 80% to 95%
-        const processingPercent = Math.min(95, 80 + (elapsed / estimatedProcessingTime) * 15);
-
-        // Only update if we are past the upload phase (upload reached 100% -> scaled 80%)
-        setUploadProgress(prev => Math.max(prev, Math.round(processingPercent)));
-
-        const estimatedProgress = (elapsed / estimatedProcessingTime) * 100;
-
-        if (estimatedProgress < 30 && estimatedProgress > 25) {
-          // Logs are now handled by simulated steps, but we can keep these as "Processing updates"
-          // avoiding duplicate logs if possible
-        }
-      }, 1000); // Update every 1 second for smoother bar
-
       // Await the upload promise only ONCE and store the result
       let result;
       try {
         result = await uploadPromise;
         clearInterval(processingInterval);
+        setProcessingProgress(100); // Finish processing bar
       } catch (error) {
         clearInterval(processingInterval);
         throw error;
@@ -567,6 +571,7 @@ export const AdminDocuments = ({
       setUploadError(null);
       setUploadSuccess(false);
       setUploadProgress(0);
+      setProcessingProgress(0);
       setUploadLogs([]); // Clear logs
       uploadStartTimeRef.current = 0;
       lastProgressUpdateRef.current = 0;
@@ -810,17 +815,44 @@ export const AdminDocuments = ({
                 </div>
 
                 {/* Upload Progress Bar */}
-                {uploadLoading && uploadProgress > 0 && (
-                  <div className="space-y-2">
-                    <div className="flex justify-between text-sm">
-                      <span className="text-muted-foreground">Uploading...</span>
-                      <span className="font-medium">{uploadProgress}%</span>
+                {uploadLoading && (
+                  <div className="space-y-4">
+                    <div className="space-y-1">
+                      <div className="flex justify-between text-xs">
+                        <span className="font-medium">File Upload</span>
+                        <span>{uploadProgress}%</span>
+                      </div>
+                      <div className="h-2 bg-secondary rounded-full overflow-hidden">
+                        <div
+                          className="h-full bg-primary transition-all duration-300 ease-out"
+                          style={{ width: `${uploadProgress}%` }}
+                        />
+                      </div>
+                      {uploadProgress === 100 && (
+                        <p className="text-[10px] text-green-600 flex items-center gap-1">
+                          <span className="inline-block w-1.5 h-1.5 rounded-full bg-green-600"></span>
+                          Upload complete
+                        </p>
+                      )}
                     </div>
-                    <div className="w-full bg-muted rounded-full h-2.5 overflow-hidden">
-                      <div
-                        className="bg-primary h-2.5 rounded-full transition-all duration-300 ease-out"
-                        style={{ width: `${uploadProgress}%` }}
-                      />
+
+                    <div className="space-y-1">
+                      <div className="flex justify-between text-xs">
+                        <span className="font-medium">Server Processing</span>
+                        <span>{processingProgress}%</span>
+                      </div>
+                      <div className="h-2 bg-secondary rounded-full overflow-hidden">
+                        <div
+                          className={`h-full transition-all duration-300 ease-out ${processingProgress > 0 ? 'bg-blue-500' : 'bg-gray-300'
+                            }`}
+                          style={{ width: `${processingProgress}%` }}
+                        />
+                      </div>
+                      {processingProgress > 0 && processingProgress < 100 && (
+                        <p className="text-[10px] text-blue-600 animate-pulse">
+                          Processing file and indexing content...
+                        </p>
+                      )}
                     </div>
                   </div>
                 )}
