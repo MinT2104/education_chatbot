@@ -808,7 +808,7 @@ export const AdminDocuments = ({
                           PDF, TXT, Images, or Videos (MP4, AVI, MOV, MKV)
                         </p>
                         <p className="text-xs text-muted-foreground">
-                          Up to 100MB for videos, 50MB for other files
+                          Up to 50MB for videos, 200MB for other files
                         </p>
                       </>
                     )}
