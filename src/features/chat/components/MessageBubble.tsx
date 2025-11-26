@@ -147,9 +147,8 @@ const MessageBubble = ({
 
   return (
     <div
-      className={`group flex gap-4 w-full max-w-[900px] mx-auto px-6 py-3 ${
-        isUser ? "justify-end" : "justify-start"
-      }`}
+      className={`group flex gap-4 w-full max-w-[900px] mx-auto px-6 py-3 ${isUser ? "justify-end" : "justify-start"
+        }`}
     >
       {/* Avatar for assistant */}
       {!isUser && !hideUser && (
@@ -163,9 +162,12 @@ const MessageBubble = ({
       )}
 
       <div
-        className={`flex-1 max-w-[85%] w-fit ${
-          isUser ? "flex flex-col justify-end items-end" : ""
-        }`}
+        className={`flex-1 ${isEditing ? "w-full" : "max-w-[85%] w-fit"} ${isUser
+            ? isEditing
+              ? "flex flex-col"
+              : "flex flex-col justify-end items-end"
+            : ""
+          }`}
       >
         {/* Message Header (for assistant with variants) */}
         {!isUser && hasVariants && (
@@ -219,13 +221,12 @@ const MessageBubble = ({
         )}
 
         <div
-          className={`${
-            isUser
-              ? "rounded-2xl p-4 bg-primary/10 text-foreground shadow-sm"
-              : isError
+          className={`${isUser
+            ? "rounded-2xl p-4 bg-primary/10 text-foreground shadow-sm"
+            : isError
               ? "rounded-lg p-4 border border-red-300 dark:border-red-800 bg-red-50 dark:bg-red-900/10"
               : "rounded-none p-0 bg-transparent shadow-none border-0"
-          }`}
+            }`}
         >
           {/* Editing mode for user messages */}
           {isUser && isEditing ? (
@@ -233,7 +234,7 @@ const MessageBubble = ({
               <textarea
                 value={editContent}
                 onChange={(e) => setEditContent(e.target.value)}
-                className="w-full min-h-[100px] p-2 rounded-md bg-background border border-border focus:outline-none focus:ring-2 focus:ring-ring resize-none"
+                className="w-full min-h-[150px] p-3 rounded-md bg-background border border-border focus:outline-none focus:ring-2 focus:ring-ring resize-y text-base"
                 autoFocus
               />
               <div className="flex gap-2">
@@ -258,9 +259,8 @@ const MessageBubble = ({
           ) : (
             // Assistant message with markdown
             <div
-              className={`prose prose-sm dark:prose-invert max-w-none leading-relaxed ${
-                isError ? "text-red-800 dark:text-red-300" : ""
-              }`}
+              className={`prose prose-sm dark:prose-invert max-w-none leading-relaxed ${isError ? "text-red-800 dark:text-red-300" : ""
+                }`}
             >
               {isError ? (
                 // Error message - plain text
@@ -429,79 +429,15 @@ const MessageBubble = ({
         {/* Actions Bar - Hide in shared view */}
         {!isSharedView && (
           <div className="flex items-center gap-1 mt-2 px-4 invisible group-hover:visible transition-opacity">
-          {/* Copy */}
-          <button
-            onClick={() => handleCopy()}
-            className="p-1.5 rounded hover:bg-muted transition-colors"
-            title="Copy"
-          >
-            {copied ? (
-              <svg
-                className="w-4 h-4 text-green-500"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M5 13l4 4L19 7"
-                />
-              </svg>
-            ) : (
-              <svg
-                className="w-4 h-4 text-muted-foreground"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"
-                />
-              </svg>
-            )}
-          </button>
-
-          {/* Share */}
-          <button
-            onClick={() => setShareModalOpen(true)}
-            className="p-1.5 rounded hover:bg-muted transition-colors"
-            title="Share"
-          >
-            <svg
-              className="w-4 h-4 text-muted-foreground"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
+            {/* Copy */}
+            <button
+              onClick={() => handleCopy()}
+              className="p-1.5 rounded hover:bg-muted transition-colors"
+              title="Copy"
             >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z"
-              />
-            </svg>
-          </button>
-
-          {/* Assistant-only actions */}
-          {!isUser && (
-            <>
-              {/* Like/Dislike */}
-              <button
-                onClick={() => handleLike(true)}
-                className={`p-1.5 rounded hover:bg-muted transition-colors ${
-                  message.feedback?.like
-                    ? "text-green-500"
-                    : "text-muted-foreground"
-                }`}
-                title="Like"
-              >
+              {copied ? (
                 <svg
-                  className="w-4 h-4"
+                  className="w-4 h-4 text-green-500"
                   fill="none"
                   stroke="currentColor"
                   viewBox="0 0 24 24"
@@ -510,41 +446,10 @@ const MessageBubble = ({
                     strokeLinecap="round"
                     strokeLinejoin="round"
                     strokeWidth={2}
-                    d="M14 10h4.764a2 2 0 011.789 2.894l-3.5 7A2 2 0 0115.263 21h-4.017c-.163 0-.326-.02-.485-.06L7 20m7-10V5a2 2 0 00-2-2h-.095c-.5 0-.905.405-.905.905 0 .714-.211 1.412-.608 2.006L7 11v9m7-10h-2M7 20H5a2 2 0 01-2-2v-6a2 2 0 012-2h2.5"
+                    d="M5 13l4 4L19 7"
                   />
                 </svg>
-              </button>
-
-              <button
-                onClick={() => handleLike(false)}
-                className={`p-1.5 rounded hover:bg-muted transition-colors ${
-                  message.feedback?.dislike
-                    ? "text-red-500"
-                    : "text-muted-foreground"
-                }`}
-                title="Dislike"
-              >
-                <svg
-                  className="w-4 h-4"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M10 14H5.236a2 2 0 01-1.789-2.894l3.5-7A2 2 0 018.736 3h4.018a2 2 0 01.485.06l3.76.94m-7 10v5a2 2 0 002 2h.096c.5 0 .905-.405.905-.904 0-.715.211-1.413.608-2.008L17 13V4m-7 10h2m5-10h2a2 2 0 012 2v6a2 2 0 01-2 2h-2.5"
-                  />
-                </svg>
-              </button>
-
-              {/* Regenerate */}
-              <button
-                onClick={() => onRegenerate?.(message.id)}
-                className="p-1.5 rounded hover:bg-muted transition-colors"
-                title="Regenerate"
-              >
+              ) : (
                 <svg
                   className="w-4 h-4 text-muted-foreground"
                   fill="none"
@@ -555,17 +460,88 @@ const MessageBubble = ({
                     strokeLinecap="round"
                     strokeLinejoin="round"
                     strokeWidth={2}
-                    d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
+                    d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"
                   />
                 </svg>
-              </button>
+              )}
+            </button>
 
-              {/* Continue */}
-              {message.isContinuable && (
+            {/* Share */}
+            <button
+              onClick={() => setShareModalOpen(true)}
+              className="p-1.5 rounded hover:bg-muted transition-colors"
+              title="Share"
+            >
+              <svg
+                className="w-4 h-4 text-muted-foreground"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z"
+                />
+              </svg>
+            </button>
+
+            {/* Assistant-only actions */}
+            {!isUser && (
+              <>
+                {/* Like/Dislike */}
                 <button
-                  onClick={() => onContinue?.(message.id)}
+                  onClick={() => handleLike(true)}
+                  className={`p-1.5 rounded hover:bg-muted transition-colors ${message.feedback?.like
+                    ? "text-green-500"
+                    : "text-muted-foreground"
+                    }`}
+                  title="Like"
+                >
+                  <svg
+                    className="w-4 h-4"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M14 10h4.764a2 2 0 011.789 2.894l-3.5 7A2 2 0 0115.263 21h-4.017c-.163 0-.326-.02-.485-.06L7 20m7-10V5a2 2 0 00-2-2h-.095c-.5 0-.905.405-.905.905 0 .714-.211 1.412-.608 2.006L7 11v9m7-10h-2M7 20H5a2 2 0 01-2-2v-6a2 2 0 012-2h2.5"
+                    />
+                  </svg>
+                </button>
+
+                <button
+                  onClick={() => handleLike(false)}
+                  className={`p-1.5 rounded hover:bg-muted transition-colors ${message.feedback?.dislike
+                    ? "text-red-500"
+                    : "text-muted-foreground"
+                    }`}
+                  title="Dislike"
+                >
+                  <svg
+                    className="w-4 h-4"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M10 14H5.236a2 2 0 01-1.789-2.894l3.5-7A2 2 0 018.736 3h4.018a2 2 0 01.485.06l3.76.94m-7 10v5a2 2 0 002 2h.096c.5 0 .905-.405.905-.904 0-.715.211-1.413.608-2.008L17 13V4m-7 10h2m5-10h2a2 2 0 012 2v6a2 2 0 01-2 2h-2.5"
+                    />
+                  </svg>
+                </button>
+
+                {/* Regenerate */}
+                <button
+                  onClick={() => onRegenerate?.(message.id)}
                   className="p-1.5 rounded hover:bg-muted transition-colors"
-                  title="Continue"
+                  title="Regenerate"
                 >
                   <svg
                     className="w-4 h-4 text-muted-foreground"
@@ -577,37 +553,59 @@ const MessageBubble = ({
                       strokeLinecap="round"
                       strokeLinejoin="round"
                       strokeWidth={2}
-                      d="M13 5l7 7-7 7M5 5l7 7-7 7"
+                      d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
                     />
                   </svg>
                 </button>
-              )}
-            </>
-          )}
 
-          {/* User-only actions */}
-          {isUser && !isEditing && (
-            <button
-              onClick={handleStartEdit}
-              className="p-1.5 rounded hover:bg-muted transition-colors"
-              title="Edit"
-            >
-              <svg
-                className="w-4 h-4 text-muted-foreground"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
+                {/* Continue */}
+                {message.isContinuable && (
+                  <button
+                    onClick={() => onContinue?.(message.id)}
+                    className="p-1.5 rounded hover:bg-muted transition-colors"
+                    title="Continue"
+                  >
+                    <svg
+                      className="w-4 h-4 text-muted-foreground"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M13 5l7 7-7 7M5 5l7 7-7 7"
+                      />
+                    </svg>
+                  </button>
+                )}
+              </>
+            )}
+
+            {/* User-only actions */}
+            {isUser && !isEditing && (
+              <button
+                onClick={handleStartEdit}
+                className="p-1.5 rounded hover:bg-muted transition-colors"
+                title="Edit"
               >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"
-                />
-              </svg>
-            </button>
-          )}
-        </div>
+                <svg
+                  className="w-4 h-4 text-muted-foreground"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"
+                  />
+                </svg>
+              </button>
+            )}
+          </div>
         )}
 
         {/* Actions Bar for shared view - only copy */}

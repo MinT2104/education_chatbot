@@ -50,7 +50,7 @@ const ChatPage = () => {
   const [currentMessages, setCurrentMessages] = useState<NewMessage[]>([]);
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
   const [isStreaming, setIsStreaming] = useState(false);
-  
+
   // Clear messages immediately when authentication state changes to false
   useEffect(() => {
     if (!isAuthenticated) {
@@ -124,7 +124,7 @@ const ChatPage = () => {
     if (typeof window !== "undefined") {
       const fromStorage = localStorage.getItem("guest_school_name");
       if (fromStorage) return fromStorage;
-      
+
       // Fallback to session if available
       const session = sessionService.getSession();
       if (session.schoolName) {
@@ -153,6 +153,23 @@ const ChatPage = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isAuthenticated]); // Only run on mount and when auth state changes
 
+  // Clear guest school selection when guest user has no messages (fresh start)
+  // This ensures school picker modal appears for new guests
+  useEffect(() => {
+    // Don't clear if there's a pending school name (user just selected school)
+    if (!isAuthenticated && currentMessages.length === 0 && !pendingSchoolName) {
+      // If guest user has no messages, clear school selection so they can choose
+      if (guestSchoolName) {
+        console.log("[Guest] Clearing school selection for fresh start");
+        setGuestSchoolName(null);
+        localStorage.removeItem("guest_school_name");
+        sessionService.clearSession();
+      }
+    }
+  }, [isAuthenticated, currentMessages.length, guestSchoolName, pendingSchoolName]);
+
+
+
   // Ensure guest session persists across refresh/navigation
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -174,7 +191,7 @@ const ChatPage = () => {
   }, [userId]);
 
   // Removed: freeLimits loading from settings - now using quotaLimit from backend response
-  
+
   // Load guest quota limit from backend settings on mount (for display in modals)
   useEffect(() => {
     if (!isAuthenticated) {
@@ -321,7 +338,7 @@ const ChatPage = () => {
     ) {
       // Set syncing flag to prevent recursive navigation
       isSyncingRef.current = true;
-      
+
       // Check if conversation exists in Redux store
       const conversationFromStore = conversations.find(
         (c) => c.id === conversationIdFromUrl
@@ -333,7 +350,7 @@ const ChatPage = () => {
         // For now, just select it (will be loaded when conversations are fetched)
         selectConversation(conversationIdFromUrl);
       }
-      
+
       // Clear syncing flag after navigation completes
       // Use requestAnimationFrame to ensure state updates are processed
       requestAnimationFrame(() => {
@@ -385,6 +402,21 @@ const ChatPage = () => {
 
   const currentConversation = selectedConversation;
 
+  // Restore last selected school on mount for authenticated users if starting new chat
+  useEffect(() => {
+    if (isAuthenticated && !conversationIdFromUrl && !currentConversation) {
+      const lastSchool = localStorage.getItem("last_selected_school");
+      if (lastSchool) {
+        setPendingSchoolName(lastSchool);
+        // Also ensure session is synced
+        const session = sessionService.getSession();
+        if (session.schoolName !== lastSchool) {
+          sessionService.saveSession({ ...session, schoolName: lastSchool });
+        }
+      }
+    }
+  }, [isAuthenticated, conversationIdFromUrl, currentConversation]);
+
   const deriveConversationTitle = (text: string) => {
     const trimmed = text.trim();
     if (!trimmed) return "Untitled";
@@ -399,16 +431,24 @@ const ChatPage = () => {
     setCurrentMessages([]);
     setIsStreaming(false);
     setWorkflowStep(null);
-    setPendingSchoolName(null);
-    
-    // Clear session storage so school picker appears for new chat
-    // This allows users to select a different school for each conversation
-    sessionService.clearSession();
-    
-    // For guest users, also clear guestSchoolName so they can pick a new school
-    if (!isAuthenticated) {
+    if (isAuthenticated) {
+      // For authenticated users, try to restore last selected school
+      const lastSchool = localStorage.getItem("last_selected_school");
+      if (lastSchool) {
+        setPendingSchoolName(lastSchool);
+        // Update session with restored school
+        const session = sessionService.getSession();
+        sessionService.saveSession({ ...session, schoolName: lastSchool });
+      } else {
+        setPendingSchoolName(null);
+        sessionService.clearSession();
+      }
+    } else {
+      // For guest users, clear everything so they can pick a new school
+      setPendingSchoolName(null);
       setGuestSchoolName(null);
       localStorage.removeItem("guest_school_name");
+      sessionService.clearSession();
     }
 
     // Navigate to /app (no ID) when starting new chat
@@ -457,6 +497,9 @@ const ChatPage = () => {
     if (!isAuthenticated) {
       setGuestSchoolName(schoolName);
       localStorage.setItem("guest_school_name", schoolName);
+    } else {
+      // For authenticated users, save as preference for next new chat
+      localStorage.setItem("last_selected_school", schoolName);
     }
 
     // IMPORTANT: Save school name to session so it persists across requests
@@ -468,7 +511,7 @@ const ChatPage = () => {
       schoolName: schoolName,
       rememberSchool: remember,
     });
-    
+
     // Also update the remember preference separately
     if (remember) {
       sessionService.setRememberSchool(true);
@@ -781,10 +824,10 @@ const ChatPage = () => {
 
     // IMPORTANT: Use school name from session if available, fallback to conversation or finalSchoolName
     // This ensures school name is always sent in the request, even if conversation doesn't have it
-    const schoolNameForRequest = 
-      currentSession.schoolName || 
-      currentConversation?.schoolName || 
-      finalSchoolName || 
+    const schoolNameForRequest =
+      currentSession.schoolName ||
+      currentConversation?.schoolName ||
+      finalSchoolName ||
       undefined;
 
     const apiData = {
@@ -991,13 +1034,13 @@ const ChatPage = () => {
     const session = sessionService.getSession();
     const finalConversationId =
       (!isAuthenticated ? guestSessionId : selectedConversationId) || undefined;
-    
+
     // IMPORTANT: Use school name from session if available, fallback to conversation or guestSchoolName
     // This ensures school name is always sent in the request
     const finalSchoolName =
       session.schoolName ||
-      currentConversation?.schoolName || 
-      (!isAuthenticated ? guestSchoolName : undefined) || 
+      currentConversation?.schoolName ||
+      (!isAuthenticated ? guestSchoolName : undefined) ||
       undefined;
 
     // Get sessionId from current conversation (for authenticated users)
@@ -1091,9 +1134,9 @@ const ChatPage = () => {
       prev.map((msg) =>
         msg.id === messageId
           ? {
-              ...msg,
-              feedback: { ...msg.feedback, like, dislike: !like },
-            }
+            ...msg,
+            feedback: { ...msg.feedback, like, dislike: !like },
+          }
           : msg
       )
     );
@@ -1114,11 +1157,11 @@ const ChatPage = () => {
       prev.map((msg) =>
         msg.id === messageId
           ? {
-              ...msg,
-              content: newContent,
-              isEdited: true,
-              originalContent: msg.originalContent || msg.content,
-            }
+            ...msg,
+            content: newContent,
+            isEdited: true,
+            originalContent: msg.originalContent || msg.content,
+          }
           : msg
       )
     );
@@ -1223,11 +1266,10 @@ const ChatPage = () => {
         {/* Sidebar - hidden when not authenticated */}
         {isAuthenticated && (
           <div
-            className={`fixed md:relative z-20 md:z-auto left-0 top-0 h-full transition-all duration-300 ease-out ${
-              isSidebarCollapsed
-                ? "w-[72px] -translate-x-full md:translate-x-0"
-                : "w-[260px] translate-x-0"
-            }`}
+            className={`fixed md:relative z-20 md:z-auto left-0 top-0 h-full transition-all duration-300 ease-out ${isSidebarCollapsed
+              ? "w-[72px] -translate-x-full md:translate-x-0"
+              : "w-[260px] translate-x-0"
+              }`}
           >
             <Sidebar
               conversations={conversations}
@@ -1293,9 +1335,8 @@ const ChatPage = () => {
 
         {/* Main Chat Area */}
         <div
-          className={`flex-1 flex flex-col overflow-hidden bg-background ${
-            !isAuthenticated ? "px-4 md:px-6" : ""
-          }`}
+          className={`flex-1 flex flex-col overflow-hidden bg-background ${!isAuthenticated ? "px-4 md:px-6" : ""
+            }`}
         >
           {/* Mobile menu button */}
           {isSidebarCollapsed && (
@@ -1371,9 +1412,9 @@ const ChatPage = () => {
           {/* Composer and bottom elements container */}
           <div
             className="flex-shrink-0 pb-1 sm:pb-2"
-            // style={{
-            //   paddingBottom: "max(5rem, env(safe-area-inset-bottom, 1.25rem))",
-            // }}
+          // style={{
+          //   paddingBottom: "max(5rem, env(safe-area-inset-bottom, 1.25rem))",
+          // }}
           >
             {/* Composer */}
             <Composer
@@ -1394,7 +1435,11 @@ const ChatPage = () => {
               }}
               compact={isAuthenticated && currentMessages.length === 0}
               onNewChat={handleNewChat}
-              schoolName={currentConversation?.schoolName}
+              schoolName={
+                (isAuthenticated
+                  ? currentConversation?.schoolName || pendingSchoolName
+                  : guestSchoolName || sessionService.getSession().schoolName) || undefined
+              }
               onChangeSchool={() => setShowSchoolPicker(true)}
             />
 
@@ -1403,7 +1448,7 @@ const ChatPage = () => {
             <div className="mx-auto max-w-[900px] px-3 pt-1 pb-1">
               <p className="text-xs text-muted-foreground text-center leading-snug">
                 <span className="block sm:inline">
-                 easyschool.ai can make mistakes. Check important info.
+                  easyschool.ai can make mistakes. Check important info.
                 </span>{" "}
                 <button
                   className="underline text-primary hover:text-primary/80 transition-colors focus:outline-none focus:ring-2 focus:ring-primary/20 rounded px-0.5"

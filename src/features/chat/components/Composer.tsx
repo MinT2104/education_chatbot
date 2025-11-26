@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect, KeyboardEvent } from "react";
+import { useState, useRef, useEffect, KeyboardEvent, useMemo } from "react";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -71,22 +71,22 @@ const Composer = ({
         textareaRef.current.style.height = "auto";
         textareaRef.current.style.overflowX = "visible";
         textareaRef.current.style.whiteSpace = "normal";
-        
+
         const minHeight = compact ? "44px" : "52px";
         const maxHeight = "200px";
         const scrollHeight = textareaRef.current.scrollHeight;
         const lineHeight = parseInt(getComputedStyle(textareaRef.current).lineHeight) || 24;
         const numberOfLines = Math.ceil(scrollHeight / lineHeight);
-        
+
         // Only show scrollbar if more than 4 lines
         textareaRef.current.style.overflowY = numberOfLines > 4 ? "auto" : "hidden";
-        
+
         if (scrollHeight <= parseInt(minHeight)) {
           textareaRef.current.style.height = minHeight;
         } else {
           textareaRef.current.style.height = `${Math.min(scrollHeight, parseInt(maxHeight))}px`;
         }
-        
+
         // Check if text wraps to multiple lines
         setIsMultiLine(scrollHeight > lineHeight * 1.5);
       } else {
@@ -105,11 +105,11 @@ const Composer = ({
           const scrollHeight = textareaRef.current.scrollHeight;
           const lineHeight = parseInt(getComputedStyle(textareaRef.current).lineHeight) || 24;
           const numberOfLines = Math.ceil(scrollHeight / lineHeight);
-          
+
           // Only show scrollbar if more than 4 lines
           textareaRef.current.style.overflowY = numberOfLines > 4 ? "auto" : "hidden";
           textareaRef.current.style.height = `${Math.min(scrollHeight, 200)}px`;
-          
+
           // Check if text wraps to multiple lines
           setIsMultiLine(scrollHeight > lineHeight * 1.5);
         }
@@ -127,16 +127,16 @@ const Composer = ({
           textareaRef.current.style.height = "auto";
           textareaRef.current.style.overflowX = "visible";
           textareaRef.current.style.whiteSpace = "normal";
-          
+
           const minHeight = compact ? "44px" : "52px";
           const maxHeight = "200px";
           const scrollHeight = textareaRef.current.scrollHeight;
           const lineHeight = parseInt(getComputedStyle(textareaRef.current).lineHeight) || 24;
           const numberOfLines = Math.ceil(scrollHeight / lineHeight);
-          
+
           // Only show scrollbar if more than 4 lines
           textareaRef.current.style.overflowY = numberOfLines > 4 ? "auto" : "hidden";
-          
+
           if (scrollHeight <= parseInt(minHeight)) {
             textareaRef.current.style.height = minHeight;
             setIsMultiLine(false);
@@ -154,7 +154,7 @@ const Composer = ({
             const scrollHeight = textareaRef.current.scrollHeight;
             const lineHeight = parseInt(getComputedStyle(textareaRef.current).lineHeight) || 24;
             const numberOfLines = Math.ceil(scrollHeight / lineHeight);
-            
+
             // Only show scrollbar if more than 4 lines
             textareaRef.current.style.overflowY = numberOfLines > 4 ? "auto" : "hidden";
             textareaRef.current.style.height = `${Math.min(scrollHeight, 200)}px`;
@@ -243,14 +243,21 @@ const Composer = ({
   const hasAnyVisibleCharacter = input.replace(/\s/g, "").length > 0;
 
   // Dynamic placeholder based on role
-  const roleBasedPlaceholder =
-    role === "student"
-      ? placeholder === "Message..."
-        ? "Ask a question or request help..."
-        : placeholder
-      : placeholder === "Message..."
-      ? "Create lesson plans, quizzes, or teaching materials..."
-      : placeholder;
+  const roleBasedPlaceholder = useMemo(() => {
+    const base =
+      role === "student"
+        ? placeholder === "Message..."
+          ? "Ask a question or request help"
+          : placeholder
+        : placeholder === "Message..."
+          ? "Create lesson plans, quizzes, or teaching materials"
+          : placeholder;
+
+    if (schoolName) {
+      return `${base} for ${schoolName}...`;
+    }
+    return `${base}...`;
+  }, [role, placeholder, schoolName]);
 
   return (
     <>
@@ -342,9 +349,8 @@ const Composer = ({
         )}
 
         <div
-          className={`mx-auto max-w-[900px] px-3 ${
-            compact ? "pt-0 pb-1" : "py-3"
-          } relative`}
+          className={`mx-auto max-w-[900px] px-3 ${compact ? "pt-0 pb-1" : "py-3"
+            } relative`}
         >
           {/* Quick suggestions row - hidden when compact (empty state) */}
           {/* {!hasAnyVisibleCharacter && !isStreaming && !compact && (
@@ -380,13 +386,12 @@ const Composer = ({
               {onNewChat && compact && (
                 <button
                   onClick={onNewChat}
-                  className={`absolute z-30 pointer-events-auto focus:outline-none focus:ring-2 focus:ring-primary/50 rounded-lg transition-all ${
-                    isMultiLine
+                  className={`absolute z-30 pointer-events-auto focus:outline-none focus:ring-2 focus:ring-primary/50 rounded-lg transition-all ${isMultiLine
                       ? "bottom-2 left-2"
                       : input.length > 10
-                      ? "left-3 top-1/2 -translate-y-1/2"
-                      : "left-3 top-3"
-                  }`}
+                        ? "left-3 top-1/2 -translate-y-1/2"
+                        : "left-3 top-3"
+                    }`}
                   aria-label="New chat"
                   style={{ zIndex: 30 }}
                 >
@@ -407,7 +412,7 @@ const Composer = ({
                   </div>
                 </button>
               )}
-              
+
               {/* Textarea - with padding left to avoid overlap with plus button when on left side */}
               <textarea
                 ref={textareaRef}
@@ -419,24 +424,22 @@ const Composer = ({
                 placeholder={roleBasedPlaceholder}
                 disabled={disabled || isStreaming}
                 rows={1}
-                className={`w-full ${
-                  compact && !isMultiLine
+                className={`w-full ${compact && !isMultiLine
                     ? "pl-10 sm:pl-12"
                     : compact && isMultiLine
-                    ? "px-3"
-                    : compact
-                    ? "px-3"
-                    : "px-4"
-                } ${
-                  compact
+                      ? "px-3"
+                      : compact
+                        ? "px-3"
+                        : "px-4"
+                  } ${compact
                     ? "pt-3 pb-12 sm:pb-12"
                     : "pt-5 pb-16 sm:pb-14"
-                } bg-transparent resize-none focus:outline-none focus:ring-0 focus:border-border disabled:opacity-50 disabled:cursor-not-allowed transition-all max-h-[200px] sm:max-h-[320px] leading-[24px] sm:leading-normal`}
+                  } bg-transparent resize-none focus:outline-none focus:ring-0 focus:border-border disabled:opacity-50 disabled:cursor-not-allowed transition-all max-h-[200px] sm:max-h-[320px] leading-[24px] sm:leading-normal`}
                 style={{
                   minHeight: compact ? "44px" : "52px",
                 }}
               />
-              
+
               {/* School + Control div - inside box, at bottom */}
               <div className="absolute bottom-2 left-2 right-2 flex items-center justify-between gap-1 sm:gap-2 pointer-events-none z-10">
                 {/* School chip - left side */}
@@ -445,10 +448,23 @@ const Composer = ({
                     <button
                       type="button"
                       onClick={onChangeSchool}
-                      className="px-2 py-1 rounded-md bg-background border border-border text-[11px] leading-none text-muted-foreground max-w-[140px] sm:max-w-[180px] truncate hover:bg-muted transition-colors"
-                      title="My school"
+                      className="px-2 py-1 rounded-md bg-background border border-border text-[11px] leading-none text-muted-foreground max-w-[140px] sm:max-w-[180px] flex items-center gap-1 hover:bg-muted transition-colors group"
+                      title="Change school"
                     >
                       {schoolName}
+                      <svg
+                        className="w-3 h-3 opacity-50 group-hover:opacity-100"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        stroke="currentColor"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"
+                        />
+                      </svg>
                     </button>
                   )}
                 </div>
@@ -468,28 +484,25 @@ const Composer = ({
                   >
                     {/* Sliding background */}
                     <span
-                      className={`absolute inset-y-1 rounded transition-all duration-300 ease-in-out bg-black ${
-                        role === "student"
+                      className={`absolute inset-y-1 rounded transition-all duration-300 ease-in-out bg-black ${role === "student"
                           ? "left-1 right-1/2"
                           : "left-1/2 right-1"
-                      }`}
+                        }`}
                     />
                     <div className="relative flex items-center gap-0.5 sm:gap-1">
                       <span
-                        className={`px-1.5 sm:px-2 py-0.5 rounded transition-colors duration-300 ${
-                          role === "student"
+                        className={`px-1.5 sm:px-2 py-0.5 rounded transition-colors duration-300 ${role === "student"
                             ? "text-white font-semibold"
                             : "text-muted-foreground"
-                        }`}
+                          }`}
                       >
                         Student
                       </span>
                       <span
-                        className={`px-1.5 sm:px-2 py-0.5 rounded transition-colors duration-300 ${
-                          role === "teacher"
+                        className={`px-1.5 sm:px-2 py-0.5 rounded transition-colors duration-300 ${role === "teacher"
                             ? "text-white font-semibold"
                             : "text-muted-foreground"
-                        }`}
+                          }`}
                       >
                         Teacher
                       </span>

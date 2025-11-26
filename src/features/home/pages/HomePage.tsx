@@ -12,17 +12,16 @@ const HomePage = () => {
   const isDark = useAppSelector((s) => s.ui.isDark);
   const [authModal, setAuthModal] = useState<"login" | "signup" | null>(null);
 
+  // Redirect ALL users (both guest and authenticated) to /app
+  // This ensures everyone uses the same chat interface
   useEffect(() => {
-    if (isAuthenticated) {
-      navigate("/app", { replace: true });
-    }
-  }, [navigate, isAuthenticated]);
+    navigate("/app", { replace: true });
+  }, [navigate]);
 
   return (
     <div
-      className={`min-h-screen bg-background ${
-        !isAuthenticated ? "pb-24" : ""
-      }`}
+      className={`min-h-screen bg-background ${!isAuthenticated ? "pb-24" : ""
+        }`}
     >
       <header className="sticky top-0 z-10 bg-background/50 backdrop-blur-sm border-b border-border/50">
         <div className="max-w-7xl mx-auto px-6 sm:px-8 lg:px-10 py-4 sm:py-0 sm:h-16 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
