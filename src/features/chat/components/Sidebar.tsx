@@ -279,6 +279,14 @@ const Sidebar = ({
       },
     ];
 
+    if (onChangeSchool) {
+      collapsedNavItems.push({
+        label: "My school",
+        icon: School,
+        onClick: onChangeSchool,
+      });
+    }
+
     const collapsedFooterItems = [
       {
         label: "FAQ",
@@ -391,7 +399,7 @@ const Sidebar = ({
             <img
               src={!isDark ? modelIconDarkMode : modelIconLightMode}
               alt="Model Icon"
-            className="w-7 h-7"
+              className="w-7 h-7"
             />
           )}
 
@@ -482,9 +490,8 @@ const Sidebar = ({
           >
             <span>Chats</span>
             <svg
-              className={`h-3 w-3 transition-transform ${
-                isHistoryCollapsed ? "rotate-180" : "rotate-0"
-              }`}
+              className={`h-3 w-3 transition-transform ${isHistoryCollapsed ? "rotate-180" : "rotate-0"
+                }`}
               viewBox="0 0 16 16"
               fill="none"
               xmlns="http://www.w3.org/2000/svg"
@@ -513,11 +520,10 @@ const Sidebar = ({
 
       {/* Conversations List */}
       <div
-        className={`flex-1 overflow-y-auto px-2 pb-4 chatgpt-scroll transition-all duration-200 ${
-          isHistoryCollapsed
+        className={`flex-1 overflow-y-auto px-2 pb-4 chatgpt-scroll transition-all duration-200 ${isHistoryCollapsed
             ? "pointer-events-none select-none opacity-0 h-0"
             : "opacity-100"
-        }`}
+          }`}
       >
         {sortedConversations.length === 0 ? (
           <div className="px-4 py-10 text-center text-slate-500 dark:text-slate-400">
@@ -543,11 +549,10 @@ const Sidebar = ({
             {sortedConversations.map((conv) => (
               <div
                 key={conv.id}
-                className={`group relative mb-1 cursor-pointer rounded-lg border border-transparent px-4 py-2 text-sm transition-all duration-150 ${
-                  selectedConversationId === conv.id
+                className={`group relative mb-1 cursor-pointer rounded-lg border border-transparent px-4 py-2 text-sm transition-all duration-150 ${selectedConversationId === conv.id
                     ? "border-slate-300 bg-slate-100 before:opacity-100 dark:border-white/15 dark:bg-white/15"
                     : "hover:bg-slate-900/5 hover:before:opacity-60 hover:translate-x-[2px] dark:hover:bg-white/10"
-                }`}
+                  }`}
                 onClick={() => onSelectConversation(conv.id)}
                 onMouseEnter={() => setHoveredId(conv.id)}
                 onMouseLeave={() => {
@@ -573,11 +578,10 @@ const Sidebar = ({
                     }
                     return (
                       <div
-                        className={`flex transition-opacity ${
-                          isMenuOpen
+                        className={`flex transition-opacity ${isMenuOpen
                             ? "opacity-100"
                             : "opacity-0 group-hover:opacity-100"
-                        }`}
+                          }`}
                       >
                         <DropdownMenu
                           open={isMenuOpen}
@@ -586,8 +590,8 @@ const Sidebar = ({
                               isOpen
                                 ? conv.id
                                 : openMenuId === conv.id
-                                ? null
-                                : openMenuId
+                                  ? null
+                                  : openMenuId
                             );
                             if (!isOpen) {
                               setHoveredId(null);
