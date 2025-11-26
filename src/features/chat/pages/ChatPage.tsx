@@ -58,7 +58,17 @@ const ChatPage = () => {
       setIsStreaming(false);
     }
   }, [isAuthenticated]);
-  const [model, setModel] = useState("Easy Government Schools");
+  const [model, setModel] = useState(() => {
+    if (typeof window !== "undefined") {
+      return localStorage.getItem("selected_model") || "Easy Government Schools";
+    }
+    return "Easy Government Schools";
+  });
+
+  // Persist model selection
+  useEffect(() => {
+    localStorage.setItem("selected_model", model);
+  }, [model]);
   const [tools, setTools] = useState<ConversationTools>({
     web: false,
     code: false,
@@ -1371,14 +1381,37 @@ const ChatPage = () => {
             tools={tools}
             memoryEnabled={memoryEnabled}
             onModelChange={(nextModel) => {
-              // If there are messages in current session, require new session
-              if (currentMessages.length > 0) {
-                toast.info("Please start a new chat to change school type");
+              // When changing school type (government <-> private), clear all school-related data
+              const currentSchoolType = model.toLowerCase().includes("government") ? "government" : "private";
+              const nextSchoolType = nextModel.toLowerCase().includes("government") ? "government" : "private";
+              
+              if (currentSchoolType !== nextSchoolType) {
+                // Clear all school-related data from storage
+                setPendingSchoolName(null);
+                setGuestSchoolName(null);
+                localStorage.removeItem("guest_school_name");
+                localStorage.removeItem("last_selected_school");
+                sessionService.clearSession();
+                
+                // Start new chat
                 handleNewChat();
-                // Set the new model after starting new chat
-                setTimeout(() => setModel(nextModel), 100);
+                
+                // Set the new model and force school picker to show
+                setTimeout(() => {
+                  setModel(nextModel);
+                  setShowSchoolPicker(true);
+                }, 100);
+                
+                toast.info("School type changed. Please select a school.");
               } else {
-                setModel(nextModel);
+                // Same school type, just change model
+                if (currentMessages.length > 0) {
+                  toast.info("Please start a new chat to change school type");
+                  handleNewChat();
+                  setTimeout(() => setModel(nextModel), 100);
+                } else {
+                  setModel(nextModel);
+                }
               }
             }}
             onToggleTool={handleToggleTool}
