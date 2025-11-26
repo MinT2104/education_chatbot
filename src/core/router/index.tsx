@@ -16,9 +16,6 @@ const AdminPage = lazy(() => import("../../features/admin/pages/AdminPage"));
 const PaymentPage = lazy(
   () => import("../../features/payment/pages/PaymentPage")
 );
-const PricingPage = lazy(
-  () => import("../../features/payment/pages/PricingPage")
-);
 const PaymentSuccessPage = lazy(
   () => import("../../features/payment/pages/PaymentSuccessPage")
 );
@@ -41,6 +38,9 @@ const GoogleCallbackPage = lazy(
 );
 const SharePage = lazy(
   () => import("../../features/chat/pages/SharePage")
+);
+const RedirectToSubscription = lazy(
+  () => import("../../components/RedirectToSubscription")
 );
 
 export interface AppRoute {
@@ -69,17 +69,16 @@ export const routes: AppRoute[] = [
     component: ChatPage,
   },
   {
+    path: "/subscription",
+    component: PaymentPage,
+  },
+  {
     path: "/upgrade",
-    component: PricingPage,
+    component: RedirectToSubscription,
   },
   {
     path: "/pricing",
-    component: PricingPage,
-  },
-  {
-    path: "/subscription",
-    component: PaymentPage,
-    protected: true,
+    component: RedirectToSubscription,
   },
   {
     path: "/payment/success",

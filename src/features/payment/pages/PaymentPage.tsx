@@ -7,17 +7,23 @@ import {
   RazorpayVerifyPayload,
   PaymentError,
 } from "../services/paymentService";
+import { Plan } from "../types/plan";
 import { toast } from "react-toastify";
 import { Loader2 } from "lucide-react";
-import { adminService } from "../../admin/services/adminService";
 import { getMe } from "../../auth/store/authSlice";
 import { AxiosError } from "axios";
+import AuthDialog from "../../auth/components/AuthDialog";
 
-type Plan = "Free" | "Go";
 type SchoolCategory = "government" | "private";
 
-const Feature = ({ children }: { children: string }) => (
-  <li className="flex items-start gap-2 text-sm text-text">
+const Feature = ({ 
+  children, 
+  enabled = true 
+}: { 
+  children: string; 
+  enabled?: boolean;
+}) => (
+  <li className={`flex items-start gap-2 text-sm text-text ${!enabled ? 'opacity-50' : ''}`}>
     <svg
       className="w-4 h-4 mt-0.5 text-primary-500"
       fill="none"
@@ -28,7 +34,7 @@ const Feature = ({ children }: { children: string }) => (
         strokeLinecap="round"
         strokeLinejoin="round"
         strokeWidth={2}
-        d="M5 13l4 4L19 7"
+        d={enabled ? "M5 13l4 4L19 7" : "M6 18L18 6M6 6l12 12"}
       />
     </svg>
     <span className="text-text-subtle">{children}</span>
@@ -39,60 +45,60 @@ const PaymentPage = () => {
   const navigate = useNavigate();
   const dispatch = useAppDispatch();
   const isAuthenticated = useAppSelector((s) => s.auth.isAuthenticated);
+  const user = useAppSelector((s) => s.auth.user);
   const currentUser = useAppSelector((s) => s.user.userData);
 
-  const [subscription, setSubscription] = useState<SubscriptionResponse | null>(
-    null
-  );
+  const [subscription, setSubscription] = useState<SubscriptionResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [planActionProcessing, setPlanActionProcessing] = useState(false);
   const [paypalProcessing, setPaypalProcessing] = useState(false);
   const [razorpayProcessing, setRazorpayProcessing] = useState(false);
-  const [currentPlan, setCurrentPlan] = useState<Plan>("Free");
   const [category, setCategory] = useState<SchoolCategory>("government");
-  const [appSettings, setAppSettings] = useState<Record<string, string>>({});
+  const [plans, setPlans] = useState<Plan[]>([]);
+  const [authModal, setAuthModal] = useState<"login" | "signup" | null>(null);
+  const [switchingToFree, setSwitchingToFree] = useState(false);
+
+  // Derived state for checkout processing
+  const isCheckoutProcessing = paypalProcessing || razorpayProcessing;
 
   useEffect(() => {
-    if (!isAuthenticated) {
-      navigate("/app");
-      return;
-    }
+    loadInitialData();
+  }, [isAuthenticated]);
 
-    loadSubscription();
-  }, [isAuthenticated, navigate]);
-
-  const loadSubscription = async () => {
+  const loadInitialData = async () => {
     try {
-      const data = await paymentService.getSubscription();
-      setSubscription(data);
-      // Update current plan based on subscription
-      if (data.plan) {
-        const planName = data.plan.toLowerCase();
-        if (planName === "go") {
-          setCurrentPlan("Go");
-        } else {
-          setCurrentPlan("Free");
-        }
+      setLoading(true);
+      
+      // Load plans (public API, no auth required)
+      const plansData = await paymentService.getAllPlans();
+      const activePlans = plansData
+        .filter((p) => p.isActive !== false)
+        .sort((a, b) => a.displayOrder - b.displayOrder);
+      setPlans(activePlans);
+
+      // Load subscription if authenticated
+      if (isAuthenticated) {
+        const subData = await paymentService.getSubscription();
+        setSubscription(subData);
       }
     } catch (error: any) {
-      console.error("Failed to load subscription:", error);
-      toast.error("Failed to load subscription information");
+      console.error("Failed to load data:", error);
+      if (isAuthenticated) {
+        toast.error("Failed to load subscription information");
+      }
     } finally {
       setLoading(false);
     }
   };
 
-  useEffect(() => {
-    // Load pricing settings
-    (async () => {
-      try {
-        const res = await adminService.getAppSettings();
-        setAppSettings(res.settings || {});
-      } catch {
-        // ignore
-      }
-    })();
-  }, []);
+  const normalizePlanCode = (code?: string | null) =>
+    (code || "").toLowerCase().replace(/\s+/g, "");
+
+  const userPlanCode = normalizePlanCode(
+    user?.plan ||
+      (user as any)?.subscription?.plan ||
+      (user as any)?.subscription?.planName
+  );
 
   // Error handling helper
   const handlePaymentError = (error: AxiosError<PaymentError> | Error) => {
@@ -175,6 +181,12 @@ const PaymentPage = () => {
   const handlePayPalCheckout = async () => {
     if (paypalProcessing || razorpayProcessing) return;
 
+    // Require authentication
+    if (!isAuthenticated) {
+      setAuthModal("login");
+      return;
+    }
+
     try {
       setPaypalProcessing(true);
       const response = await paymentService.createSubscription("go");
@@ -193,6 +205,12 @@ const PaymentPage = () => {
 
   const handleRazorpayCheckout = async () => {
     if (razorpayProcessing || paypalProcessing) return;
+
+    // Require authentication
+    if (!isAuthenticated) {
+      setAuthModal("login");
+      return;
+    }
 
     try {
       setRazorpayProcessing(true);
@@ -235,11 +253,9 @@ const PaymentPage = () => {
               
               // Refresh user state and subscription
               await Promise.all([
-                loadSubscription(),
+                loadInitialData(),
                 dispatch(getMe())
               ]);
-              
-              setCurrentPlan("Go");
               
               // Optional: Show success message or redirect
               setTimeout(() => {
@@ -296,13 +312,103 @@ const PaymentPage = () => {
     }
   };
 
-  const priceByCategory = (cat: SchoolCategory) => {
-    const gov = appSettings.go_price_government_inr || "299";
-    const pri = appSettings.go_price_private_inr || "399";
-    return cat === "government" ? `₹${gov}` : `₹${pri}`;
+  const getPlanPrice = (plan: Plan, cat: SchoolCategory) => {
+    const price =
+      cat === "government" ? plan.priceGovernment : plan.pricePrivate;
+    return `${plan.currency === "USD" ? "$" : "₹"}${price ?? 0}`;
   };
 
+  const getPlanButtonText = (plan: Plan) => {
+    const isCurrent =
+      isAuthenticated && userPlanCode === normalizePlanCode(plan.code);
+
+    if (plan.code === "free") {
+      if (isCurrent) return "Current plan";
+      if (switchingToFree) return "Switching...";
+      return isAuthenticated ? "Switch to Free" : "Get Started";
+    }
+    if (isCurrent) return "Current plan";
+    return isAuthenticated ? `Upgrade to ${plan.name}` : "Sign up to upgrade";
+  };
+
+  const getPlanButtonStyle = (plan: Plan) => {
+    if (plan.code === "free") {
+      return "w-full min-h-[44px] px-4 py-2.5 rounded-2xl bg-surface-muted text-text hover:bg-primary-500/10 disabled:opacity-50 disabled:cursor-not-allowed";
+    }
+    return "w-full min-h-[44px] px-4 py-2.5 rounded-2xl bg-primary-500 text-white hover:bg-primary-600 disabled:opacity-50 disabled:cursor-not-allowed";
+  };
+
+  const handleUpgrade = async (planCode: string) => {
+    const targetCode = normalizePlanCode(planCode);
+    if (!isAuthenticated) {
+      setAuthModal("login");
+      return;
+    }
+
+    // If already on this plan, nothing to do
+    if (userPlanCode && userPlanCode === targetCode) {
+      return;
+    }
+
+    // Switch to free: cancel current subscription
+    if (targetCode === "free") {
+      await handleSwitchToFree();
+      return;
+    }
+
+    // Paid upgrade - scroll to payment buttons
+    // No action needed, buttons are already visible in the plan card
+  };
+
+  const fallbackPlans: Plan[] = [
+    {
+      id: "free-fallback",
+      code: "free",
+      name: "Free",
+      description: "Intelligence for everyday tasks",
+      priceGovernment: 0,
+      pricePrivate: 0,
+      currency: "INR",
+      billingPeriod: "month",
+      features: [
+        { id: "f1", text: "Access to GPT-5", enabled: true },
+        { id: "f2", text: "Limited file uploads", enabled: true },
+        { id: "f3", text: "Limited and slower image generation", enabled: true },
+        { id: "f4", text: "Limited memory and context", enabled: true },
+        { id: "f5", text: "Limited deep research", enabled: true },
+      ],
+      badge: "",
+      isActive: true,
+      displayOrder: 0,
+    },
+    {
+      id: "go-fallback",
+      code: "go",
+      name: "Go",
+      description: "More access to popular features",
+      priceGovernment: 299,
+      pricePrivate: 399,
+      currency: "INR",
+      billingPeriod: "month",
+      features: [
+        { id: "g1", text: "Expanded Access to GPT-5", enabled: true },
+        { id: "g2", text: "Expanded messaging and uploads", enabled: true },
+        { id: "g3", text: "Expanded and faster image creation", enabled: true },
+        { id: "g4", text: "Longer memory and context", enabled: true },
+        { id: "g5", text: "Limited deep research", enabled: true },
+        { id: "g6", text: "Projects, tasks, custom GPTs", enabled: true },
+      ],
+      badge: "NEW",
+      isActive: true,
+      displayOrder: 1,
+    },
+  ];
+
+  const displayedPlans = plans.length > 0 ? plans : fallbackPlans;
+
   const handleSwitchToFree = async () => {
+    if (switchingToFree) return;
+    
     if (
       !confirm(
         "Are you sure you want to switch to Free plan? Your subscription will be cancelled."
@@ -312,12 +418,11 @@ const PaymentPage = () => {
     }
 
     try {
+      setSwitchingToFree(true);
       setPlanActionProcessing(true);
-      // Cancel subscription (which will switch to Free plan)
       await paymentService.cancelSubscription();
       toast.success("Switched to Free plan");
-      await loadSubscription();
-      setCurrentPlan("Free");
+      await loadInitialData();
       await dispatch(getMe());
     } catch (error: any) {
       console.error("Failed to switch to Free plan:", error);
@@ -326,6 +431,7 @@ const PaymentPage = () => {
       );
     } finally {
       setPlanActionProcessing(false);
+      setSwitchingToFree(false);
     }
   };
 
@@ -342,8 +448,7 @@ const PaymentPage = () => {
       setPlanActionProcessing(true);
       await paymentService.cancelSubscription();
       toast.success("Subscription cancelled successfully");
-      await loadSubscription();
-      setCurrentPlan("Free");
+      await loadInitialData();
       await dispatch(getMe());
     } catch (error: any) {
       console.error("Failed to cancel subscription:", error);
@@ -354,8 +459,6 @@ const PaymentPage = () => {
       setPlanActionProcessing(false);
     }
   };
-
-  const isCheckoutProcessing = paypalProcessing || razorpayProcessing;
 
   if (loading) {
     return (
@@ -390,7 +493,7 @@ const PaymentPage = () => {
         </button>
 
         <h1 className="text-2xl md:text-3xl font-semibold mb-8 text-text text-center">
-          Upgrade your plan
+          Plans and Pricing
         </h1>
 
         {/* Category Tabs */}
@@ -422,144 +525,143 @@ const PaymentPage = () => {
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          {/* Free Card */}
-          <div
-            className={`rounded-3xl bg-surface shadow-[inset_0_0_0_1px_var(--border)] p-6 md:p-8 flex flex-col`}
-          >
-            <div className="flex items-center justify-between">
-              <h2 className="text-xl font-semibold text-text">Free</h2>
-            </div>
-            <div className="mt-2 text-3xl font-semibold text-text">
-              $0
-              <span className="text-base font-normal text-text-subtle ml-1">
-                / month
-              </span>
-            </div>
-            <p className="mt-2 text-sm text-text-subtle">
-              Intelligence for everyday tasks
-            </p>
-            <div className="mt-5 flex-shrink-0">
-              <button
-                onClick={currentPlan === "Go" ? handleSwitchToFree : undefined}
-                disabled={planActionProcessing || currentPlan === "Free"}
-                className="w-full min-h-[44px] px-4 py-2.5 rounded-2xl bg-surface-muted text-text hover:bg-primary-500/10 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
-              >
-                {currentPlan === "Free"
-                  ? "Your current plan"
-                  : "Switch to Free"}
-              </button>
-            </div>
-            <ul className="mt-6 space-y-3 flex-grow">
-              <Feature>Access to GPT-5</Feature>
-              <Feature>Limited file uploads</Feature>
-              <Feature>Limited and slower image generation</Feature>
-              <Feature>Limited memory and context</Feature>
-              <Feature>Limited deep research</Feature>
-            </ul>
-            <p className="mt-6 text-xs text-text-subtle">
-              Have an existing plan?{" "}
-              <button className="underline hover:text-primary-600">
-                See billing help
-              </button>
-            </p>
-          </div>
+          {displayedPlans.map((plan) => {
+            const isCurrent = isAuthenticated && userPlanCode === normalizePlanCode(plan.code);
+            const isPaidPlan = plan.code !== "free";
 
-          {/* Go Card */}
-          <div
-            className={`rounded-3xl bg-surface shadow-[inset_0_0_0_1px_var(--border)] p-6 md:p-8 relative flex flex-col ${
-              currentPlan === "Go" ? "ring-2 ring-primary-500/30" : ""
-            }`}
-          >
-            <div className="flex items-center justify-between">
-              <h2 className="text-xl font-semibold text-text">Go</h2>
-              <span className="text-2xs px-2 py-0.5 rounded-full bg-primary-500/10 text-primary-600">
-                NEW
-              </span>
-            </div>
-            <div className="mt-2 text-3xl font-semibold text-text">
-              {priceByCategory(category)}
-              <span className="text-base font-normal text-text-subtle ml-1">
-                / month
-              </span>
-            </div>
-            <p className="mt-2 text-sm text-text-subtle">
-              More access to popular features
-            </p>
-            <div className="mt-5 flex-shrink-0">
-              {currentPlan === "Go" ? (
-                <>
-                  {subscription?.subscription?.nextBillingDate && (
-                    <p className="mb-3 text-xs text-text-subtle">
-                      Next billing:{" "}
-                      {new Date(
-                        subscription.subscription.nextBillingDate
-                      ).toLocaleDateString()}
-                    </p>
+            return (
+              <div
+                key={plan.id}
+                className={`rounded-3xl bg-surface shadow-[inset_0_0_0_1px_var(--border)] p-6 md:p-8 flex flex-col ${
+                  isCurrent ? "ring-2 ring-primary-500/30" : ""
+                }`}
+              >
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <h2 className="text-xl font-semibold text-text">{plan.name}</h2>
+                    {isCurrent && (
+                      <span className="text-2xs px-2 py-0.5 rounded-full bg-green-500/10 text-green-600">
+                        Current plan
+                      </span>
+                    )}
+                  </div>
+                  {plan.badge && (
+                    <span className="text-2xs px-2 py-0.5 rounded-full bg-primary-500/10 text-primary-600">
+                      {plan.badge}
+                    </span>
                   )}
-                  <button
-                    onClick={handleCancel}
-                    disabled={planActionProcessing}
-                    className="w-full min-h-[44px] px-4 py-2.5 rounded-2xl bg-surface-muted text-text hover:bg-red-500/10 hover:text-red-600 disabled:opacity-50 flex items-center justify-center"
-                  >
-                    {planActionProcessing ? (
-                      <span className="flex items-center justify-center gap-2">
-                        <Loader2 className="h-4 w-4 animate-spin" />
-                        Cancelling...
-                      </span>
-                    ) : (
-                      "Cancel subscription"
-                    )}
-                  </button>
-                </>
-              ) : (
-                <div className="flex flex-col gap-3">
-                  <button
-                    onClick={handlePayPalCheckout}
-                    disabled={isCheckoutProcessing}
-                    className="w-full min-h-[44px] px-4 py-2.5 rounded-2xl bg-primary-500 text-white hover:bg-primary-600 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
-                  >
-                    {paypalProcessing ? (
-                      <span className="flex items-center justify-center gap-2">
-                        <Loader2 className="h-4 w-4 animate-spin" />
-                        Redirecting to PayPal...
-                      </span>
-                    ) : (
-                      "Pay with PayPal"
-                    )}
-                  </button>
-                  <button
-                    onClick={handleRazorpayCheckout}
-                    disabled={isCheckoutProcessing}
-                    className="w-full min-h-[44px] px-4 py-2.5 rounded-2xl bg-indigo-500 text-white hover:bg-indigo-600 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
-                  >
-                    {razorpayProcessing ? (
-                      <span className="flex items-center justify-center gap-2">
-                        <Loader2 className="h-4 w-4 animate-spin" />
-                        Opening Razorpay...
-                      </span>
-                    ) : (
-                      "Pay with Razorpay"
-                    )}
-                  </button>
                 </div>
-              )}
-            </div>
-            <ul className="mt-6 space-y-3 flex-grow">
-              <Feature>Expanded Access to GPT-5</Feature>
-              <Feature>Expanded messaging and uploads</Feature>
-              <Feature>Expanded and faster image creation</Feature>
-              <Feature>Longer memory and context</Feature>
-              <Feature>Limited deep research</Feature>
-              <Feature>Projects, tasks, custom GPTs</Feature>
-            </ul>
-            <p className="mt-6 text-xs text-text-subtle">
-              Only available in certain regions.{" "}
-              <button className="underline hover:text-primary-600">
-                Limits apply
-              </button>
-            </p>
-          </div>
+                <div className="mt-2 text-3xl font-semibold text-text">
+                  {getPlanPrice(plan, category)}
+                  <span className="text-base font-normal text-text-subtle ml-1">
+                    / {plan.billingPeriod || "month"}
+                  </span>
+                </div>
+                <p className="mt-2 text-sm text-text-subtle">
+                  {plan.description}
+                </p>
+                
+                {/* Action Buttons */}
+                <div className="mt-5 flex-shrink-0">
+                  {isPaidPlan && isCurrent ? (
+                    <>
+                      {subscription?.subscription?.nextBillingDate && (
+                        <p className="mb-3 text-xs text-text-subtle">
+                          Next billing:{" "}
+                          {new Date(
+                            subscription.subscription.nextBillingDate
+                          ).toLocaleDateString()}
+                        </p>
+                      )}
+                      <button
+                        onClick={handleCancel}
+                        disabled={planActionProcessing}
+                        className="w-full min-h-[44px] px-4 py-2.5 rounded-2xl bg-surface-muted text-text hover:bg-red-500/10 hover:text-red-600 disabled:opacity-50 flex items-center justify-center"
+                      >
+                        {planActionProcessing ? (
+                          <span className="flex items-center justify-center gap-2">
+                            <Loader2 className="h-4 w-4 animate-spin" />
+                            Cancelling...
+                          </span>
+                        ) : (
+                          "Cancel subscription"
+                        )}
+                      </button>
+                    </>
+                  ) : isPaidPlan && !isCurrent ? (
+                    <div className="flex flex-col gap-3">
+                      <button
+                        onClick={handlePayPalCheckout}
+                        disabled={isCheckoutProcessing || !isAuthenticated}
+                        className="w-full min-h-[44px] px-4 py-2.5 rounded-2xl bg-primary-500 text-white hover:bg-primary-600 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
+                      >
+                        {paypalProcessing ? (
+                          <span className="flex items-center justify-center gap-2">
+                            <Loader2 className="h-4 w-4 animate-spin" />
+                            Redirecting to PayPal...
+                          </span>
+                        ) : (
+                          "Pay with PayPal"
+                        )}
+                      </button>
+                      <button
+                        onClick={handleRazorpayCheckout}
+                        disabled={isCheckoutProcessing || !isAuthenticated}
+                        className="w-full min-h-[44px] px-4 py-2.5 rounded-2xl bg-indigo-500 text-white hover:bg-indigo-600 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
+                      >
+                        {razorpayProcessing ? (
+                          <span className="flex items-center justify-center gap-2">
+                            <Loader2 className="h-4 w-4 animate-spin" />
+                            Opening Razorpay...
+                          </span>
+                        ) : (
+                          "Pay with Razorpay"
+                        )}
+                      </button>
+                    </div>
+                  ) : (
+                    <button
+                      onClick={() => handleUpgrade(plan.code)}
+                      className={getPlanButtonStyle(plan)}
+                      disabled={isCurrent || (plan.code === "free" && switchingToFree)}
+                    >
+                      {getPlanButtonText(plan)}
+                    </button>
+                  )}
+                </div>
+
+                <ul className="mt-6 space-y-3 flex-grow">
+                  {(plan.features && plan.features.length > 0
+                    ? plan.features
+                    : fallbackPlans.find((p) => p.code === plan.code)?.features || []
+                  ).map((feature) => (
+                    <Feature key={`${plan.id}-${feature.id}`} enabled={feature.enabled}>
+                      {feature.text}
+                    </Feature>
+                  ))}
+                </ul>
+                {plan.limitGovernment && plan.limitPrivate && (
+                  <p className="mt-6 text-xs text-text-subtle">
+                    Message limits: {category === "government" ? plan.limitGovernment : plan.limitPrivate} per day
+                  </p>
+                )}
+              </div>
+            );
+          })}
         </div>
+
+        {plans.length === 0 && !loading && (
+          <p className="text-xs text-text-subtle mt-3 text-center">
+            Showing fallback plans because live plans are unavailable.
+          </p>
+        )}
+
+        <AuthDialog
+          inline
+          open={authModal !== null}
+          onClose={() => setAuthModal(null)}
+          initialMode={authModal || "login"}
+        />
       </div>
     </div>
   );
