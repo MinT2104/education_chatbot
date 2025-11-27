@@ -387,10 +387,10 @@ const Composer = ({
                 <button
                   onClick={onNewChat}
                   className={`absolute z-30 pointer-events-auto focus:outline-none focus:ring-2 focus:ring-primary/50 rounded-lg transition-all ${isMultiLine
-                      ? "bottom-2 left-2"
-                      : input.length > 10
-                        ? "left-3 top-1/2 -translate-y-1/2"
-                        : "left-3 top-3"
+                    ? "bottom-2 left-2"
+                    : input.length > 10
+                      ? "left-3 top-1/2 -translate-y-1/2"
+                      : "left-3 top-3"
                     }`}
                   aria-label="New chat"
                   style={{ zIndex: 30 }}
@@ -425,12 +425,12 @@ const Composer = ({
                 disabled={disabled || isStreaming}
                 rows={1}
                 className={`w-full ${compact && !isMultiLine
-                    ? "pl-10 sm:pl-12"
-                    : compact && isMultiLine
+                  ? "pl-10 sm:pl-12"
+                  : compact && isMultiLine
+                    ? "px-3"
+                    : compact
                       ? "px-3"
-                      : compact
-                        ? "px-3"
-                        : "px-4"
+                      : "px-4"
                   } ${compact
                     ? "pt-3 pb-12 sm:pb-12"
                     : "pt-5 pb-16 sm:pb-14"
@@ -485,23 +485,23 @@ const Composer = ({
                     {/* Sliding background */}
                     <span
                       className={`absolute inset-y-1 rounded transition-all duration-300 ease-in-out bg-black ${role === "student"
-                          ? "left-1 right-1/2"
-                          : "left-1/2 right-1"
+                        ? "left-1 right-1/2"
+                        : "left-1/2 right-1"
                         }`}
                     />
                     <div className="relative flex items-center gap-0.5 sm:gap-1">
                       <span
                         className={`px-1.5 sm:px-2 py-0.5 rounded transition-colors duration-300 ${role === "student"
-                            ? "text-white font-semibold"
-                            : "text-muted-foreground"
+                          ? "text-white font-semibold"
+                          : "text-muted-foreground"
                           }`}
                       >
                         Student
                       </span>
                       <span
                         className={`px-1.5 sm:px-2 py-0.5 rounded transition-colors duration-300 ${role === "teacher"
-                            ? "text-white font-semibold"
-                            : "text-muted-foreground"
+                          ? "text-white font-semibold"
+                          : "text-muted-foreground"
                           }`}
                       >
                         Teacher
@@ -566,19 +566,45 @@ const Composer = ({
           <DialogHeader>
             <DialogTitle>
               {role === "teacher"
-                ? "You’re now in Teacher mode."
-                : "You’re now using the chatbot in Student mode."}
+                ? "Are you a teacher?"
+                : "You're now using the chatbot in Student mode."}
             </DialogTitle>
             <DialogDescription>
               {role === "teacher"
-                ? "I’ll provide classroom resources, activity ideas, and teaching insights designed for educators."
+                ? "Please confirm that you are a teacher to access teaching resources, lesson planning tools, and classroom management features."
                 : "Responses will focus on learning support, explanations, and study guidance."}
             </DialogDescription>
           </DialogHeader>
-          <div className="mt-4">
-            <Button className="w-full" onClick={() => setModeDialogOpen(false)}>
-              Got it
-            </Button>
+          <div className="mt-4 flex gap-3">
+            {role === "teacher" ? (
+              <>
+                <Button
+                  className="flex-1"
+                  onClick={() => setModeDialogOpen(false)}
+                >
+                  Yes, I'm a teacher
+                </Button>
+                <Button
+                  variant="outline"
+                  className="flex-1"
+                  onClick={() => {
+                    // Revert to student mode
+                    if (onRoleChange) {
+                      onRoleChange("student");
+                    } else {
+                      setInternalRole("student");
+                    }
+                    setModeDialogOpen(false);
+                  }}
+                >
+                  No, I'm a student
+                </Button>
+              </>
+            ) : (
+              <Button className="w-full" onClick={() => setModeDialogOpen(false)}>
+                Got it
+              </Button>
+            )}
           </div>
         </DialogContent>
       </Dialog>
