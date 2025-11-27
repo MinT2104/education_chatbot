@@ -19,8 +19,8 @@ const MainLayout = ({ children }: MainLayoutProps) => {
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
   const [plan] = useState<"free" | "go">(
     ((localStorage.getItem("plan") as any) || "free").toLowerCase() as
-      | "free"
-      | "go"
+    | "free"
+    | "go"
   );
 
   // Load conversations only if user is authenticated
@@ -66,11 +66,10 @@ const MainLayout = ({ children }: MainLayoutProps) => {
         {/* Sidebar - hidden when not authenticated */}
         {isAuthenticated && (
           <div
-            className={`fixed md:relative z-20 md:z-auto left-0 top-0 h-full transition-all duration-300 ease-out ${
-              isSidebarCollapsed
+            className={`fixed md:relative z-20 md:z-auto left-0 top-0 h-full transition-all duration-300 ease-out ${isSidebarCollapsed
                 ? "w-[72px] -translate-x-full md:translate-x-0"
                 : "w-[260px] translate-x-0"
-            }`}
+              }`}
           >
             <Sidebar
               conversations={conversations}
@@ -94,6 +93,10 @@ const MainLayout = ({ children }: MainLayoutProps) => {
               }
               userName={userName}
               plan={plan}
+              onChangeSchool={() => {
+                // Navigate to chat page where school picker is available
+                navigate("/app");
+              }}
             />
           </div>
         )}
