@@ -4,6 +4,7 @@ import { useAppDispatch, useAppSelector } from "../../../core/store/hooks";
 import { Switch } from "@/components/ui/switch";
 import { toggleDarkMode } from "../../ui/store/uiSlice";
 import AuthDialog from "../../auth/components/AuthDialog";
+import { School } from "lucide-react";
 
 const HomePage = () => {
   const navigate = useNavigate();
@@ -11,12 +12,15 @@ const HomePage = () => {
   const isAuthenticated = useAppSelector((s) => s.auth.isAuthenticated);
   const isDark = useAppSelector((s) => s.ui.isDark);
   const [authModal, setAuthModal] = useState<"login" | "signup" | null>(null);
+  const [selectedSchool, setSelectedSchool] = useState<string | null>(null);
 
-  // Redirect ALL users (both guest and authenticated) to /app
-  // This ensures everyone uses the same chat interface
+  // Get selected school from localStorage
   useEffect(() => {
-    navigate("/app", { replace: true });
-  }, [navigate]);
+    const lastSchool = localStorage.getItem("last_selected_school");
+    if (lastSchool) {
+      setSelectedSchool(lastSchool);
+    }
+  }, []);
 
   return (
     <div
@@ -80,6 +84,26 @@ const HomePage = () => {
           <p className="mt-4 text-lg sm:text-xl lg:text-2xl text-muted-foreground">
             Your AI learning assistant.
           </p>
+
+          {/* Display selected school if available */}
+          {selectedSchool && (
+            <div className="mt-8 inline-flex items-center gap-2 px-4 py-3 rounded-lg bg-primary/10 border border-primary/20">
+              <School className="w-5 h-5 text-primary" />
+              <span className="text-sm font-medium">
+                Currently using: <span className="text-primary">{selectedSchool}</span>
+              </span>
+            </div>
+          )}
+
+          {/* Start Chat Button */}
+          <div className="mt-8">
+            <button
+              onClick={() => navigate("/app")}
+              className="h-12 px-8 inline-flex items-center justify-center rounded-lg bg-primary text-primary-foreground text-base font-medium hover:bg-primary/90 transition-colors"
+            >
+              Start Chat
+            </button>
+          </div>
         </div>
       </main>
       <AuthDialog
