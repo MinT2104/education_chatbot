@@ -161,11 +161,15 @@ const ChatArea = ({
               <p className="text-[0.75rem] sm:text-[1rem] md:text-[1.45rem] lg:text-[1.85rem] xl:text-[2.45rem] font-bold leading-tight text-foreground">
                 {(() => {
                   const hour = new Date().getHours();
-                  const partOfDay =
-                    hour < 12 ? "Morning" : hour < 18 ? "Afternoon" : "Evening";
+                  let greeting = "Good Evening";
+                  if (hour >= 5 && hour < 12) {
+                    greeting = "Good Morning";
+                  } else if (hour >= 12 && hour < 18) {
+                    greeting = "Good Afternoon";
+                  }
                   const name =
                     userName && userName !== "Guest" ? userName : "there";
-                  return `Good ${partOfDay}, ${name}`;
+                  return `${greeting}, ${name}`;
                 })()}
               </p>
               <p className="text-[0.75rem] sm:text-[1rem] md:text-[1.45rem] lg:text-[1.85rem] xl:text-[2.45rem] font-bold leading-tight text-foreground">

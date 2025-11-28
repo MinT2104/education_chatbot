@@ -222,28 +222,52 @@ const MessageBubble = ({
 
         <div
           className={`${isUser
-            ? "rounded-2xl p-4 bg-primary/10 text-foreground shadow-sm"
+            ? isEditing
+              ? "rounded-2xl p-0 bg-transparent"
+              : "rounded-2xl p-4 bg-primary/10 text-foreground shadow-sm"
             : isError
               ? "rounded-lg p-4 border border-red-300 dark:border-red-800 bg-red-50 dark:bg-red-900/10"
               : "rounded-none p-0 bg-transparent shadow-none border-0"
             }`}
         >
-          {/* Editing mode for user messages */}
+          {/* Editing mode for user messages - ChatGPT style */}
           {isUser && isEditing ? (
-            <div className="space-y-2">
-              <textarea
-                value={editContent}
-                onChange={(e) => setEditContent(e.target.value)}
-                className="w-full min-h-[150px] p-3 rounded-md bg-background border border-border focus:outline-none focus:ring-2 focus:ring-ring resize-y text-base"
-                autoFocus
-              />
-              <div className="flex gap-2">
-                <Button size="sm" onClick={handleSaveEdit}>
-                  Save & Resend
-                </Button>
-                <Button size="sm" variant="outline" onClick={handleCancelEdit}>
-                  Cancel
-                </Button>
+            <div className="w-full">
+              <div className="rounded-2xl bg-muted/50 p-1">
+                <textarea
+                  value={editContent}
+                  onChange={(e) => {
+                    setEditContent(e.target.value);
+                    // Auto-resize textarea
+                    e.target.style.height = 'auto';
+                    e.target.style.height = e.target.scrollHeight + 'px';
+                  }}
+                  className="w-full min-h-[80px] p-3 rounded-xl bg-transparent border-0 focus:outline-none focus:ring-0 resize-none text-base leading-relaxed"
+                  autoFocus
+                  style={{ overflow: 'hidden' }}
+                  onFocus={(e) => {
+                    // Auto-resize on focus
+                    e.target.style.height = 'auto';
+                    e.target.style.height = e.target.scrollHeight + 'px';
+                  }}
+                />
+                <div className="flex justify-end gap-2 px-2 pb-2">
+                  <Button 
+                    size="sm" 
+                    variant="ghost"
+                    onClick={handleCancelEdit}
+                    className="text-muted-foreground hover:text-foreground"
+                  >
+                    Cancel
+                  </Button>
+                  <Button 
+                    size="sm" 
+                    onClick={handleSaveEdit}
+                    className="bg-foreground text-background hover:bg-foreground/90"
+                  >
+                    Send
+                  </Button>
+                </div>
               </div>
             </div>
           ) : isUser ? (
