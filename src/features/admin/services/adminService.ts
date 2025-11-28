@@ -740,6 +740,17 @@ export const adminService = {
       throw error;
     }
   },
+
+  /**
+   * Change password for authenticated admin user
+   */
+  async changePassword(currentPassword: string, newPassword: string): Promise<{ message: string }> {
+    const response = await apiClient.post("/auth/change-password", {
+      currentPassword,
+      newPassword,
+    });
+    return response.data;
+  },
 };
 
 // Re-export School type for backward compatibility

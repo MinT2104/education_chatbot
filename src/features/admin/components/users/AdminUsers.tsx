@@ -37,10 +37,17 @@ import {
   XCircle,
   Mail,
   MailCheck,
+  Lock,
+  Eye,
+  EyeOff,
+  AlertCircle,
+  CheckCircle2,
+  Shield,
 } from "lucide-react";
 import { adminService, AdminUser } from "../../services/adminService";
 import { UserDetailPanel } from "./UserDetailPanel";
 import { toast } from "react-toastify";
+import { Label } from "@/components/ui/label";
 
 type SortField = "name" | "email" | "createdAt" | "lastActive" | "plan";
 type SortDirection = "asc" | "desc";
@@ -51,6 +58,16 @@ export const AdminUsers = () => {
   const [selectedUser, setSelectedUser] = useState<AdminUser | null>(null);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+
+  // Password change state
+  const [currentPassword, setCurrentPassword] = useState("");
+  const [newPassword, setNewPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [showCurrentPassword, setShowCurrentPassword] = useState(false);
+  const [showNewPassword, setShowNewPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [changingPassword, setChangingPassword] = useState(false);
+  const [passwordMessage, setPasswordMessage] = useState<{ type: "success" | "error"; text: string } | null>(null);
 
   // Filters
   const [planFilter, setPlanFilter] = useState<string>("all");
@@ -128,6 +145,44 @@ export const AdminUsers = () => {
     } else {
       setSortField(field);
       setSortDirection("asc");
+    }
+  };
+
+  const handleChangePassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setPasswordMessage(null);
+
+    // Validation
+    if (!currentPassword || !newPassword || !confirmPassword) {
+      setPasswordMessage({ type: "error", text: "Please fill in all fields" });
+      return;
+    }
+
+    if (newPassword.length < 6) {
+      setPasswordMessage({ type: "error", text: "New password must be at least 6 characters" });
+      return;
+    }
+
+    if (newPassword !== confirmPassword) {
+      setPasswordMessage({ type: "error", text: "New passwords do not match" });
+      return;
+    }
+
+    setChangingPassword(true);
+    try {
+      await adminService.changePassword(currentPassword, newPassword);
+      setPasswordMessage({ type: "success", text: "Password changed successfully!" });
+      toast.success("Password changed successfully!");
+      // Clear form
+      setCurrentPassword("");
+      setNewPassword("");
+      setConfirmPassword("");
+    } catch (error: any) {
+      const errorMsg = error.response?.data?.message || error.message || "Failed to change password";
+      setPasswordMessage({ type: "error", text: errorMsg });
+      toast.error(errorMsg);
+    } finally {
+      setChangingPassword(false);
     }
   };
 
@@ -246,7 +301,144 @@ export const AdminUsers = () => {
   }
 
   return (
-    <div className="grid grid-cols-1 xl:grid-cols-3 gap-4 sm:gap-6">
+    <div className="space-y-6">
+      {/* Admin Account Section */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2 text-lg sm:text-xl">
+            <Shield className="h-5 w-5" />
+            Admin Account
+          </CardTitle>
+          <CardDescription className="text-xs sm:text-sm">
+            Manage your admin account security
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <form onSubmit={handleChangePassword} className="max-w-md space-y-4">
+            <div className="flex items-center gap-2 mb-4">
+              <Lock className="h-4 w-4 text-muted-foreground" />
+              <span className="font-medium text-sm">Change Password</span>
+            </div>
+            
+            {/* Current Password */}
+            <div className="space-y-2">
+              <Label htmlFor="currentPassword" className="text-sm">Current Password</Label>
+              <div className="relative">
+                <Input
+                  id="currentPassword"
+                  type={showCurrentPassword ? "text" : "password"}
+                  value={currentPassword}
+                  onChange={(e) => setCurrentPassword(e.target.value)}
+                  placeholder="Enter current password"
+                  className="pr-10"
+                />
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
+                  onClick={() => setShowCurrentPassword(!showCurrentPassword)}
+                >
+                  {showCurrentPassword ? (
+                    <EyeOff className="h-4 w-4 text-muted-foreground" />
+                  ) : (
+                    <Eye className="h-4 w-4 text-muted-foreground" />
+                  )}
+                </Button>
+              </div>
+            </div>
+
+            {/* New Password */}
+            <div className="space-y-2">
+              <Label htmlFor="newPassword" className="text-sm">New Password</Label>
+              <div className="relative">
+                <Input
+                  id="newPassword"
+                  type={showNewPassword ? "text" : "password"}
+                  value={newPassword}
+                  onChange={(e) => setNewPassword(e.target.value)}
+                  placeholder="Enter new password (min 6 characters)"
+                  className="pr-10"
+                />
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
+                  onClick={() => setShowNewPassword(!showNewPassword)}
+                >
+                  {showNewPassword ? (
+                    <EyeOff className="h-4 w-4 text-muted-foreground" />
+                  ) : (
+                    <Eye className="h-4 w-4 text-muted-foreground" />
+                  )}
+                </Button>
+              </div>
+            </div>
+
+            {/* Confirm New Password */}
+            <div className="space-y-2">
+              <Label htmlFor="confirmPassword" className="text-sm">Confirm New Password</Label>
+              <div className="relative">
+                <Input
+                  id="confirmPassword"
+                  type={showConfirmPassword ? "text" : "password"}
+                  value={confirmPassword}
+                  onChange={(e) => setConfirmPassword(e.target.value)}
+                  placeholder="Confirm new password"
+                  className="pr-10"
+                />
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
+                  onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                >
+                  {showConfirmPassword ? (
+                    <EyeOff className="h-4 w-4 text-muted-foreground" />
+                  ) : (
+                    <Eye className="h-4 w-4 text-muted-foreground" />
+                  )}
+                </Button>
+              </div>
+            </div>
+
+            {/* Message */}
+            {passwordMessage && (
+              <div
+                className={`flex items-center gap-2 p-3 rounded-md ${
+                  passwordMessage.type === "success"
+                    ? "bg-green-50 text-green-700 dark:bg-green-900/20 dark:text-green-400"
+                    : "bg-red-50 text-red-700 dark:bg-red-900/20 dark:text-red-400"
+                }`}
+              >
+                {passwordMessage.type === "success" ? (
+                  <CheckCircle2 className="h-4 w-4" />
+                ) : (
+                  <AlertCircle className="h-4 w-4" />
+                )}
+                <span className="text-sm">{passwordMessage.text}</span>
+              </div>
+            )}
+
+            {/* Submit Button */}
+            <Button type="submit" disabled={changingPassword} className="w-full sm:w-auto">
+              {changingPassword ? (
+                <>
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  Changing...
+                </>
+              ) : (
+                "Change Password"
+              )}
+            </Button>
+          </form>
+        </CardContent>
+      </Card>
+
+      {/* User Management Section */}
+      <div className="grid grid-cols-1 xl:grid-cols-3 gap-4 sm:gap-6">
       <Card className="xl:col-span-2">
         <CardHeader>
           <div className="flex flex-col gap-3">
@@ -621,6 +813,7 @@ export const AdminUsers = () => {
       </Card>
 
       <UserDetailPanel user={selectedUser} />
+    </div>
     </div>
   );
 };

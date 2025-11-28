@@ -27,11 +27,11 @@ export const AdminHeader = () => {
               variant="outline"
               size="sm"
               className="flex items-center gap-1.5 sm:gap-2"
-              onClick={() => navigate("/home")}
+              onClick={() => navigate("/app")}
             >
               <Home className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
-              <span className="hidden sm:inline">Back to Home</span>
-              <span className="sm:hidden">Home</span>
+              <span className="hidden sm:inline">Back to App</span>
+              <span className="sm:hidden">App</span>
             </Button>
           </div>
         </div>
