@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import React, { useEffect, useState } from "react";
 import { adminService } from "../../services/adminService";
 import {
   Card,
@@ -40,7 +40,9 @@ export const AdminSpaces = () => {
         try {
           const parsedS = JSON.parse(suggRaw);
           if (Array.isArray(parsedS)) setSuggestions(parsedS);
-        } catch {}
+        } catch {
+          // ignore error
+        }
       }
     } finally {
       setLoading(false);
@@ -52,16 +54,16 @@ export const AdminSpaces = () => {
   }, []);
 
   const addSpace = () => {
-    setSpaces((s) => [
+    setSpaces((s: SpaceItem[]) => [
       ...s,
       { title: "", description: "", icon: "✨", content: "" },
     ]);
   };
   const removeSpace = (idx: number) => {
-    setSpaces((s) => s.filter((_, i) => i !== idx));
+    setSpaces((s: SpaceItem[]) => s.filter((_, i) => i !== idx));
   };
   const update = (idx: number, key: keyof SpaceItem, value: string) => {
-    setSpaces((s) =>
+    setSpaces((s: SpaceItem[]) =>
       s.map((item, i) => (i === idx ? { ...item, [key]: value } : item))
     );
   };
@@ -114,14 +116,14 @@ export const AdminSpaces = () => {
                   <Label>Title</Label>
                   <Input
                     value={s.title}
-                    onChange={(e) => update(idx, "title", e.target.value)}
+                    onChange={(e: any) => update(idx, "title", e.target.value)}
                   />
                 </div>
                 <div>
                   <Label>Icon (emoji)</Label>
                   <Input
                     value={s.icon}
-                    onChange={(e) => update(idx, "icon", e.target.value)}
+                    onChange={(e: any) => update(idx, "icon", e.target.value)}
                     maxLength={2}
                   />
                 </div>
@@ -130,7 +132,7 @@ export const AdminSpaces = () => {
                 <Label>Description</Label>
                 <Input
                   value={s.description}
-                  onChange={(e) => update(idx, "description", e.target.value)}
+                  onChange={(e: any) => update(idx, "description", e.target.value)}
                 />
               </div>
               <div>
@@ -139,7 +141,7 @@ export const AdminSpaces = () => {
                   className="w-full rounded-md border border-border bg-background p-2 text-sm min-h-[180px]"
                   rows={8}
                   value={s.content}
-                  onChange={(e) => update(idx, "content", e.target.value)}
+                  onChange={(e: any) => update(idx, "content", e.target.value)}
                 />
               </div>
               <div className="flex justify-end">
@@ -171,7 +173,7 @@ export const AdminSpaces = () => {
                   <Label>Icon</Label>
                   <Input
                     value={item.icon || ""}
-                    onChange={(e) => {
+                    onChange={(e: any) => {
                       const next = suggestions.slice();
                       next[idx] = { ...next[idx], icon: e.target.value };
                       setSuggestions(next);
@@ -184,7 +186,7 @@ export const AdminSpaces = () => {
                   <Label>Text</Label>
                   <Input
                     value={item.text}
-                    onChange={(e) => {
+                    onChange={(e: any) => {
                       const next = suggestions.slice();
                       next[idx] = { ...next[idx], text: e.target.value };
                       setSuggestions(next);

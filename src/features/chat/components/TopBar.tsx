@@ -394,7 +394,9 @@ const TopBar = ({
               onClick={async () => {
                 try {
                   await navigator.clipboard.writeText(shareUrl);
-                } catch {}
+                } catch {
+                  // ignore error
+                }
               }}
               variant="secondary"
               className="h-10 px-3"

@@ -1,8 +1,7 @@
 import { createSlice, createAsyncThunk, PayloadAction } from "@reduxjs/toolkit";
 import { authService } from "../services/authService";
-import { getCookie, setCookie, removeCookie } from "@/core/utils/cookie";
 import type { User, LoginCredentials, SignupData } from "../types";
-import type { RootState } from "@/core/store";
+import { getCookie, removeCookie } from "@/core/utils/cookie";
 
 interface AuthState {
   user: User | null;
@@ -12,12 +11,6 @@ interface AuthState {
   error: string | null;
   accessToken: string | null;
   refreshToken: string | null;
-  // pendingAuth holds login response when user hasn't verified email yet
-  pendingAuth?: {
-    user: User;
-    accessToken: string;
-    refreshToken: string;
-  } | null;
 }
 
 const initialState: AuthState = {
@@ -28,7 +21,6 @@ const initialState: AuthState = {
   error: null,
   accessToken: null,
   refreshToken: null,
-  pendingAuth: null,
 };
 
 // Async thunks
@@ -88,41 +80,6 @@ export const refreshToken = createAsyncThunk(
   }
 );
 
-export const finalizeLogin = createAsyncThunk<
-  { user: User; accessToken: string; refreshToken: string },
-  void,
-  { state: RootState; rejectValue: string }
->(
-  "auth/finalizeLogin",
-  async (_, { getState, rejectWithValue }) => {
-    try {
-      const state = getState();
-      const pending = state.auth.pendingAuth;
-      if (!pending) {
-        return rejectWithValue("No pending auth to finalize");
-      }
-
-      // Store tokens in cookies
-      setCookie("access_token", pending.accessToken, {
-        expires: 0.25,
-        path: "/",
-        secure: import.meta.env.PROD,
-        sameSite: "lax",
-      });
-      setCookie("refresh_token", pending.refreshToken, {
-        expires: 7,
-        path: "/",
-        secure: import.meta.env.PROD,
-        sameSite: "lax",
-      });
-
-      return pending;
-    } catch (error: any) {
-      return rejectWithValue(error.message || "Failed to finalize login");
-    }
-  }
-);
-
 export const initializeAuth = createAsyncThunk(
   "auth/initialize",
   async (_, { dispatch }) => {
@@ -176,6 +133,7 @@ const authSlice = createSlice({
       })
       .addCase(login.fulfilled, (state, action) => {
         state.isLoading = false;
+        state.isAuthenticated = true;
         // Convert Date objects to strings to avoid serialization issues
         const user = { ...action.payload.user };
         if (user.subscription) {
@@ -204,13 +162,9 @@ const authSlice = createSlice({
                 : user.voiceSubscription.endDate,
           };
         }
-        // Always store login response in pendingAuth. We'll finalize only after verification
-        state.pendingAuth = {
-          user: user as User,
-          accessToken: action.payload.accessToken,
-          refreshToken: action.payload.refreshToken,
-        };
-        state.isAuthenticated = false;
+        state.user = user;
+        state.accessToken = action.payload.accessToken;
+        state.refreshToken = action.payload.refreshToken;
       })
       .addCase(login.rejected, (state, action) => {
         state.isLoading = false;
@@ -277,24 +231,6 @@ const authSlice = createSlice({
         }
         state.user = user;
         state.isAuthenticated = true;
-      })
-      // Finalize pending login after verification
-      .addCase(finalizeLogin.pending, (state) => {
-        state.isLoading = true;
-        state.error = null;
-      })
-      .addCase(finalizeLogin.fulfilled, (state, action) => {
-        state.isLoading = false;
-        state.pendingAuth = null;
-        const payload = action.payload;
-        state.user = payload.user as User;
-        state.accessToken = payload.accessToken;
-        state.refreshToken = payload.refreshToken;
-        state.isAuthenticated = true;
-      })
-      .addCase(finalizeLogin.rejected, (state, action) => {
-        state.isLoading = false;
-        state.error = action.payload as string;
       })
       .addCase(getMe.rejected, (state) => {
         state.isLoading = false;

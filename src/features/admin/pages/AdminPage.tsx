@@ -14,7 +14,6 @@ import { adminService } from "../services/adminService";
 import { AdminLogs } from "../components/logs/AdminLogs";
 import { AdminPricing } from "../components/pricing/AdminPricing";
 import { AdminSpaces } from "../components/spaces/AdminSpaces";
-import { AdminSMTP } from "../components/smtp/AdminSMTP";
 import { AdminPrompts } from "../components/prompts/AdminPrompts";
 import { AdminStaticPages } from "../components/pages/AdminStaticPages";
 import { AdminSubjects } from "../components/subjects/AdminSubjects";
@@ -202,11 +201,7 @@ const AdminPage = () => {
             <AdminSpaces />
           </TabsContent>
 
-          <TabsContent value="smtp" className="space-y-6">
-            <AdminSMTP />
-          </TabsContent>
-
-          <TabsContent value="content" className="space-y-6">
+          <TabsContent value="content" className="space-y-4 sm:space-y-6">
             <AdminContent
               homeContent={homeContent}
               onContentChange={setHomeContent}

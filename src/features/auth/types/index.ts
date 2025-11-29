@@ -23,7 +23,6 @@ export interface User {
   voiceDownloadCount?: number;
   voicePlanLimit?: number;
   buyMoreVoice?: boolean;
-  isEmailVerification?: boolean;
 }
 
 export interface Subscription {
@@ -65,5 +64,4 @@ export interface AuthResponse {
   user: User;
   accessToken: string;
   refreshToken: string;
-  verification_email_sent?: boolean;
 }

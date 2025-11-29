@@ -48,7 +48,14 @@ const ChatPage = () => {
 
   const [enterToSend, setEnterToSend] = useState(true);
   const [currentMessages, setCurrentMessages] = useState<NewMessage[]>([]);
-  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
+  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(location.pathname === "/app");
+
+  useEffect(() => {
+    if (location.pathname === "/app") {
+      setIsSidebarCollapsed(true);
+    }
+  }, [location.pathname]);
+
   const [isStreaming, setIsStreaming] = useState(false);
 
   // Clear messages immediately when authentication state changes to false

@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import { useAppSelector } from "../core/store/hooks";
 import Sidebar from "../features/chat/components/Sidebar";
 import { Conversation } from "../features/chat/types";
@@ -10,18 +10,26 @@ interface MainLayoutProps {
 
 const MainLayout = ({ children }: MainLayoutProps) => {
   const navigate = useNavigate();
+  const location = useLocation();
   const userName = useAppSelector((s) => s.auth?.user?.name ?? "Guest");
   const isAuthenticated = useAppSelector((s) => s.auth.isAuthenticated);
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [selectedConversationId, setSelectedConversationId] = useState<
     string | null
   >(null);
-  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
+  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(location.pathname === "/app");
   const [plan] = useState<"free" | "go">(
     ((localStorage.getItem("plan") as any) || "free").toLowerCase() as
     | "free"
     | "go"
   );
+
+  // Default minimize sidebar when route to /app
+  useEffect(() => {
+    if (location.pathname === "/app") {
+      setIsSidebarCollapsed(true);
+    }
+  }, [location.pathname]);
 
   // Load conversations only if user is authenticated
   useEffect(() => {

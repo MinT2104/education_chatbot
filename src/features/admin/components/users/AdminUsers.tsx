@@ -187,7 +187,7 @@ export const AdminUsers = () => {
   };
 
   const filteredAndSortedUsers = useMemo(() => {
-    let filtered = users.filter((user) => {
+    const filtered = users.filter((user) => {
       // Search filter
       const matchesSearch = [
         user.name,
