@@ -1,7 +1,8 @@
 import { useState, useEffect } from "react";
+import { authService } from "../services/authService";
 import { useNavigate, Link } from "react-router-dom";
 import { useAppDispatch, useAppSelector } from "../../../core/store/hooks";
-import { login, signup } from "../store/authSlice";
+import { login, signup, finalizeLogin } from "../store/authSlice";
 import { toast } from "react-toastify";
 import apiClient from "../../../core/api/axios";
 import {
@@ -27,7 +28,8 @@ const AuthDialog = ({
 }: AuthDialogProps) => {
   const dispatch = useAppDispatch();
   const navigate = useNavigate();
-  const { isLoading, error } = useAppSelector((state) => state.auth);
+  const { isLoading, error, user, pendingAuth } = useAppSelector((state) => state.auth as any);
+  const emailToCheck = pendingAuth?.user?.email || user?.email;
   const [mode, setMode] = useState<"login" | "signup">(initialMode);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -39,12 +41,71 @@ const AuthDialog = ({
   }, [open, initialMode]);
 
   // Clear errors when switching modes
+    // State for email verification dialog
+    const [showVerifyDialog, setShowVerifyDialog] = useState(false);
+    const [autoResent, setAutoResent] = useState(false);
   useEffect(() => {
     setLoginErrors({});
     setSignupErrors({});
     setShowPassword(false);
     setEmailCheckResult(null);
   }, [mode]);
+
+  // Reset all form/state when dialog closes or when component is unmounted
+  const resetFormState = () => {
+    setLoginData({ email: "", password: "" });
+    setSignupData({ name: "", email: "", password: "", confirmPassword: "", acceptedTerms: false });
+    setSignupErrors({});
+    setLoginErrors({});
+    setShowPassword(false);
+    setCheckingEmail(false);
+    setEmailCheckResult(null);
+    setIsSubmitting(false);
+    setMode("login");
+    setShowVerifyDialog(false);
+    setAutoResent(false);
+  };
+
+  useEffect(() => {
+    if (!open) {
+      // Clear inputs/errors when dialog is closed
+      resetFormState();
+    }
+    // Do not set state in unmount cleanup to avoid setting state on unmounted component
+  }, [open]);
+
+  // When verification dialog opens, automatically resend verification email once
+  useEffect(() => {
+    if (showVerifyDialog && !autoResent && emailToCheck) {
+      (async () => {
+        try {
+          await authService.resendVerificationEmail(emailToCheck);
+          toast.success("Verification email resent. Please check your inbox.");
+        } catch (err: any) {
+          // don't spam the user with errors here; show a toast
+          toast.error(err?.message || "Failed to resend verification email");
+        } finally {
+          setAutoResent(true);
+        }
+      })();
+    }
+    if (!showVerifyDialog) {
+      // reset flag when dialog closes so it can auto-resent next time
+      setAutoResent(false);
+    }
+  }, [showVerifyDialog, autoResent, emailToCheck]);
+
+  // NOTE: verification status is checked via `authService.getMe` when needed.
+
+  const handleResend = async (): Promise<void> => {
+    if (!emailToCheck) return;
+    try {
+      await authService.resendVerificationEmail(emailToCheck);
+      toast.success("Verification email resent. Please check your inbox.");
+    } catch (err: any) {
+      toast.error(err?.message || "Failed to resend verification email");
+    }
+  };
 
   // Login form data
   const [loginData, setLoginData] = useState({
@@ -247,10 +308,26 @@ const AuthDialog = ({
     }
 
     // Proceed with login
-    try {
-      await dispatch(login(loginData)).unwrap();
-      toast.success("Login successful!");
-      navigate("/app");
+      try {
+        const res = await dispatch(login(loginData)).unwrap();
+        // Check email verification (treat missing/false as not verified)
+        const verified = res?.user?.isEmailVerification;
+        if (!verified) {
+          // If backend already sent a verification email during login, prevent auto-resend
+          const apiSent = !!res?.verification_email_sent;
+          setAutoResent(apiSent);
+          setShowVerifyDialog(true);
+          return;
+        }
+        // If verified, finalize login (login flow already stored tokens in pendingAuth or set directly)
+        // If login flow saved tokens already (verified true), dispatch finalizeLogin to ensure cookies/state consistent
+        try {
+          await dispatch(finalizeLogin()).unwrap();
+        } catch (e) {
+          // finalizeLogin may fail if no pendingAuth; ignore
+        }
+        toast.success("Login successful!");
+        navigate("/app");
     } catch (err: any) {
       const errorMessage = err || "Login failed";
       toast.error(errorMessage);
@@ -273,18 +350,34 @@ const AuthDialog = ({
 
       // Auto-login after signup
       try {
-        await dispatch(
+        const res = await dispatch(
           login({
             email: signupPayload.email,
             password: signupPayload.password,
           })
         ).unwrap();
+        // Check email verification (treat missing/false as not verified)
+        const verified = res?.user?.isEmailVerification;
+        if (!verified) {
+          // We already sent a verification email during registration on the server,
+          // so prevent the auto-resend effect from triggering again immediately.
+          setAutoResent(true);
+          setShowVerifyDialog(true);
+          return;
+        }
+        try {
+          await dispatch(finalizeLogin()).unwrap();
+        } catch (e) {
+          // ignore
+        }
         toast.success("Login successful!");
         navigate("/app");
       } catch (loginErr: any) {
         toast.error(loginErr || "Auto-login failed. Please login manually.");
         setMode("login");
       }
+
+      // (handled above) auto-login already attempted
     } catch (err: any) {
       toast.error(err || "Signup failed");
     } finally {
@@ -305,10 +398,46 @@ const AuthDialog = ({
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <DialogTitle className="text-2xl">
-            {mode === "login" ? "Log in or sign up" : "Create your account"}
+            {!showVerifyDialog &&( mode === "login" ? "Log in or sign up" : "Create your account")}
+            {showVerifyDialog && "Email verification"}
           </DialogTitle>
         </DialogHeader>
         <div className="mt-6 space-y-3">
+          {showVerifyDialog ? (
+            // Verification view replaces the forms when state is set
+            <div>
+              <div className="py-4 text-left">
+                {(pendingAuth?.user?.email || user?.email) && (
+                  <p className="mb-2">Please check your inbox <b>{pendingAuth?.user?.email || user?.email}</b> to confirm your email address.</p>
+                )}
+                <p>If you didn't receive the email, check your spam folder or click resend.</p>
+              </div>
+
+              <div className="flex flex-col sm:flex-row justify-center gap-2 mt-4">
+                <button
+                  type="button"
+                  className="w-full sm:w-1/2 inline-flex items-center justify-center py-2.5 px-4 border border-transparent rounded-md bg-black text-sm font-medium text-white hover:bg-gray-900 transition-colors disabled:opacity-50"
+                  onClick={async () => {
+                    try {
+                      await handleResend();
+                    } catch (err) {
+                      /* handled in handleResend */
+                    }
+                  }}
+                >
+                  Resend email
+                </button>
+                <button
+                  type="button"
+                  className="w-full sm:w-1/2 inline-flex items-center justify-center py-2.5 px-4 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-transparent hover:bg-gray-50 transition-colors disabled:opacity-50"
+                  onClick={() => setShowVerifyDialog(false)}
+                >
+                  Back
+                </button>
+              </div>
+            </div>
+          ) : (
+          <>
           {/* Social Auth Buttons */}
           <button
             type="button"
@@ -399,7 +528,7 @@ const AuthDialog = ({
                       });
                     }
                   }}
-                  className={`w-full text-sm px-3 py-2 border rounded-md focus:outline-none focus:ring-primary-500 focus:border-primary-500 placeholder-gray-500 dark:placeholder-gray-400 text-gray-900 dark:text-white bg-white dark:bg-gray-700 ${
+                  className={`w-full h-[42px] text-sm px-3 py-2 border rounded-md focus:outline-none focus:ring-primary-500 focus:border-primary-500 placeholder-gray-500 dark:placeholder-gray-400 text-gray-900 dark:text-white bg-white dark:bg-gray-700 ${
                     loginErrors.email
                       ? "border-red-500 dark:border-red-500"
                       : "border-gray-300 dark:border-gray-600"
@@ -438,7 +567,7 @@ const AuthDialog = ({
                         });
                       }
                     }}
-                    className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-primary-500 focus:border-primary-500 placeholder-gray-500 dark:placeholder-gray-400 text-gray-900 dark:text-white bg-white dark:bg-gray-700 ${
+                    className={`w-full h-[42px] px-3 py-2 border rounded-md focus:outline-none focus:ring-primary-500 focus:border-primary-500 placeholder-gray-500 dark:placeholder-gray-400 text-gray-900 dark:text-white bg-white dark:bg-gray-700 ${
                       loginErrors.password
                         ? "border-red-500 dark:border-red-500"
                         : "border-gray-300 dark:border-gray-600"
@@ -535,7 +664,7 @@ const AuthDialog = ({
                       });
                     }
                   }}
-                  className={`w-full text-sm px-3 py-2 border rounded-md focus:outline-none focus:ring-primary-500 focus:border-primary-500 placeholder-gray-500 dark:placeholder-gray-400 text-gray-900 dark:text-white bg-white dark:bg-gray-700 ${
+                  className={`w-full h-[42px] text-sm px-3 py-2 border rounded-md focus:outline-none focus:ring-primary-500 focus:border-primary-500 placeholder-gray-500 dark:placeholder-gray-400 text-gray-900 dark:text-white bg-white dark:bg-gray-700 ${
                     signupErrors.email
                       ? "border-red-500 dark:border-red-500"
                       : "border-gray-300 dark:border-gray-600"
@@ -719,7 +848,10 @@ const AuthDialog = ({
                 : "Already have an account? Sign in"}
             </button>
           </div>
+          </>
+          )}
         </div>
+
       </DialogContent>
     </Dialog>
   );

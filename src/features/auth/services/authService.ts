@@ -21,6 +21,7 @@ interface BackendLoginResponse {
     role: string;
     auth_providers?: string;
   };
+  verification_email_sent?: boolean;
 }
 
 interface BackendRegisterResponse {
@@ -62,22 +63,8 @@ export const authService = {
       user: response.data.user as User,
       accessToken: response.data.access_token,
       refreshToken: response.data.refresh_token,
+      verification_email_sent: !!response.data.verification_email_sent,
     };
-
-    // Store tokens in cookies (7 days for refresh token, 6 hours for access token)
-    setCookie("access_token", authResponse.accessToken, {
-      expires: 0.25, // 6 hours in days
-      path: "/",
-      secure: import.meta.env.PROD,
-      sameSite: "lax",
-    });
-    setCookie("refresh_token", authResponse.refreshToken, {
-      expires: 7, // 7 days
-      path: "/",
-      secure: import.meta.env.PROD,
-      sameSite: "lax",
-    });
-
     return authResponse;
   },
 
@@ -111,7 +98,15 @@ export const authService = {
     }
   },
 
-  async getMe(): Promise<User> {
+  async getMe(token?: string): Promise<User> {
+    // If token provided, send it in Authorization header to check user status without cookies
+    if (token) {
+      const response = await apiClient.get<User>("/auth/me", {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      return response.data;
+    }
+
     const response = await apiClient.get<User>("/auth/me");
     return response.data;
   },
@@ -179,8 +174,8 @@ export const authService = {
     return authResponse;
   },
 
-  async verifyEmail(email: string, code: string): Promise<void> {
-    await apiClient.post("/auth/email-verification", { email, code });
+  async verifyEmail(token: string): Promise<void> {
+    await apiClient.post("/auth/email-verification", { token });
   },
 
   async resendVerificationEmail(email: string): Promise<void> {

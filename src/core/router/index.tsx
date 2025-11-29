@@ -1,4 +1,4 @@
-import { lazy } from "react";
+import React, { lazy } from "react";
 
 // Lazy load components for code splitting
 const HomePage = lazy(() => import("../../features/home/pages/HomePage"));
@@ -42,6 +42,7 @@ const SharePage = lazy(
 const RedirectToSubscription = lazy(
   () => import("../../components/RedirectToSubscription")
 );
+const EmailVerifyPage = lazy(() => import("../../features/auth/pages/EmailVerifyPage"));
 
 export interface AppRoute {
   path: string;
@@ -166,5 +167,9 @@ export const routes: AppRoute[] = [
   {
     path: "/share",
     component: SharePage,
+  },
+  {
+    path: "/auth/verify",
+    component: EmailVerifyPage,
   },
 ];
