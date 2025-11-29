@@ -19,7 +19,7 @@ export default function EmailVerifyPage() {
     (async () => {
       try {
         setLoading(true);
-        await authService.verifyEmail(token);
+        await authService.verifyEmail(token, token);
         toast.success("Email verified successfully. Redirecting to the app.");
         // Redirect to app after short delay
         setTimeout(() => navigate("/app"), 1200);
